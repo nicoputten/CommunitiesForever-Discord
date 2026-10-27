@@ -156,8 +156,8 @@ describe("runPoster", () => {
     expect(discord.messages).toHaveLength(0);
 
     site.settingsBody = { siteName: "Doombringers", posts: { milestones: true }, channels: { posts: CHANNEL } };
-    now += 5 * 60_000;
-    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    now += 30_000;
+    await vi.advanceTimersByTimeAsync(30_000);
     await vi.waitFor(() => expect(site.acked.has(6)).toBe(true));
     stop.abort();
     await running;

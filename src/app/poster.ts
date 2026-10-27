@@ -11,8 +11,11 @@ import { decide, readEvents } from "../core/events.js";
 import { type Group, type MessageContent, groupedMessage, joinsPost, markedEvents } from "../core/milestones.js";
 import { type SiteSettings, readSettings, settingsText } from "../core/settings.js";
 
-/** How often the settings are read again, so the admin's changes apply without a restart. */
-export const SETTINGS_EVERY_MS = 5 * 60_000;
+/**
+ * How often the settings are read again, so the admin's changes (a new posts channel, a test post) apply within about
+ * a long poll, without a restart. One small request.
+ */
+export const SETTINGS_EVERY_MS = 30_000;
 
 export interface PosterDeps {
   siteUrl: string;
