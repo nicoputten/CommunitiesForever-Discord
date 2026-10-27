@@ -19,6 +19,8 @@ export interface Site {
   image(path: string, signal: AbortSignal): Promise<Uint8Array | undefined>;
   /** The last weekly recap (BOT-05, `GET recap/latest`). */
   recapLatest(signal: AbortSignal): Promise<SiteAnswer>;
+  /** A look-up (BOT-06, BOT-API.md "Look-ups"): `lookup/<what>?…`. */
+  lookup(what: string, params: Readonly<Record<string, string>>, signal: AbortSignal): Promise<SiteAnswer>;
 }
 
 const TIMEOUT_MS = 15_000;
@@ -50,6 +52,8 @@ export function siteClient(config: SiteConfig): Site {
     posted: (eventId, messageId, signal) => call(`events/${eventId}/posted`, signal, TIMEOUT_MS, { messageId }),
     guild: (report, signal) => call("guild", signal, TIMEOUT_MS, report),
     recapLatest: (signal) => call("recap/latest", signal, TIMEOUT_MS),
+    lookup: (what, params, signal) =>
+      call(`lookup/${encodeURIComponent(what)}?${new URLSearchParams(params).toString()}`, signal, TIMEOUT_MS),
     async image(path, signal) {
       try {
         const response = await fetch(`${config.siteUrl}/api/bot/v1/${path}`, {

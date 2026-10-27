@@ -77,7 +77,12 @@ describe("readSettings", () => {
 });
 
 describe("COMMANDS", () => {
-  it("has /recap (BOT-05) until BOT-06 adds the look-ups", () => {
-    expect(COMMANDS.map((c) => c.name)).toEqual(["recap"]);
+  it("has the look-ups (BOT-06) and /recap (BOT-05), within Discord's limits", () => {
+    expect(COMMANDS.map((c) => c.name)).toEqual(["whereis", "who", "whocancraft", "character", "alts", "me", "recap"]);
+    for (const c of COMMANDS) {
+      expect(c.name).toMatch(/^[a-z]{1,32}$/);
+      expect(c.description.length).toBeLessThanOrEqual(100);
+      for (const o of c.options ?? []) expect(o.choices === undefined || o.autocomplete !== true).toBe(true);
+    }
   });
 });

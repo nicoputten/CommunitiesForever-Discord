@@ -51,3 +51,9 @@ Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open 
 - Posts the recap at the site's recap time (Sunday 13:00, Nico's time zone) as on the `bot-recap` board, text exactly as the site wrote it; `/recap` shows the last one to the asker only. A missed time (bot down) posts once when back, never twice.
 - Decided with Nico (2026-10-28): the recap channel, else the posts channel; one message as on the board; the card images fetched with the bot token and attached; `/recap` for anyone in the server, ephemeral, no linked check; milestone card images (level 60, new character at 60, profession 300); a missed time needs nothing extra (the site keeps the event, the marker prevents a second post).
 - Done (PR #18): `src/core/recap.ts` (`readRecap`, `recapMessage`, `recapFiles`), the `recap` event in `core/events.ts` and the poster (recap channel, images, markers read there too), `/recap` (`core/commands.ts`, `app/commands.ts`, `onCommand` in the Discord adapter, answers deferred ephemerally), `site.image` and `site.recapLatest`, milestone images (`hasCard`, `milestoneFiles`).
+
+### BOT-06 Look-up commands
+- Needs the site's lookup endpoints and Discord linking (web stories).
+- `/whereis`, `/who`, `/whocancraft`, `/character` (autocomplete), `/alts`, `/me` as on the `bot-commands-runs` board (full character names); ephemeral with Share; "Link your Discord first" for unlinked users.
+- Decided with Nico (2026-10-28): anyone in the server, only `/me` linked; the options and Share as in DESIGN-NOTES "Decisions"; "Plan a run with them" waits for BOT-04.
+- Done (PR #19): `core/commands.ts` (seven commands with options and choices), `core/lookups.ts` (the answers as embeds), `app/lookups.ts` (the look-ups, autocomplete, Share with `SharedAnswers`), the Discord adapter's options, autocomplete and buttons, `site.lookup`. CLAUDE.md rule 6 now says commands answer anyone in the server, only `/me` needs a link.
