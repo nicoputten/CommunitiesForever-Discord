@@ -2,7 +2,7 @@
 
 Open stories in build order. A done story moves to `docs/STORIES-COMPLETED.md` with a "Done (PR #n)" line. The bot depends on web stories (in the web repo's `docs/STORIES.md`): the bot API (WEB-38) first, then the site's parts of each feature.
 
-Build order (2026-10-27): BOT-07 (so milestones post from launch), then per feature once its web story is merged: BOT-06 (commands, WEB-39), BOT-04 (runs, WEB-40 and WEB-43), BOT-05 (recap, WEB-41), BOT-08 (channels and roles, after the web's guild channels and roles story).
+Build order (2026-10-27): per feature once its web story is merged: BOT-06 (commands, WEB-39), BOT-04 (runs, WEB-40 and WEB-43), BOT-05 (recap, WEB-41), BOT-08 (channels and roles, after the web's guild channels and roles story).
 
 ### BOT-04 Planned runs
 Decided with Nico, 2026-10-27 (the web repo's E7 has the whole flow; board `runs-flow`). Boards: `bot-posts-runs`, `bot-commands-runs`. Needs the web's WEB-38 (run events and actions), WEB-39 (time zones, settings) and WEB-40.
@@ -20,11 +20,6 @@ Decided with Nico, 2026-10-27 (the web repo's E7 has the whole flow; board `runs
 ### BOT-06 Look-up commands
 - Needs the site's lookup endpoints and Discord linking (web stories).
 - `/whereis`, `/who`, `/whocancraft`, `/character` (autocomplete), `/alts`, `/me` as on the `bot-commands-runs` board (full character names); ephemeral with Share; "Link your Discord first" for unlinked users.
-
-### BOT-07 Release and deploy
-- Release workflow: a `v*` tag on `main` pushes `ghcr.io/nicoputten/communitiesforever-discord` (public). `CHANGELOG.md` section per release.
-- The web repo's `deploy/compose.yaml` and `deploy/README.md` get the bot container (env without values).
-- Manual: Nico adds the env in TrueNAS and sees the bot online in the real server.
 
 ### BOT-08 Report the server's channels and roles
 - Once the web's channels and roles story has its endpoint in `docs/BOT-API.md`: the bot reports the server's text channels and roles (ids and names) to the site at start and when they change, so the admin picks the posts channel, runs channel and mention role from a list instead of typing ids.

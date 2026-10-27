@@ -60,10 +60,11 @@ describe("start", () => {
     const { lines, texts, log } = logger();
     const stop = new AbortController();
     site.add(milestonesEvent(12));
-    const running = start(FULL, log, deps, stop.signal);
+    const running = start({ ...FULL, APP_VERSION: "v0.1.0" }, log, deps, stop.signal);
 
     discord.report({ kind: "ready", servers: 1 });
     await vi.waitFor(() => expect(site.acked.has(12)).toBe(true));
+    expect(texts()[0]).toBe("version v0.1.0");
     expect(discord.registered).toEqual([[]]);
     expect(texts()).toContain("site: https://example.com answers as Doombringers; posts channel set");
     expect(readHeartbeat(file)).toBe(now);

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Releases: a `v*` tag on `main` publishes the bot's image; the bot logs its version at start. The web repo's `deploy/compose.yaml` runs it next to the site.
 - Milestones from uploads within 5 minutes of a post are added to that post, so friends logging off together give one post instead of several.
 - Milestone posts: after an upload the bot posts its milestones (every 10 levels, level 60, a profession at its cap, a new character) in one message in the posts channel set on the site, each once, also after a restart.
 - The bot connects to Discord (no privileged intents), registers its slash commands, reconnects by itself, checks its site token, stops gracefully on `docker stop`, and has a container health check. `docs/DISCORD-SETUP.md` explains setting up the Discord application and inviting the bot.
