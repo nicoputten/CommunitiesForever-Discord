@@ -1,13 +1,14 @@
 // The poster (BOT-03): reads the site's settings, long-polls its events, posts each one once and acknowledges it
 // (CLAUDE.md rule 9). Posts carry a marker (core/milestones.ts), so after a restart the bot finds what it already
 // posted in the channel and only acknowledges it. Never fatal: the site and Discord may be away for a while.
+// Milestones of uploads within 5 minutes of a post are added to that post by editing it (BOT-09).
 import type { Discord } from "../adapters/discord.js";
 import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site, SiteAnswer } from "../adapters/site.js";
 import { MAX_BACKOFF_SECONDS, backoffSeconds } from "../core/connection.js";
 import { decide, readEvents } from "../core/events.js";
-import { markedEvents } from "../core/milestones.js";
+import { type Group, type MessageContent, groupedMessage, joinsPost, markedEvents } from "../core/milestones.js";
 import { type SiteSettings, readSettings, settingsText } from "../core/settings.js";
 
 /** How often the settings are read again, so the admin's changes apply without a restart. */
@@ -31,6 +32,8 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
   let cursor = "0";
   let channel: string | undefined;
   let posted = new Map<number, string>();
+  // The post that still takes milestones (BOT-09); at most MAX_LINES milestones, so bounded.
+  let open: { id: string; channel: string; at: number; groups: Group[] } | undefined;
 
   const retry = async (text: string, seconds = backoffSeconds(++attempt)) => {
     log.error(`${text}; trying again in ${seconds} s`);
@@ -73,6 +76,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       }
       channel = wanted;
       cursor = "0";
+      open = undefined;
     }
 
     const answer = await site.events(cursor, signal);
@@ -84,21 +88,39 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
     const { events, cursor: next } = readEvents(answer.body);
     let failed = false;
     for (const event of events) {
-      const action = decide(event, settings, posted, siteUrl, host);
+      const action = decide(event, settings, posted);
       if (action.do === "leave") continue;
-      let messageId: string;
+      let messageId: string | undefined;
       if (action.do === "ack") {
         messageId = action.messageId;
       } else {
-        try {
-          messageId = await discord.post(channel, action.content);
-        } catch (error) {
-          failed = true;
-          await retry(`discord: posting event ${event.id} failed (${codeOf(error)})`);
-          break;
+        const group: Group = { eventId: event.id, milestones: action.milestones };
+        const shownInOpen = open?.groups.reduce((n, g) => n + g.milestones.length, 0) ?? 0;
+        if (open?.channel === channel && joinsPost(open.at, shownInOpen, group.milestones.length, deps.now())) {
+          const groups = [...open.groups, group];
+          try {
+            await discord.edit(channel, open.id, groupedMessage(groups, siteUrl, host) as MessageContent);
+            open.groups = groups;
+            messageId = open.id;
+            log.info(`added event ${event.id} to the post of event ${groups[0]?.eventId}`);
+          } catch (error) {
+            // Deleted or not editable: a new post instead.
+            log.error(`discord: adding event ${event.id} to the open post failed (${codeOf(error)}); posting it`);
+            open = undefined;
+          }
+        }
+        if (messageId === undefined) {
+          try {
+            messageId = await discord.post(channel, groupedMessage([group], siteUrl, host) as MessageContent);
+          } catch (error) {
+            failed = true;
+            await retry(`discord: posting event ${event.id} failed (${codeOf(error)})`);
+            break;
+          }
+          open = { id: messageId, channel, at: deps.now(), groups: [group] };
+          log.info(`posted event ${event.id}`);
         }
         posted.set(event.id, messageId);
-        log.info(`posted event ${event.id}`);
       }
       const ack = await site.posted(event.id, messageId, signal);
       if (signal.aborted) return;

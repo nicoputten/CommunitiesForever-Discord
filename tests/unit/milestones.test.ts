@@ -5,6 +5,8 @@ import {
   GOLD,
   type Milestone,
   escapeMarkdown,
+  groupedMessage,
+  joinsPost,
   markedEvents,
   milestoneMessage,
 } from "../../src/core/milestones.js";
@@ -154,13 +156,42 @@ describe("readEvents and readMilestones", () => {
 describe("decide", () => {
   const event = { id: 20, type: "milestones", data: { milestones: [{ kind: "newCharacter", character: zul }] } };
   it("posts, acknowledges what is posted already, and leaves the rest", () => {
-    expect(decide(event, {}, new Map(), SITE, HOST).do).toBe("post");
-    expect(decide(event, {}, new Map([[20, "1100000000000000009"]]), SITE, HOST)).toEqual({
+    expect(decide(event, {}, new Map()).do).toBe("post");
+    expect(decide(event, {}, new Map([[20, "1100000000000000009"]]))).toEqual({
       do: "ack",
       messageId: "1100000000000000009",
     });
-    expect(decide(event, { milestones: false }, new Map(), SITE, HOST).do).toBe("leave");
-    expect(decide({ ...event, type: "runPosted" }, {}, new Map(), SITE, HOST).do).toBe("leave");
-    expect(decide({ ...event, data: {} }, {}, new Map(), SITE, HOST).do).toBe("leave");
+    expect(decide(event, { milestones: false }, new Map()).do).toBe("leave");
+    expect(decide({ ...event, type: "runPosted" }, {}, new Map()).do).toBe("leave");
+    expect(decide({ ...event, data: {} }, {}, new Map()).do).toBe("leave");
+  });
+});
+
+describe("groupedMessage and joinsPost (BOT-09)", () => {
+  it("puts a later upload's level 60 on top and marks each upload once", () => {
+    const message = groupedMessage(
+      [
+        { eventId: 30, milestones: [{ kind: "level", character: ves, level: 40 }] },
+        { eventId: 31, milestones: [{ kind: "maxLevel", character: mira, level: 60 }] },
+        { eventId: 32, milestones: [{ kind: "newCharacter", character: zul }] },
+      ],
+      SITE,
+      HOST,
+    );
+    expect(message?.embeds[0]?.url).toBe("https://example.com/character/Player-1-MIRA#e31");
+    expect(message?.embeds[1]?.description).toContain("Player-1-VES#e30)");
+    expect(message?.embeds[1]?.description).toContain("Player-1-ZUL#e32)");
+    expect(
+      markedEvents(SITE, [{ id: "1", texts: message?.embeds.flatMap((e) => [e.url ?? "", e.description ?? ""]) ?? [] }])
+        .size,
+    ).toBe(3);
+  });
+
+  it("joins within 5 minutes of the post and up to 10 milestones", () => {
+    const at = 1_793_112_000_000;
+    expect(joinsPost(at, 3, 2, at + 4 * 60_000)).toBe(true);
+    expect(joinsPost(at, 3, 2, at + 5 * 60_000)).toBe(false);
+    expect(joinsPost(at, 9, 2, at)).toBe(false);
+    expect(joinsPost(at, 9, 1, at)).toBe(true);
   });
 });

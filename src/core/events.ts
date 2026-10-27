@@ -1,6 +1,6 @@
 // The site's event feed (web repo docs/BOT-API.md "Events") read defensively, and what the bot does with each event
 // (BOT-03). Pure: settings and what is already posted come in as arguments.
-import { type MessageContent, type Milestone, milestoneMessage } from "./milestones.js";
+import { type Milestone, showable } from "./milestones.js";
 import type { SiteSettings } from "./settings.js";
 
 export interface SiteEvent {
@@ -62,24 +62,19 @@ export function readMilestones(data: unknown): Milestone[] {
 }
 
 export type Action =
-  | { do: "post"; content: MessageContent }
+  /** Post (or add to the open post, BOT-09): the milestones that can be shown. */
+  | { do: "post"; milestones: Milestone[] }
   /** Already in the channel (found by its marker): only acknowledge it. */
   | { do: "ack"; messageId: string }
   /** Nothing to post: leave it; the site lets it expire. */
   | { do: "leave" };
 
-export function decide(
-  event: SiteEvent,
-  settings: SiteSettings,
-  posted: ReadonlyMap<number, string>,
-  siteUrl: string,
-  siteHost: string,
-): Action {
+export function decide(event: SiteEvent, settings: SiteSettings, posted: ReadonlyMap<number, string>): Action {
   if (event.type !== "milestones" || settings.milestones === false) return { do: "leave" };
   const messageId = posted.get(event.id);
   if (messageId !== undefined) return { do: "ack", messageId };
-  const content = milestoneMessage(event.id, readMilestones(event.data), siteUrl, siteHost);
-  return content ? { do: "post", content } : { do: "leave" };
+  const milestones = showable(readMilestones(event.data));
+  return milestones.length > 0 ? { do: "post", milestones } : { do: "leave" };
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
