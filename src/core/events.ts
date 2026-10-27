@@ -1,6 +1,6 @@
 // The site's event feed (web repo docs/BOT-API.md "Events") read defensively, and what the bot does with each event
 // (BOT-03). Pure: settings and what is already posted come in as arguments.
-import { type Milestone, showable } from "./milestones.js";
+import { type MessageContent, type Milestone, showable, testMessage } from "./milestones.js";
 import type { SiteSettings } from "./settings.js";
 
 export interface SiteEvent {
@@ -64,14 +64,29 @@ export function readMilestones(data: unknown): Milestone[] {
 export type Action =
   /** Post (or add to the open post, BOT-09): the milestones that can be shown. */
   | { do: "post"; milestones: Milestone[] }
+  /** Post this message on its own (the test post). */
+  | { do: "send"; content: MessageContent }
   /** Already in the channel (found by its marker): only acknowledge it. */
   | { do: "ack"; messageId: string }
   /** Nothing to post: leave it; the site lets it expire. */
   | { do: "leave" };
 
-export function decide(event: SiteEvent, settings: SiteSettings, posted: ReadonlyMap<number, string>): Action {
-  if (event.type !== "milestones" || settings.milestones === false) return { do: "leave" };
+export function decide(
+  event: SiteEvent,
+  settings: SiteSettings,
+  posted: ReadonlyMap<number, string>,
+  siteUrl: string,
+  siteHost: string,
+): Action {
   const messageId = posted.get(event.id);
+  if (event.type === "test") {
+    // Only the posts channel's test so far (BOT-API.md "test"); kinds for other channels come with their stories.
+    const kind = isObject(event.data) ? event.data.kind : undefined;
+    if (kind !== undefined && kind !== "posts") return { do: "leave" };
+    if (messageId !== undefined) return { do: "ack", messageId };
+    return { do: "send", content: testMessage(event.id, siteUrl, siteHost) };
+  }
+  if (event.type !== "milestones" || settings.milestones === false) return { do: "leave" };
   if (messageId !== undefined) return { do: "ack", messageId };
   const milestones = showable(readMilestones(event.data));
   return milestones.length > 0 ? { do: "post", milestones } : { do: "leave" };

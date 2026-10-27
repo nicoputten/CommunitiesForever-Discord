@@ -156,14 +156,14 @@ describe("readEvents and readMilestones", () => {
 describe("decide", () => {
   const event = { id: 20, type: "milestones", data: { milestones: [{ kind: "newCharacter", character: zul }] } };
   it("posts, acknowledges what is posted already, and leaves the rest", () => {
-    expect(decide(event, {}, new Map()).do).toBe("post");
-    expect(decide(event, {}, new Map([[20, "1100000000000000009"]]))).toEqual({
+    expect(decide(event, {}, new Map(), SITE, HOST).do).toBe("post");
+    expect(decide(event, {}, new Map([[20, "1100000000000000009"]]), SITE, HOST)).toEqual({
       do: "ack",
       messageId: "1100000000000000009",
     });
-    expect(decide(event, { milestones: false }, new Map()).do).toBe("leave");
-    expect(decide({ ...event, type: "runPosted" }, {}, new Map()).do).toBe("leave");
-    expect(decide({ ...event, data: {} }, {}, new Map()).do).toBe("leave");
+    expect(decide(event, { milestones: false }, new Map(), SITE, HOST).do).toBe("leave");
+    expect(decide({ ...event, type: "runPosted" }, {}, new Map(), SITE, HOST).do).toBe("leave");
+    expect(decide({ ...event, data: {} }, {}, new Map(), SITE, HOST).do).toBe("leave");
   });
 });
 
@@ -193,5 +193,34 @@ describe("groupedMessage and joinsPost (BOT-09)", () => {
     expect(joinsPost(at, 3, 2, at + 5 * 60_000)).toBe(false);
     expect(joinsPost(at, 9, 2, at)).toBe(false);
     expect(joinsPost(at, 9, 1, at)).toBe(true);
+  });
+});
+
+describe("the test post", () => {
+  it("posts the admin's test with a marker, acknowledges a posted one, and leaves other channels' tests", () => {
+    const test = { id: 40, type: "test", data: { kind: "posts" } };
+    const action = decide(test, { milestones: false }, new Map(), SITE, HOST);
+    expect(action).toEqual({
+      do: "send",
+      content: {
+        embeds: [
+          {
+            title: "Test post",
+            url: "https://example.com/discord#e40",
+            description: "Posts from example.com arrive in this channel. Sent from the site's Discord page.",
+            color: GOLD,
+          },
+        ],
+        allowed_mentions: { parse: [] },
+      },
+    });
+    expect(
+      markedEvents(SITE, [{ id: "1100000000000000040", texts: ["https://example.com/discord#e40"] }]).get(40),
+    ).toBe("1100000000000000040");
+    expect(decide(test, {}, new Map([[40, "1100000000000000040"]]), SITE, HOST)).toEqual({
+      do: "ack",
+      messageId: "1100000000000000040",
+    });
+    expect(decide({ ...test, data: { kind: "recap" } }, {}, new Map(), SITE, HOST).do).toBe("leave");
   });
 });

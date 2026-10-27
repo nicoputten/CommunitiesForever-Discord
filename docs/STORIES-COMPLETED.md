@@ -40,3 +40,8 @@ Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open 
 - Uses the `Guilds` intent BOT-02 already has; no new permission.
 - Only what the endpoint documents (CLAUDE.md rule 10); logs counts, never names or ids.
 - Done (PR #9). Built against web WEB-46 (`POST /api/bot/v1/guild`, BOT-API.md "Guild"): `src/core/guild.ts` (text and announcement channels the bot can view, send and embed in, in Discord's order; mentionable roles without @everyone and managed roles, highest first; the site's limits and clean names), `guild()` and `onGuildChange` in `src/adapters/discord.ts` (channel, role and server events of the `Guilds` intent), `src/app/guildReporter.ts` (on ready, resume and every change, bundled within 5 s; a `404` from an older site logged once and not retried until the next change; other failures with backoff). Decisions (Nico, 2026-10-27): as proposed. Known limit: a role given to the bot itself isn't seen until the next change or restart (GUILD_MEMBER_UPDATE needs the privileged members intent).
+
+### BOT-10 The site's test post
+- The admin's "Send a test post" on the site's Discord page (web WEB-39, BOT-API.md "test", `data.kind` `posts`) posts a short test message in the posts channel and acknowledges it like any event; also when milestones are off.
+- Done (PR #10). Built: `testMessage` in `src/core/milestones.ts` (a gold "Test post" embed linking to the site's Discord page with the `#e<id>` marker, so a restart doesn't post it twice; markers now count on any link to the site), the `send` action in `decide`, posted on its own in `src/app/poster.ts` (never added to an open milestone post). Tests for other channels (`kind` other than `posts`) are left until their stories.
+

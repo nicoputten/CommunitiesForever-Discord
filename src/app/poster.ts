@@ -88,11 +88,21 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
     const { events, cursor: next } = readEvents(answer.body);
     let failed = false;
     for (const event of events) {
-      const action = decide(event, settings, posted);
+      const action = decide(event, settings, posted, siteUrl, host);
       if (action.do === "leave") continue;
       let messageId: string | undefined;
       if (action.do === "ack") {
         messageId = action.messageId;
+      } else if (action.do === "send") {
+        try {
+          messageId = await discord.post(channel, action.content);
+        } catch (error) {
+          failed = true;
+          await retry(`discord: posting event ${event.id} failed (${codeOf(error)})`);
+          break;
+        }
+        posted.set(event.id, messageId);
+        log.info(`posted event ${event.id} (test)`);
       } else {
         const group: Group = { eventId: event.id, milestones: action.milestones };
         const shownInOpen = open?.groups.reduce((n, g) => n + g.milestones.length, 0) ?? 0;
