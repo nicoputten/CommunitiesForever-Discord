@@ -14,3 +14,9 @@ Decided with Nico, 2026-10-27 (the web repo's E7 has the whole flow; board `runs
 - **Runs v2** (Nico, 2026-10-27; the web repo's WEB-47 and boards `runs-v2-*`): any character can join and the role is picked apart from it. Pick my character becomes character and role: a select of all the asker's characters with the fit tag ("fits", "+3 over", "carry · +21", "4 below"; a character 6+ below can only answer Maybe), then the roles the class can play. The post shows each sign-up's chosen role, marks carries "carry", and lists reserves (I'm in for a full role). An organiser's move (another role, reserve, removed) reaches the moved person as a quiet notice, never a channel ping. All from the site's optional fields in `docs/BOT-API.md` (WEB-47).
 - Tests: the post in every state, the select menu, the time-passed and not-yours replies, edits instead of new posts, no double reminder after a restart.
 
+### BOT-11 Class icons
+Decided with Nico (2026-10-28): Discord can't colour text in an embed, so every character name in the bot's answers and posts gets a class icon before it, and the class written after it ("[icon] **Mira Sunstrider** · Mage"). The icons come from Claude Design (`docs/DESIGN-PROMPT-CLASS-ICONS.md`); the story waits for the 9 PNGs.
+- The 9 icons (128×128 PNG) in `assets/class-icons/`, and their board in `design/boards/class-icons/`.
+- The bot owns them as **application emoji** (uploaded by the bot itself at start when missing or changed, so no server emoji slots and no manual upload), named `cf_warrior` … `cf_druid`.
+- Used wherever a character name shows: look-ups (BOT-06), milestones (BOT-03), runs (BOT-04), recap (BOT-05). Without the emoji (upload failed) the name shows without icon, never a broken one.
+- Tests: the class to emoji mapping for all 9, the fallback without emoji, the start-up sync (missing, changed, unchanged).
