@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## v0.1.0 (2026-10-27)
 - The bot reads the site's settings every 30 seconds instead of every 5 minutes, so a newly picked channel and a test post work at once.
 - "Send a test post" on the site's Discord page now posts a test message in the posts channel.
 - The bot tells the site the server's channels and mentionable roles, so the admin picks the posts channel and the run mention role from a list.
