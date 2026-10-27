@@ -17,3 +17,10 @@ Decided with Nico, 2026-10-27 (the web repo's E7 has the whole flow; board `runs
 ### BOT-06 Look-up commands
 - Needs the site's lookup endpoints and Discord linking (web stories).
 - `/whereis`, `/who`, `/whocancraft`, `/character` (autocomplete), `/alts`, `/me` as on the `bot-commands-runs` board (full character names); ephemeral with Share; "Link your Discord first" for unlinked users.
+
+### BOT-11 Class icons
+Decided with Nico (2026-10-28): Discord can't colour text in an embed, so every character name in the bot's answers and posts gets a class icon before it, and the class written after it ("[icon] **Mira Sunstrider** · Mage"). The icons come from Claude Design (`docs/DESIGN-PROMPT-CLASS-ICONS.md`); the story waits for the 9 PNGs.
+- The 9 icons (128×128 PNG) in `assets/class-icons/`, and their board in `design/boards/class-icons/`.
+- The bot owns them as **application emoji** (uploaded by the bot itself at start when missing or changed, so no server emoji slots and no manual upload), named `cf_warrior` … `cf_druid`.
+- Used wherever a character name shows: look-ups (BOT-06), milestones (BOT-03), runs (BOT-04), recap (BOT-05). Without the emoji (upload failed) the name shows without icon, never a broken one.
+- Tests: the class to emoji mapping for all 9, the fallback without emoji, the start-up sync (missing, changed, unchanged).
