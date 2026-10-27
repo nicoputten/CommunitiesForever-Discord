@@ -8,7 +8,7 @@ import type { Site, SiteConfig } from "../adapters/site.js";
 import { COMMANDS } from "../core/commands.js";
 import { type Env, problemText, readConfig } from "../core/config.js";
 import { type ConnectionEvent, HEARTBEAT_MS, isConnected, stateText } from "../core/connection.js";
-import { commandHandler } from "./commands.js";
+import { commandHandlers } from "./commands.js";
 import { type GuildReporter, guildReporter } from "./guildReporter.js";
 import { runPoster } from "./poster.js";
 
@@ -50,7 +50,10 @@ export async function start(env: Env, log: Log, deps: Deps, stop: AbortSignal): 
       const site = deps.site(config);
       poster = runPoster({ siteUrl: config.siteUrl, site, discord, log, now: deps.now }, posterStop.signal);
       reporter = guildReporter(site, discord, log);
-      discord.onCommand(commandHandler({ siteUrl: config.siteUrl, site, log }, posterStop.signal));
+      const handlers = commandHandlers({ siteUrl: config.siteUrl, site, log, now: deps.now }, posterStop.signal);
+      discord.onCommand(handlers.command);
+      discord.onAutocomplete(handlers.autocomplete);
+      discord.onButton(handlers.button);
     }
     // After a reconnect the server may have changed while the bot was away.
     if (event.kind === "ready" || event.kind === "resumed") reporter?.changed();

@@ -87,7 +87,7 @@ describe("start", () => {
       expect.arrayContaining([
         "discord: connecting",
         "discord: ready in 1 server",
-        "discord: registered 1 slash command",
+        "discord: registered 7 slash commands",
         "posted event 12",
         "stopping",
         "stopped",

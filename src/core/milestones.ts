@@ -47,6 +47,8 @@ export interface Embed {
 export interface MessageContent {
   embeds: Embed[];
   allowed_mentions: { parse: never[] };
+  /** BOT-06: buttons under the message (Discord's action rows), e.g. Share. */
+  components?: { type: 1; components: { type: 2; style: number; label: string; custom_id?: string; url?: string }[] }[];
 }
 
 /** The gold embed border (web token `--gold`). */

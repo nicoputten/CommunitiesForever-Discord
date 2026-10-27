@@ -46,6 +46,7 @@ The contract lives in the web repo (`docs/BOT-API.md`, made by WEB-38). Shape as
 - `POST /api/bot/v1/asks`, `POST /api/bot/v1/asks/<id>/answers`: `/ask` and the ask buttons.
 - `GET /api/bot/v1/cards/<id>.png`: generated card images (level 60, recap header, map crops), rendered by the site. The bot fetches each with its token and attaches it to the post (Discord can't fetch a URL that needs the token); a post goes out without an image the site can't give (BOT-05).
 - `GET /api/bot/v1/recap/latest`: the last weekly recap, for `/recap` (BOT-05).
+- `GET /api/bot/v1/lookup/<what>`: the look-up commands' data (BOT-06, web WEB-39b); `names` and `professions` feed the autocomplete. Answered for anyone in the server; only `me` needs the asker linked. Share keeps an answer in memory for 15 minutes (at most 100), then the button does nothing.
 
 Polling every 30 s with backoff is enough for a friend group and needs no public endpoint on the bot.
 
