@@ -1,0 +1,8 @@
+# Allow-list: the image build needs only the sources and the build config. design/, docs, tests, local
+# .env files and node_modules stay out.
+*
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.build.json
+!src/
