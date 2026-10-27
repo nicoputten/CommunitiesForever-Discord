@@ -2,7 +2,7 @@
 
 Open stories in build order. A done story moves to `docs/STORIES-COMPLETED.md` with a "Done (PR #n)" line. The bot depends on web stories (in the web repo's `docs/STORIES.md`): the bot API (WEB-38) first, then the site's parts of each feature.
 
-Build order: BOT-01, BOT-02, then per feature once its web story is merged: BOT-03 (milestones), BOT-06 (commands), BOT-04 (asks), BOT-05 (recap), then BOT-07.
+Build order: BOT-01, BOT-02, then per feature once its web story is merged: BOT-03 (milestones, WEB-38), BOT-06 (commands, WEB-39), BOT-04 (runs, WEB-40 and WEB-43), BOT-05 (recap, WEB-41), then BOT-07.
 
 ### BOT-01 Repo skeleton and CI
 - Node 24 (`.nvmrc`), TypeScript, ESLint, Prettier, Vitest as in the web repo; `src/core`, `src/adapters`, `src/app` with an ESLint rule that `core` imports nothing from the others or from discord.js and Node.
@@ -22,11 +22,14 @@ Build order: BOT-01, BOT-02, then per feature once its web story is merged: BOT-
 - Respects the site's settings (channel, milestones on or off, mention role).
 - Tests: core formatting for every milestone kind and the grouped message; the poll loop with a fake site and a fake Discord (restart, outage, ack failure).
 
-### BOT-04 Group asks
-- Needs the site's asks (web story) and, for asks from the game, the addon story.
-- Posts an ask as on the `bot-posts` board (part 2), updates it on every answer, buttons I'm in / Maybe / Can't tonight / Pick my character (a select menu of the friend's characters that fit), `/ask` (dungeon with autocomplete, time).
-- Answers go to the site, which keeps the state; the message is rebuilt from the site's state.
-- Open: roles per character (see `docs/DESIGN-NOTES.md`).
+### BOT-04 Planned runs
+Decided with Nico, 2026-10-27 (the web repo's E7 has the whole flow; board `runs-flow`). Boards: `bot-posts-runs`, `bot-commands-runs`. Needs the web's WEB-38 (run events and actions), WEB-39 (time zones, settings) and WEB-40.
+- **The run post** in the runs channel: organiser on their character, dungeon, Discord timestamp (each reader's own time and "in 3 hours"), level range, note, five role slots, "N in · N maybe · N open", who could fill an open slot, buttons I'm in / Maybe / Can't, Pick my character (a select menu of the asker's characters in range; the reply "You're in as Lia Thornwhisper (healer)" is ephemeral), Open run. **One message per run**, edited in every state: open, full (Maybe is next in line), starting soon, started (buttons removed but Open run), done ("Ran it · 3 of 5 signed-up came"), didn't happen, cancelled (by the organiser, or removed by the admin; sign-ups get a quiet notice).
+- **Reminder** (the site's reminder time, default 30 min) and **Starting now** as new messages, mentioning only those who answered I'm in or Maybe; Starting now is always posted. A **ping from the game** ("Hey Jorrit, these people are waiting for you") when the organiser sends it (it arrives after their `/reload`).
+- **Ask now from the game** (only when "Also post on Discord" was ticked): the post with "asked from the game · via /reload", answers in game and on Discord, expires 10 minutes after it was asked in game (buttons removed, "Expired").
+- **Commands:** `/plan` (dungeon with autocomplete showing ranges and who it fits, day: Today, Tomorrow or a weekday in the next 7 days, time 24-hour, note; read in the asker's time zone from the site; confirmation with the Discord timestamp and "Lead with another character"; the time-passed reply with "Tomorrow" and "Ask now instead"), `/ask` (a run that starts now, expires after 10 min; says it can't whisper anyone in game), `/runs` (upcoming runs this week with your answers, only for you), `/run edit` and `/run cancel` (autocomplete lists only your own runs, the admin's lists all; "This run isn't yours" with Answer Can't). `/who`'s button becomes "Plan a run with them".
+- Every answer and action goes to the site; posts are rebuilt from the site's state (rules 2 and 9).
+- Tests: the post in every state, the select menu, the time-passed and not-yours replies, edits instead of new posts, no double reminder after a restart.
 
 ### BOT-05 Weekly recap
 - Needs the site's recap (web story: catalogue, rotation, card images).
@@ -34,7 +37,7 @@ Build order: BOT-01, BOT-02, then per feature once its web story is merged: BOT-
 
 ### BOT-06 Look-up commands
 - Needs the site's lookup endpoints and Discord linking (web stories).
-- `/whereis`, `/who`, `/whocancraft`, `/character` (autocomplete), `/alts`, `/me` as on the `bot-commands` board; ephemeral with Share; "Link your Discord first" for unlinked users.
+- `/whereis`, `/who`, `/whocancraft`, `/character` (autocomplete), `/alts`, `/me` as on the `bot-commands-runs` board (full character names); ephemeral with Share; "Link your Discord first" for unlinked users.
 
 ### BOT-07 Release and deploy
 - Release workflow: a `v*` tag on `main` pushes `ghcr.io/nicoputten/communitiesforever-discord` (public). `CHANGELOG.md` section per release.

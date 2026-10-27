@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discord commands · runs</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#070C15}
+.chat{background:#2B2D31;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;font-family:Inter,sans-serif;color:#DBDEE1}
+.cmd{display:flex;align-items:center;gap:8px;font-size:14px;color:#949BA4}
+.cmd code{font:14px ui-monospace,Consolas,monospace;color:#C9CDFB;background:rgba(88,101,242,.18);padding:2px 6px;border-radius:4px}
+.msg{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px}
+.av{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#1E2E48,#0A1322);display:flex;align-items:center;justify-content:center}
+.nm{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:#F0D08E}
+.tag{font:700 10px/1 Inter,sans-serif;padding:3px 5px;border-radius:3px;background:#D4AF6A;color:#0B0F14}
+.eph{font-size:12px;color:#949BA4;display:flex;align-items:center;gap:6px}
+.emb{margin-top:6px;background:#232428;border-left:4px solid #D4AF6A;border-radius:4px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.et{font-size:15px;font-weight:700;color:#F2F3F5}
+.ed{font-size:14px;line-height:1.45;color:#DBDEE1}
+.row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:14px;padding:3px 0}
+.dot{width:12px;height:12px;border-radius:50%}
+.ef{font-size:12px;color:#949BA4}
+.b{display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border-radius:4px;font:500 13px Inter,sans-serif;color:#fff;background:#4E5058}
+.cap{font:18px 'Marcellus SC',serif;letter-spacing:.06em;color:#F0D08E;margin:0 0 8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:500;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7E8898;padding:8px 10px;border-bottom:1px solid rgba(212,175,106,.3)}
+td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);color:#C9CFD9;vertical-align:top}
+td code{font:13px ui-monospace,Consolas,monospace;color:#F3DFAE}
+</style>
+</helmet>
+<div style="width: 1440px; box-sizing: border-box; padding: 48px 56px 60px; background: radial-gradient(1200px 500px at 30% -10%, #12233A, rgba(7,12,21,0) 70%), #070C15; font-family: Inter, sans-serif; color: #E6E1D6; display: flex; flex-direction: column; gap: 26px">
+  <div>
+    <h1 style="margin: 0; font: 40px 'Marcellus SC', serif; letter-spacing: .05em; color: #F3DFAE">Commands · runs</h1>
+    <p style="margin: 6px 0 0; font-size: 15px; color: #8E98A8; line-height: 1.5">Slash commands for friends who linked their Discord on the site. Answers are only visible to you by default; <b style="color: #E6E1D6">Share</b> posts it in the channel. New: <b style="color: #E6E1D6">/plan</b>, <b style="color: #E6E1D6">/ask</b> as a run starting now, and <b style="color: #E6E1D6">/run</b> to edit or cancel. Character names are always written in full.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start">
+    <!-- whereis -->
+    <div><h2 class="cap">/whereis</h2>
+    <div class="chat">
+      <div class="cmd"><code>/whereis</code> friend: Bob</div>
+      <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+        <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+          <div class="emb"><div class="et">Bob's characters</div>
+            <img src="./assets/9c2044d1797d9107f6b621cb17353da3.png" alt="Map crop of Westfall and Stranglethorn with Bob's markers" style="width: 100%; height: 130px; object-fit: cover; object-position: 66% 82%; border-radius: 6px">
+            <div class="row"><span class="dot" style="background: #FFF468; box-shadow: 0 0 8px #FFF468"></span><span><b style="color: #FFF468">Bob Example</b> 41 · The Deadmines</span><span class="ef">5 h</span></div>
+            <div class="row"><span class="dot" style="background: #0070DD"></span><span><b style="color: #4DA3FF">Tok Ironhide</b> 33 · Hillsbrad</span><span class="ef">1 d</span></div>
+            <div class="ef">Seen by the addon · wow.vestras.nl/map</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b">Share</span><span class="b">Open map ↗</span></div>
+        </div></div>
+    </div></div>
+
+    <!-- whocancraft -->
+    <div><h2 class="cap">/whocancraft</h2>
+    <div class="chat">
+      <div class="cmd"><code>/whocancraft</code> profession: Tailoring</div>
+      <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+        <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+          <div class="emb"><div class="et">Tailoring · covered</div>
+            <div class="row"><span style="color: #F0D08E">★</span><span><b style="color: #3FC7EB">Mira Sunstrider</b> 300 / 300</span><span class="ef">Mira</span></div>
+            <div class="row"><span></span><span><b style="color: #FFFFFF">Lia Thornwhisper</b> 205 / 225</span><span class="ef">Femke</span></div>
+            <div class="row"><span></span><span><b style="color: #A9AAF5">Ves Doombringer</b> 187 / 225</span><span class="ef">Nico</span></div>
+            <div class="ed" style="font-size: 13px; color: #949BA4">Later: <code style="color: #C9CDFB">/whocancraft item: Bolt of Silk Cloth</code> once the addon shares recipes.</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b">Share</span></div>
+        </div></div>
+    </div></div>
+
+    <!-- who -->
+    <div><h2 class="cap">/who</h2>
+    <div class="chat">
+      <div class="cmd"><code>/who</code> level: 30-40 role: healer</div>
+      <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+        <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+          <div class="emb"><div class="et">2 healers between 30 and 40</div>
+            <div class="row"><span class="dot" style="background: #FFFFFF"></span><span><b style="color: #FFFFFF">Lia Thornwhisper</b> 37 Priest</span><span class="ef">Femke · 1 h</span></div>
+            <div class="row"><span class="dot" style="background: #0070DD"></span><span><b style="color: #4DA3FF">Tok Ironhide</b> 33 Shaman</span><span class="ef">Bob · 1 d</span></div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b" style="background: #248046">Plan a run with them</span><span class="b">Share</span></div>
+        </div></div>
+    </div></div>
+
+    <!-- character -->
+    <div><h2 class="cap">/character</h2>
+    <div class="chat">
+      <div class="cmd"><code>/character</code> name: Ves Doombringer</div>
+      <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+        <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+          <div class="emb" style="border-left-color: #8788EE">
+            <div style="display: flex; gap: 12px; align-items: center"><span style="width: 52px; height: 52px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #B9BAF7, #6B6CD0); box-shadow: 0 0 0 2px #232428, 0 0 0 3px #D4AF6A; font: 600 15px/52px Inter, sans-serif; text-align: center; color: #0B0F14">VD</span><div><div class="et" style="color: #A9AAF5">Ves Doombringer</div><div class="ed" style="font-size: 13px">39 Undead Warlock · Destruction · Nico</div></div></div>
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; font-size: 13px"><div><b style="display: block; color: #F2F3F5">Item level</b>34</div><div><b style="display: block; color: #F2F3F5">Talents</b>10/0/20</div><div><b style="display: block; color: #F2F3F5">Seen</b>STV · 2 h</div></div>
+            <div class="ed" style="font-size: 13px">Tailoring 187 · Enchanting 160 · Cooking 75</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b">Share</span><span class="b">Open on site ↗</span></div>
+        </div></div>
+    </div></div>
+
+    <!-- alts / me -->
+    <div><h2 class="cap">/alts · /me</h2>
+    <div class="chat">
+      <div class="cmd"><code>/alts</code> friend: Femke</div>
+      <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+        <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+          <div class="emb"><div class="et">Femke · 2 characters</div>
+            <div class="row"><span class="dot" style="background: #FFFFFF"></span><span><b style="color: #FFFFFF">Lia Thornwhisper</b> 37 Priest · Healer</span><span class="ef">1 h</span></div>
+            <div class="row"><span class="dot" style="background: #8788EE"></span><span><b style="color: #A9AAF5">Zul Kazrek</b> 15 Warlock · Damage</span><span class="ef">4 d</span></div>
+            <div class="ef">/me shows your own characters and your week</div>
+          </div>
+        </div></div>
+    </div></div>
+
+    <!-- not linked -->
+    <div><h2 class="cap">Not linked yet</h2>
+    <div class="chat">
+      <div class="cmd"><code>/whereis</code> friend: Mira</div>
+      <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+        <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+          <div class="emb" style="border-left-color: #E08A4A"><div class="et">Link your Discord first</div><div class="ed">The bot only answers friends on the Doombringers guest list. Sign in on the site with Battle.net and click <b>Link Discord</b>; it takes 20 seconds.</div></div>
+          <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b" style="background: #D4AF6A; color: #0B0F14">Link on wow.vestras.nl ↗</span></div>
+        </div></div>
+    </div></div>
+  </div>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 14px"><h2 class="cap" style="font-size: 22px; margin: 0">Runs</h2><span style="font-size: 13px; color: #8E98A8">Anyone linked can create. Edit and cancel only your own; admins can cancel any run.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start">
+      <!-- plan autocomplete -->
+      <div><h2 class="cap">/plan · dungeon autocomplete</h2>
+      <div class="chat">
+        <div style="border-radius: 8px; background: #2B2D31; border: 1px solid #1E1F22; overflow: hidden">
+          <div style="padding: 8px 12px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #949BA4">Dungeon · matching “scar”</div>
+          <div style="padding: 8px 12px; background: #35373C; font-size: 14px; color: #F2F3F5">Scarlet Monastery: Armory <span style="color: #949BA4">· 32–42 · fits Ves Doombringer</span></div>
+          <div style="padding: 8px 12px; font-size: 14px; color: #DBDEE1">Scarlet Monastery: Cathedral <span style="color: #949BA4">· 35–45</span></div>
+          <div style="padding: 8px 12px; font-size: 14px; color: #DBDEE1">Scarlet Monastery: Library <span style="color: #949BA4">· 29–39</span></div>
+          <div style="padding: 8px 12px; font-size: 14px; color: #DBDEE1">Scarlet Monastery: Graveyard <span style="color: #949BA4">· 26–36</span></div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 12px; border-radius: 8px; background: #383A40; font: 14px ui-monospace, Consolas, monospace; color: #DBDEE1">/plan <span style="background: #1E1F22; border-radius: 4px; padding: 2px 6px; color: #C9CDFB">dungeon: scar<span style="color: #F2F3F5">|</span></span> <span style="background: #2B2D31; border-radius: 4px; padding: 2px 6px; color: #6D6F78">day</span> <span style="background: #2B2D31; border-radius: 4px; padding: 2px 6px; color: #6D6F78">time</span> <span style="background: #2B2D31; border-radius: 4px; padding: 2px 6px; color: #6D6F78">note</span></div>
+        <div class="ef">day: Today, Tomorrow or a weekday (next 7 days) · time: 24-hour, like 20:30</div>
+      </div></div>
+
+      <!-- plan confirm -->
+      <div><h2 class="cap">/plan · confirmation</h2>
+      <div class="chat">
+        <div class="cmd"><code>/plan</code> dungeon: Scarlet Monastery: Armory day: Today time: 20:30</div>
+        <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+          <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+            <div class="emb" style="border-left-color: #248046"><div class="et">Planned · Scarlet Monastery: Armory</div>
+              <div class="ed"><span style="background: rgba(255,255,255,.08); border-radius: 3px; padding: 0 3px">Today at 20:30</span> · <span style="background: rgba(255,255,255,.08); border-radius: 3px; padding: 0 3px">in 3 hours</span><br>You lead as <b style="color: #A9AAF5">Ves Doombringer</b> (39, damage). Posted in #doombringers-runs.</div>
+              <div class="ef">Read in your time zone from the site: Europe/Amsterdam. Everyone else sees it in theirs.</div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap"><span class="b">Lead with another character ▾</span><span class="b">Open run ↗</span></div>
+          </div></div>
+      </div></div>
+
+      <!-- past time -->
+      <div><h2 class="cap">/plan · time already past</h2>
+      <div class="chat">
+        <div class="cmd"><code>/plan</code> dungeon: Wailing Caverns day: Today time: 14:00</div>
+        <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+          <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+            <div class="emb" style="border-left-color: #DA373C"><div class="et">That time has already passed</div>
+              <div class="ed">Today 14:00 was 3 hours ago in your time (Europe/Amsterdam). Pick a later time or another day. Want to go right now? Use <b style="color: #C9CDFB">/ask</b>.</div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b">Tomorrow 14:00</span><span class="b" style="background: #248046">Ask now instead</span></div>
+          </div></div>
+      </div></div>
+
+      <!-- ask now -->
+      <div><h2 class="cap">/ask · a run that starts now</h2>
+      <div class="chat">
+        <div class="cmd"><code>/ask</code> dungeon: The Deadmines</div>
+        <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+          <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+            <div class="emb" style="border-left-color: #9BE3B0"><div class="et">Asked · The Deadmines, now</div>
+              <div class="ed">Posted in #doombringers-runs. It expires <span style="background: rgba(255,255,255,.08); border-radius: 3px; padding: 0 3px">in 10 minutes</span>.</div>
+              <div class="ef">Discord can't whisper anyone in game. For the in-game whisper to online friends, ask from the Dungeons tab.</div>
+            </div>
+          </div></div>
+      </div></div>
+
+      <!-- edit -->
+      <div><h2 class="cap">/run edit · your own run</h2>
+      <div class="chat">
+        <div class="cmd"><code>/run edit</code> run: Scarlet Monastery: Armory · today 20:30 time: 21:00</div>
+        <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+          <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+            <div class="emb"><div class="et">Moved to <span style="background: rgba(255,255,255,.08); border-radius: 3px; padding: 0 3px; font-weight: 600">Today at 21:00</span></div>
+              <div class="ed">The post is updated. Lia Thornwhisper, Bob Example and Tok Ironhide keep their answers and get a quiet notice.</div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b" style="background: #DA373C">Cancel run</span><span class="b">Open run ↗</span></div>
+          </div></div>
+      </div></div>
+
+      <!-- not yours -->
+      <div><h2 class="cap">/run cancel · not yours</h2>
+      <div class="chat">
+        <div class="cmd"><code>/run cancel</code> run: Wailing Caverns · Sat 15:00</div>
+        <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+          <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+            <div class="emb" style="border-left-color: #E08A4A"><div class="et">This run isn't yours</div>
+              <div class="ed">Only Mira, who planned it, or an admin can change or cancel it. Can't make it? Answer Can't instead.</div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b">Answer Can't</span></div>
+          </div></div>
+        <div class="ef">Autocomplete only lists your own runs; admins see every run. This reply covers a run picked by typing its name.</div>
+      </div></div>
+    </div>
+  </section>
+
+  <section style="padding: 18px 20px; border-radius: 14px; background: rgba(12,18,30,0.8); border: 1px solid rgba(212,175,106,0.22)">
+    <h2 class="cap">All commands</h2>
+    <table>
+      <thead><tr><th>Command</th><th>Options</th><th>Answer</th></tr></thead>
+      <tbody>
+        <tr><td><code>/whereis</code></td><td>friend or character</td><td>Last known zones with a map crop and how old each sighting is</td></tr>
+        <tr><td><code>/who</code></td><td>level range, role, class, online-recently</td><td>Matching characters, with a button to start a group ask</td></tr>
+        <tr><td><code>/whocancraft</code></td><td>profession (later: item)</td><td>Who has it, at what skill, best crafter starred</td></tr>
+        <tr><td><code>/character</code></td><td>name (autocomplete)</td><td>Character card with stats, professions, last seen</td></tr>
+        <tr><td><code>/alts</code> · <code>/me</code></td><td>friend · none</td><td>All characters of a friend, or your own plus your week</td></tr>
+        <tr><td><code>/plan</code></td><td>dungeon (autocomplete), day, time, note</td><td>Creates a planned run and posts it in #doombringers-runs</td></tr>
+        <tr><td><code>/ask</code></td><td>dungeon (autocomplete), note</td><td>A run that starts now: same post, expires after 10 min</td></tr>
+        <tr><td><code>/runs</code></td><td>none</td><td>Upcoming runs this week, only for you, with your answers</td></tr>
+        <tr><td><code>/run edit</code> · <code>/run cancel</code></td><td>run (autocomplete, only yours; admins see all)</td><td>Change time or note, or cancel; the post updates itself</td></tr>
+        <tr><td><code>/recap</code></td><td>none</td><td>Last weekly recap again, only for you</td></tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2250}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
