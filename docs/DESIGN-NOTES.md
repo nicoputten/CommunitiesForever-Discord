@@ -45,5 +45,5 @@ Approved departures from the boards (CLAUDE.md rule 8). Only Nico approves one; 
 | 2026-10-27 | No Discord mention of the owner under a milestone ("Mira · @mira" is "Mira") | The event has no Discord id, and posts carry none (rule 5) | Nico |
 | 2026-10-27 | The bot is called **DoomBot** (set in the developer portal), not the community's name | Nico's choice | Nico |
 | 2026-10-27 | No pronouns in any text: "Somebody pay a visit." instead of the board's "Somebody visit her." | We never infer pronouns | Nico |
-| 2026-10-28 | Look-up answers (BOT-06): names in bold, not in their class colour; the embed's border takes the class colour where the answer is about one character | Discord can't colour text inside an embed | pending |
+| 2026-10-28 | Look-up answers (BOT-06): names in bold, not in their class colour, with the class written next to every name (e.g. "**Ves Doombringer** 39 Warlock"); the embed's border takes the class colour where the answer is about one character | Discord can't colour text inside an embed | Nico |
 | 2026-10-28 | `/who` has no "Plan a run with them" button yet | It needs `/plan` (BOT-04), which adds it | Nico |

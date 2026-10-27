@@ -1,6 +1,7 @@
 // The look-up commands' answers (BOT-06, board `bot-commands-runs`): the site's look-up data (web BOT-API.md
 // "Look-ups") as embeds. Pure: the site's answer and "now" come in, Discord's JSON goes out. Full character names,
-// display names for friends; names from players never become Discord markdown (escapeMarkdown).
+// display names for friends; names from players never become Discord markdown (escapeMarkdown). Discord can't colour
+// text in an embed, so every character name is bold with its class written next to it (Nico, 2026-10-28).
 import { CLASS_COLOURS, type Embed, GOLD, type MessageContent, characterUrl, escapeMarkdown } from "./milestones.js";
 
 export interface LookupCharacter {
@@ -110,7 +111,7 @@ export function whereisMessage(
 ): MessageContent {
   const rows = chars.map((c) =>
     line(
-      `${bold(c.name)}${c.level !== undefined ? ` ${c.level}` : ""}`,
+      `${bold(c.name)} ${[c.level, c.className].filter((x) => x !== undefined).join(" ")}`.trim(),
       c.seen?.zone ?? "not seen yet",
       c.seen ? age(c.seen.at, now) : undefined,
     ),
@@ -167,6 +168,7 @@ export function craftMessage(
   const rows = crafters.map((c) =>
     line(
       `${c.best ? "★ " : ""}${bold(c.name)} ${c.rank}${c.max !== undefined ? ` / ${c.max}` : ""}`,
+      c.className,
       c.owner ? escapeMarkdown(c.owner) : undefined,
     ),
   );

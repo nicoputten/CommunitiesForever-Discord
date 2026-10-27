@@ -92,7 +92,9 @@ describe("look-ups", () => {
       title: "Nico's characters",
       image: { url: "attachment://whereis-Player-1-VES.png" },
     });
-    expect(answer.content.embeds[0]?.description).toContain("**Ves Doombringer** 39 · Stranglethorn Vale · 2 h");
+    expect(answer.content.embeds[0]?.description).toContain(
+      "**Ves Doombringer** 39 Warlock · Stranglethorn Vale · 2 h",
+    );
     const buttons = answer.content.components?.[0]?.components ?? [];
     expect(buttons.map((b) => b.label)).toEqual(["Share", "Open on site ↗"]);
   });
@@ -115,7 +117,9 @@ describe("look-ups", () => {
     handlers.command(craft.command);
     await craft.answered;
     expect(craft.answers[0]?.content.embeds[0]).toMatchObject({ title: "Tailoring · covered" });
-    expect(craft.answers[0]?.content.embeds[0]?.description).toContain("★ **Ves Doombringer** 300 / 300 · Nico");
+    expect(craft.answers[0]?.content.embeds[0]?.description).toContain(
+      "★ **Ves Doombringer** 300 / 300 · Warlock · Nico",
+    );
 
     const card = asked("character", { name: "Player-1-VES" });
     handlers.command(card.command);
