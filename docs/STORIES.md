@@ -2,7 +2,7 @@
 
 Open stories in build order. A done story moves to `docs/STORIES-COMPLETED.md` with a "Done (PR #n)" line. The bot depends on web stories (in the web repo's `docs/STORIES.md`): the bot API (WEB-38) first, then the site's parts of each feature.
 
-Build order: BOT-02, then per feature once its web story is merged: BOT-03 (milestones, WEB-38), BOT-06 (commands, WEB-39), BOT-04 (runs, WEB-40 and WEB-43), BOT-05 (recap, WEB-41), then BOT-07.
+Build order (2026-10-27): BOT-02, BOT-03 (milestones; WEB-38 is merged), BOT-07 (so milestones post from launch), then per feature once its web story is merged: BOT-06 (commands, WEB-39), BOT-04 (runs, WEB-40 and WEB-43), BOT-05 (recap, WEB-41).
 
 ### BOT-02 Discord application and connection
 - A guide in `docs/DISCORD-SETUP.md` for Nico: create the application and bot in the Discord developer portal, which intents (none privileged if possible) and permissions (send messages, embed links, attach files, use application commands), the invite link, where the token goes (TrueNAS env only).
