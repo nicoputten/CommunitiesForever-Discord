@@ -51,7 +51,7 @@ On the site's Discord page (admin) pick the channel for posts and keep Milestone
 - roles (mention on new runs): roles set as **mentionable** in the server settings, without @everyone and bot roles.
 - Changes in the server show up within about 5 seconds. One exception: giving the bot itself another role isn't seen until the next change or restart (that event needs a privileged intent the bot doesn't use).
 
-Without a channel the bot posts nothing and logs `posts channel not set`; it reads the settings again every 5 minutes, so no restart is needed.
+Without a channel the bot posts nothing and logs `posts channel not set`; it reads the settings again every 30 seconds, so a new channel (and a test post) works without a restart.
 
 ## 6. Check
 - The bot shows as online in the server's member list.

@@ -44,4 +44,4 @@ Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open 
 ### BOT-10 The site's test post
 - The admin's "Send a test post" on the site's Discord page (web WEB-39, BOT-API.md "test", `data.kind` `posts`) posts a short test message in the posts channel and acknowledges it like any event; also when milestones are off.
 - Done (PR #10). Built: `testMessage` in `src/core/milestones.ts` (a gold "Test post" embed linking to the site's Discord page with the `#e<id>` marker, so a restart doesn't post it twice; markers now count on any link to the site), the `send` action in `decide`, posted on its own in `src/app/poster.ts` (never added to an open milestone post). Tests for other channels (`kind` other than `posts`) are left until their stories.
-
+- Follow-up (Nico, 2026-10-27): the settings are read every 30 s instead of every 5 min, so a newly picked channel and the test post work at once (a test post waited up to 5 minutes).

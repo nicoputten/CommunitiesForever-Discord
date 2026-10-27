@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- The bot reads the site's settings every 30 seconds instead of every 5 minutes, so a newly picked channel and a test post work at once.
 - "Send a test post" on the site's Discord page now posts a test message in the posts channel.
 - The bot tells the site the server's channels and mentionable roles, so the admin picks the posts channel and the run mention role from a list.
 - Releases: a `v*` tag on `main` publishes the bot's image; the bot logs its version at start. The web repo's `deploy/compose.yaml` runs it next to the site.
