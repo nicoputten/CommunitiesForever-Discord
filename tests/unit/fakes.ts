@@ -3,6 +3,7 @@ import { type Discord, PostError } from "../../src/adapters/discord.js";
 import type { Site, SiteAnswer } from "../../src/adapters/site.js";
 import type { CommandDefinition } from "../../src/core/commands.js";
 import type { ConnectionEvent, FailReason } from "../../src/core/connection.js";
+import type { GuildSnapshot } from "../../src/core/guild.js";
 import type { MessageContent, PostedMessage } from "../../src/core/milestones.js";
 
 // Made-up values only (CLAUDE.md rule 1).
@@ -43,6 +44,8 @@ export class FakeSite implements Site {
   events_: { id: number; type: string; data: unknown }[] = [];
   acked = new Map<number, string>();
   waiting: (() => void)[] = [];
+  guildReports: unknown[] = [];
+  guildStatus: number | undefined;
 
   async settings(): Promise<SiteAnswer> {
     if (this.settingsDown > 0) {
@@ -78,6 +81,12 @@ export class FakeSite implements Site {
     if (this.acked.has(eventId) && this.acked.get(eventId) !== messageId) return { ok: false, status: 409 };
     this.acked.set(eventId, messageId);
     return { ok: true, body: { id: eventId, messageId } };
+  }
+
+  async guild(report: unknown): Promise<SiteAnswer> {
+    if (this.guildStatus !== undefined) return { ok: false, status: this.guildStatus };
+    this.guildReports.push(report);
+    return { ok: true, body: {} };
   }
 
   add(event: { id: number; type: string; data: unknown }) {
@@ -127,6 +136,16 @@ export class FakeDiscord implements Discord {
     this.edits++;
     message.content = content;
     message.texts = content.embeds.flatMap((e) => [e.url ?? "", e.description ?? ""]);
+  };
+  snapshot: GuildSnapshot | undefined = {
+    channels: [{ id: CHANNEL, name: "doombringers", kind: "text", position: 1, canPost: true }],
+    roles: [],
+  };
+  guildListeners = new Set<() => void>();
+  guild = () => this.snapshot;
+  onGuildChange = (listener: () => void) => {
+    this.guildListeners.add(listener);
+    return () => this.guildListeners.delete(listener);
   };
   recentPosts = async (channel: string) => this.messages.filter((m) => m.channel === channel).slice(-50);
   destroy = async () => {

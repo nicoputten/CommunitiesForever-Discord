@@ -1,9 +1,19 @@
 // The Discord gateway (BOT-02): one client with the Guilds intent only (no privileged intents), its state changes
 // reported as ConnectionEvents, the global slash command registration, and posting (BOT-03). Thin: what to do with
-// them is src/app's.
-import { Client, DiscordAPIError, Events, GatewayIntentBits, REST, Routes } from "discord.js";
+// them is src/app's. It also tells what the server's channels and roles are, for the site's dropdowns (BOT-08).
+import {
+  ChannelType,
+  Client,
+  DiscordAPIError,
+  Events,
+  GatewayIntentBits,
+  PermissionFlagsBits,
+  REST,
+  Routes,
+} from "discord.js";
 import type { CommandDefinition } from "../core/commands.js";
 import type { ConnectionEvent, FailReason } from "../core/connection.js";
+import type { GuildSnapshot } from "../core/guild.js";
 import type { MessageContent, PostedMessage } from "../core/milestones.js";
 
 export interface Discord {
@@ -17,6 +27,10 @@ export interface Discord {
   edit(channelId: string, messageId: string, content: MessageContent): Promise<void>;
   /** The bot's own messages among the channel's last 50. Throws a PostError. */
   recentPosts(channelId: string): Promise<PostedMessage[]>;
+  /** The (first) server's channels and roles as Discord's cache knows them; undefined when not in a server. */
+  guild(): GuildSnapshot | undefined;
+  /** Calls `listener` when the server's channels or roles change; returns the unsubscribe. */
+  onGuildChange(listener: () => void): () => void;
   destroy(): Promise<void>;
 }
 
@@ -47,6 +61,20 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
   client.on(Events.ShardDisconnect, (event) => report({ kind: "disconnected", code: event.code }));
   client.on(Events.ShardReconnecting, () => report({ kind: "reconnecting" }));
   client.on(Events.ShardResume, () => report({ kind: "resumed" }));
+  const guildListeners = new Set<() => void>();
+  const guildChanged = () => guildListeners.forEach((listener) => listener());
+  for (const event of [
+    Events.GuildCreate,
+    Events.GuildUpdate,
+    Events.ChannelCreate,
+    Events.ChannelDelete,
+    Events.ChannelUpdate,
+    Events.GuildRoleCreate,
+    Events.GuildRoleDelete,
+    Events.GuildRoleUpdate,
+  ] as const) {
+    client.on(event, guildChanged);
+  }
   // discord.js retries by itself; without a listener an "error" event would end the process.
   client.on(Events.Error, () => undefined);
 
@@ -97,7 +125,46 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
         throw refused(error);
       }
     },
+    guild() {
+      const guild = client.guilds.cache.first();
+      if (guild === undefined) return undefined;
+      const me = guild.members.me;
+      const needed = [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.EmbedLinks,
+      ];
+      return {
+        channels: guild.channels.cache.map((channel) => ({
+          id: channel.id,
+          name: channel.name,
+          kind:
+            channel.type === ChannelType.GuildText
+              ? "text"
+              : channel.type === ChannelType.GuildAnnouncement
+                ? "announcement"
+                : "other",
+          // Discord's order: channels without a category first, then by category, then within it.
+          position:
+            ((channel.parent?.rawPosition ?? -1) + 1) * 100_000 + ("rawPosition" in channel ? channel.rawPosition : 0),
+          canPost: me ? (channel.permissionsFor(me)?.has(needed) ?? false) : false,
+        })),
+        roles: guild.roles.cache.map((role) => ({
+          id: role.id,
+          name: role.name,
+          position: role.position,
+          mentionable: role.mentionable,
+          managed: role.managed,
+          everyone: role.id === guild.id,
+        })),
+      };
+    },
+    onGuildChange(listener) {
+      guildListeners.add(listener);
+      return () => guildListeners.delete(listener);
+    },
     async destroy() {
+      guildListeners.clear();
       client.removeAllListeners();
       await client.destroy();
     },
