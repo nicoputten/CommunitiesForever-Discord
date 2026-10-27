@@ -9,7 +9,7 @@ The bot follows the web's "Night over Azeroth" design system: tokens, class colo
 **Automatic posts** (one channel, set on the site)
 - *Milestones* (board `bot-posts`, part 1): every 10 levels, level 60 (with a generated card), a profession at its cap, a new character. Several from one upload are grouped into one message. They arrive after an upload.
 - *Group asks* (board `bot-posts`, part 2): from the addon ("Ask who's up for it"), the site or `/ask`. Dungeon, time, level range, five role slots, "N in · N maybe" and healers in range; buttons I'm in / Maybe / Can't tonight / Pick my character. The message updates itself. Asks made in the game reach Discord after the next save and upload; answers reach the game after the friend's next upload or sync.
-- *Weekly recap* (board `bot-recap`, Sunday 20:00): headline (10 templates) · 4 core numbers · Doombringer of the week · 4 rotating cards (one stat, one progress, one social, one fun) · weekly challenge (12 templates). Header image: the week's busiest zone or the award winner's portrait.
+- *Weekly recap* (board `bot-recap`, Sunday 13:00 in the admin's time zone, see Deviations): headline (10 templates) · 4 core numbers · Doombringer of the week · 4 rotating cards (one stat, one progress, one social, one fun) · weekly challenge (12 templates). Header image: the week's busiest zone or the award winner's portrait.
 
 **Recap rotation:** a card is eligible only if its threshold is met and it wasn't used in the last 4 weeks; highest interest score per slot; ties broken with the week number as seed, so re-runs are identical; at most one card per friend; quiet weeks get a short recap. The catalogue of 48 cards (A1–A10 awards, S1–S12 stats, P1–P13 progress, F1–F13 social and fun) is on the `bot-recap` board. The site computes the recap (ARCHITECTURE.md), the bot posts it.
 
@@ -27,6 +27,8 @@ The bot follows the web's "Night over Azeroth" design system: tokens, class colo
 ## Decisions
 
 - Repo, stack, data flow and hosting: the proposals of 2026-10-27, approved by Nico (see `docs/ARCHITECTURE.md`).
+- Recap text (Nico, 2026-10-27): the site writes it from templates, several phrasings per card, headline and challenge; a phrasing isn't used again until all of that card's phrasings were used. No pronouns anywhere. Details in the web repo's WEB-41.
+- Planned runs and group asks: being redesigned; the prompt for the new boards is `docs/DESIGN-PROMPT-PLANNED-RUNS.md`. The current `bot-posts` ask stays as it is until those boards are back.
 
 ## Deviations
 
@@ -34,3 +36,5 @@ Approved departures from the boards (CLAUDE.md rule 8). Only Nico approves one; 
 
 | Date | What | Why | Approved |
 |---|---|---|---|
+| 2026-10-27 | Weekly recap on Sunday 13:00 in the admin's time zone (stored in UTC), not the board's Sunday 20:00 | Nico's choice | Nico |
+| 2026-10-27 | No pronouns in any text: "Somebody pay a visit." instead of the board's "Somebody visit her." | We never infer pronouns | Nico |

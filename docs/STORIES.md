@@ -30,7 +30,7 @@ Build order: BOT-01, BOT-02, then per feature once its web story is merged: BOT-
 
 ### BOT-05 Weekly recap
 - Needs the site's recap (web story: catalogue, rotation, card images).
-- Posts the recap at the site's recap time as on the `bot-recap` board; `/recap` shows the last one to the asker only. A missed time (bot down) posts once when back, never twice.
+- Posts the recap at the site's recap time (Sunday 13:00, Nico's time zone) as on the `bot-recap` board, text exactly as the site wrote it; `/recap` shows the last one to the asker only. A missed time (bot down) posts once when back, never twice.
 
 ### BOT-06 Look-up commands
 - Needs the site's lookup endpoints and Discord linking (web stories).
