@@ -8,6 +8,7 @@ import {
   groupedMessage,
   joinsPost,
   markedEvents,
+  milestoneFiles,
   milestoneMessage,
 } from "../../src/core/milestones.js";
 
@@ -144,6 +145,8 @@ describe("readEvents and readMilestones", () => {
     });
     expect(read).toEqual([
       {
+        // Its place in the site's list names its card image (BOT-05).
+        index: 0,
         kind: "level",
         character: { guid: "G", name: "Ves", classFile: undefined, level: undefined, ownerName: undefined },
         level: 40,
@@ -222,5 +225,30 @@ describe("the test post", () => {
       messageId: "1100000000000000040",
     });
     expect(decide({ ...test, data: { kind: "recap" } }, {}, new Map(), SITE, HOST).do).toBe("leave");
+  });
+});
+
+describe("milestone card images (BOT-05)", () => {
+  const sixty = { index: 2, kind: "maxLevel" as const, character: mira, level: 60, from: 58 };
+  const tailor = { index: 0, kind: "professionCap" as const, character: lia, profession: "Tailoring", rank: 300 };
+  const newSixty = { index: 1, kind: "newCharacter" as const, character: { ...ves, level: 60 } };
+  const low = { index: 3, kind: "professionCap" as const, character: zul, profession: "Alchemy", rank: 150 };
+
+  it("gives level 60, a new character at 60 and a profession at 300 their own embed with the site's card", () => {
+    const groups = [{ eventId: 30, milestones: [tailor, newSixty, sixty, low] }];
+    expect(milestoneFiles(groups).map((f) => f.path)).toEqual([
+      "cards/milestone-30-0.png",
+      "cards/milestone-30-1.png",
+      "cards/milestone-30-2.png",
+    ]);
+    const message = groupedMessage(groups, SITE, HOST, ["milestone-30-0.png", "milestone-30-2.png"])!;
+    expect(message.embeds.map((e) => e.image?.url)).toEqual([
+      "attachment://milestone-30-0.png",
+      undefined,
+      "attachment://milestone-30-2.png",
+      undefined,
+    ]);
+    // The rank 150 cap stays a line in the gold list.
+    expect(message.embeds.at(-1)?.description).toContain("Zul Kazrek");
   });
 });

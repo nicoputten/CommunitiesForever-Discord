@@ -1,5 +1,5 @@
 // Fakes for the adapters: a site that serves events like BOT-API.md, and a Discord that keeps the channel's posts.
-import { type Attachment, type Discord, PostError } from "../../src/adapters/discord.js";
+import { type Attachment, type Discord, PostError, type SlashCommand } from "../../src/adapters/discord.js";
 import type { Site, SiteAnswer } from "../../src/adapters/site.js";
 import type { CommandDefinition } from "../../src/core/commands.js";
 import type { ConnectionEvent, FailReason } from "../../src/core/connection.js";
@@ -159,6 +159,11 @@ export class FakeDiscord implements Discord {
   onGuildChange = (listener: () => void) => {
     this.guildListeners.add(listener);
     return () => this.guildListeners.delete(listener);
+  };
+  commandListeners: ((command: SlashCommand) => void)[] = [];
+  onCommand = (listener: (command: SlashCommand) => void) => {
+    this.commandListeners.push(listener);
+    return () => undefined;
   };
   recentPosts = async (channel: string) => this.messages.filter((m) => m.channel === channel).slice(-50);
   destroy = async () => {

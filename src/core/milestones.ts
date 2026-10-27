@@ -9,10 +9,29 @@ export interface Character {
   ownerName?: string;
 }
 
-export type Milestone =
+/** `index`: its place in the event's list, which names its card image on the site (BOT-05). */
+export type Milestone = { index?: number } & (
   | { kind: "level" | "maxLevel"; character: Character; level?: number; from?: number }
   | { kind: "professionCap"; character: Character; skillLine?: number; profession?: string; rank?: number }
-  | { kind: "newCharacter"; character: Character };
+  | { kind: "newCharacter"; character: Character }
+);
+
+/**
+ * The milestones the site draws a card image for (web BOT-API.md "Card images"): level 60, a new character at 60, a
+ * profession at 300. Each gets its own embed with the image.
+ */
+export function hasCard(m: Milestone): boolean {
+  return (
+    m.kind === "maxLevel" ||
+    (m.kind === "newCharacter" && (m.character.level ?? 0) >= 60) ||
+    (m.kind === "professionCap" && (m.rank ?? 0) >= 300)
+  );
+}
+
+/** The card image's file name for a milestone of an event (`cards/<name>` on the site). */
+export function cardName(eventId: number, m: Milestone): string | undefined {
+  return hasCard(m) && m.index !== undefined ? `milestone-${eventId}-${m.index}.png` : undefined;
+}
 
 export interface Embed {
   title?: string;
@@ -124,8 +143,17 @@ export function milestoneMessage(
   return groupedMessage([{ eventId, milestones }], siteUrl, siteHost);
 }
 
-// Discord allows 10 embeds per message: at most 9 level 60 embeds, the gold list is the 10th.
+// Discord allows 10 embeds per message: at most 9 embeds with a card, the gold list is the 10th.
 const MAX_LEVEL_EMBEDS = 9;
+
+/** The card images a post of these groups shows: one per milestone with its own embed (fetched by the poster). */
+export function milestoneFiles(groups: readonly Group[]): { name: string; path: string }[] {
+  return groups
+    .flatMap((g) => showable(g.milestones).map((m) => cardName(g.eventId, m)))
+    .filter((name): name is string => name !== undefined)
+    .slice(0, MAX_LEVEL_EMBEDS)
+    .map((name) => ({ name, path: `cards/${name}` }));
+}
 
 /**
  * The milestones of one or more uploads as one message (BOT-09: later uploads are added by editing it). Each upload's
@@ -135,6 +163,7 @@ export function groupedMessage(
   groups: readonly Group[],
   siteUrl: string,
   siteHost: string,
+  attached: readonly string[] = [],
 ): MessageContent | undefined {
   const all = groups.flatMap((g) => showable(g.milestones).map((milestone) => ({ eventId: g.eventId, milestone })));
   const shown = all.slice(0, MAX_LINES);
@@ -147,11 +176,13 @@ export function groupedMessage(
     return url;
   };
 
-  const top = shown.filter((s) => s.milestone.kind === "maxLevel").slice(0, MAX_LEVEL_EMBEDS);
+  const top = shown.filter((s) => hasCard(s.milestone)).slice(0, MAX_LEVEL_EMBEDS);
   const embeds: Embed[] = [];
   for (const { eventId, milestone } of top) {
     const link = linkFor(eventId);
+    const card = cardName(eventId, milestone);
     embeds.push({
+      ...(card !== undefined && attached.includes(card) ? { image: { url: `attachment://${card}` } } : {}),
       title: headline(milestone),
       url: link(milestone.character),
       description: [

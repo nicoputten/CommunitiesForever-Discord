@@ -175,6 +175,34 @@ describe("runPoster", () => {
     await running;
   });
 
+  it("attaches the site's card to a level 60 post, and keeps it when a later upload is added (BOT-05)", async () => {
+    site.images.set("cards/milestone-30-0.png", new Uint8Array([1]));
+    site.add({
+      id: 30,
+      type: "milestones",
+      data: {
+        milestones: [
+          {
+            kind: "maxLevel",
+            character: { guid: "G-30", name: "Mira Sunstrider", classFile: "MAGE" },
+            level: 60,
+            from: 59,
+          },
+        ],
+      },
+    });
+    const running = run();
+    await vi.waitFor(() => expect(site.acked.size).toBe(1));
+    expect(discord.messages[0]?.files).toEqual(["milestone-30-0.png"]);
+    expect(discord.messages[0]?.content.embeds[0]?.image).toEqual({ url: "attachment://milestone-30-0.png" });
+    site.add(milestonesEvent(31, "Ves Doombringer"));
+    await vi.waitFor(() => expect(site.acked.size).toBe(2));
+    expect(discord.edits).toBe(1);
+    expect(discord.messages[0]?.content.embeds[0]?.image).toEqual({ url: "attachment://milestone-30-0.png" });
+    stop.abort();
+    await running;
+  });
+
   describe("the weekly recap (BOT-05)", () => {
     const RECAP_CHANNEL = "100000000000000003";
     const recapEvent = (id: number, week = 3, zone = true) => ({

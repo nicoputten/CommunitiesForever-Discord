@@ -77,7 +77,7 @@ describe("readSettings", () => {
 });
 
 describe("COMMANDS", () => {
-  it("is empty until BOT-06", () => {
-    expect(COMMANDS).toEqual([]);
+  it("has /recap (BOT-05) until BOT-06 adds the look-ups", () => {
+    expect(COMMANDS.map((c) => c.name)).toEqual(["recap"]);
   });
 });

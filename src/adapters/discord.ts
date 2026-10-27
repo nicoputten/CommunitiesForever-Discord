@@ -7,6 +7,7 @@ import {
   DiscordAPIError,
   Events,
   GatewayIntentBits,
+  MessageFlags,
   PermissionFlagsBits,
   REST,
   Routes,
@@ -29,9 +30,20 @@ export interface Discord {
   recentPosts(channelId: string): Promise<PostedMessage[]>;
   /** The (first) server's channels and roles as Discord's cache knows them; undefined when not in a server. */
   guild(): GuildSnapshot | undefined;
+  /**
+   * Calls `listener` for each slash command (BOT-05). The answer is deferred at once, only for the asker (ephemeral);
+   * `reply` fills it in. Returns the unsubscribe.
+   */
+  onCommand(listener: (command: SlashCommand) => void): () => void;
   /** Calls `listener` when the server's channels or roles change; returns the unsubscribe. */
   onGuildChange(listener: () => void): () => void;
   destroy(): Promise<void>;
+}
+
+/** A slash command a user ran: its name, and the answer to give only to them. */
+export interface SlashCommand {
+  name: string;
+  reply(content: MessageContent, files?: readonly Attachment[]): Promise<void>;
 }
 
 /** A file to attach to a post (a card image from the site, BOT-05). */
@@ -81,6 +93,28 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
   ] as const) {
     client.on(event, guildChanged);
   }
+  const commandListeners = new Set<(command: SlashCommand) => void>();
+  client.on(Events.InteractionCreate, (interaction) => {
+    if (!interaction.isChatInputCommand()) return;
+    // Within Discord's 3 seconds; the answer follows when the site has given it.
+    const deferred = interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => undefined);
+    const command: SlashCommand = {
+      name: interaction.commandName,
+      async reply(content, files = []) {
+        await deferred;
+        try {
+          await interaction.editReply({
+            embeds: content.embeds,
+            allowedMentions: { parse: [] },
+            files: files.map((f) => ({ name: f.name, attachment: Buffer.from(f.data) })),
+          });
+        } catch (error) {
+          throw refused(error);
+        }
+      },
+    };
+    commandListeners.forEach((listener) => listener(command));
+  });
   // discord.js retries by itself; without a listener an "error" event would end the process.
   client.on(Events.Error, () => undefined);
 
@@ -168,12 +202,17 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
         })),
       };
     },
+    onCommand(listener) {
+      commandListeners.add(listener);
+      return () => commandListeners.delete(listener);
+    },
     onGuildChange(listener) {
       guildListeners.add(listener);
       return () => guildListeners.delete(listener);
     },
     async destroy() {
       guildListeners.clear();
+      commandListeners.clear();
       client.removeAllListeners();
       await client.destroy();
     },

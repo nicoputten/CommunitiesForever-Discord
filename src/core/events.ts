@@ -30,7 +30,7 @@ export function readEvents(body: unknown): EventsAnswer {
 
 export function readMilestones(data: unknown): Milestone[] {
   if (!isObject(data) || !Array.isArray(data.milestones)) return [];
-  return data.milestones.flatMap((m): Milestone[] => {
+  return data.milestones.flatMap((m, index): Milestone[] => {
     if (!isObject(m) || !isObject(m.character) || typeof m.character.guid !== "string") return [];
     const c = m.character;
     const character = {
@@ -43,10 +43,11 @@ export function readMilestones(data: unknown): Milestone[] {
     switch (m.kind) {
       case "level":
       case "maxLevel":
-        return [{ kind: m.kind, character, level: number(m.level), from: number(m.from) }];
+        return [{ index, kind: m.kind, character, level: number(m.level), from: number(m.from) }];
       case "professionCap":
         return [
           {
+            index,
             kind: m.kind,
             character,
             skillLine: number(m.skillLine),
@@ -55,7 +56,7 @@ export function readMilestones(data: unknown): Milestone[] {
           },
         ];
       case "newCharacter":
-        return [{ kind: m.kind, character }];
+        return [{ index, kind: m.kind, character }];
       default:
         return [];
     }

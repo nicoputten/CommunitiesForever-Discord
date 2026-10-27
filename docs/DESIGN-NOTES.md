@@ -29,6 +29,8 @@ The bot follows the web's "Night over Azeroth" design system: tokens, class colo
 - Repo, stack, data flow and hosting: the proposals of 2026-10-27, approved by Nico (see `docs/ARCHITECTURE.md`).
 - Recap text (Nico, 2026-10-27): the site writes it from templates, several phrasings per card, headline and challenge; a phrasing isn't used again until all of that card's phrasings were used. No pronouns anywhere. Details in the web repo's WEB-41.
 - Milestones from uploads within 5 minutes of a post are added to that post by editing it, up to 10 per post (Nico, 2026-10-27, BOT-09): a group session that ends together gives one post, not one per friend. Discord marks the post "(edited)".
+- Weekly recap (Nico, 2026-10-28, BOT-05): posted in the recap channel set on the site (the posts channel when none is set), texts exactly as the site wrote them, the header image on top and the Zone of the week map with that card. `/recap` answers anyone in the server, only to them, without the linked check, now and after WEB-39b: only friends can read that channel, so linking doesn't matter for it.
+- Milestone card images (Nico, 2026-10-28, BOT-05): level 60, a new character at 60 and a profession at 300 get their own embed with the site's card image. When a later upload is added to the post by editing (BOT-09), the earlier images stay; the added milestones go without one.
 - Planned runs replace the group ask of `bot-posts` (Nico, 2026-10-27): boards `bot-posts-runs`, `bot-commands-runs`, `runs-flow` (from `docs/DESIGN-PROMPT-PLANNED-RUNS.md`). A separate runs channel; one message per run, edited per state; reminders mention only I'm in and Maybe; `/plan` times in the asker's time zone from the site; `/ask` can't whisper in game. One admin: the boards' "Admins: Nico, Mira" (web) is not built.
 
 ## Deviations
@@ -40,6 +42,5 @@ Approved departures from the boards (CLAUDE.md rule 8). Only Nico approves one; 
 | 2026-10-27 | Weekly recap on Sunday 13:00 in the admin's time zone (stored in UTC), not the board's Sunday 20:00 | Nico's choice | Nico |
 | 2026-10-27 | Milestone posts show only what the site's event carries (name, owner, level, class, profession and rank); the board's extra lines ("The first Doombringer at max level", "Took 5 weeks · 3rd character to 40+", "Mount time. Scarlet Monastery now fits …", "Next step: an Artisan trainer", "first seen in Durotar") wait until the site sends them | The bot computes no game facts (CLAUDE.md rule 2) | Nico |
 | 2026-10-27 | No Discord mention of the owner under a milestone ("Mira · @mira" is "Mira") | The event has no Discord id, and posts carry none (rule 5) | Nico |
-| 2026-10-27 | The level 60 post has no generated card image yet: an embed in the class colour with "Open character ↗" | The site doesn't render card images yet; they follow in their own story | Nico |
 | 2026-10-27 | The bot is called **DoomBot** (set in the developer portal), not the community's name | Nico's choice | Nico |
 | 2026-10-27 | No pronouns in any text: "Somebody pay a visit." instead of the board's "Somebody visit her." | We never infer pronouns | Nico |

@@ -158,3 +158,19 @@ export function recapMessage(
   }
   return { embeds, allowed_mentions: { parse: [] } };
 }
+
+/** `/recap` before the site's first recap, or when the site can't be reached. */
+export function noRecapMessage(siteUrl: string, siteHost: string, reachable: boolean): MessageContent {
+  return {
+    embeds: [
+      {
+        title: reachable ? "No recap yet" : "The recap isn't available right now",
+        description: reachable
+          ? `The first weekly recap comes on Sunday. [${siteHost} ↗](${siteUrl}/)`
+          : `Try again in a moment. [${siteHost} ↗](${siteUrl}/)`,
+        color: GOLD,
+      },
+    ],
+    allowed_mentions: { parse: [] },
+  };
+}
