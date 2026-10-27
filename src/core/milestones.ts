@@ -73,9 +73,9 @@ export interface PostedMessage {
   texts: string[];
 }
 
-/** Event id → message id for the bot's posts that carry a marker linking to this site. */
+/** Event id → message id for the bot's posts that carry a marker on a link to this site. */
 export function markedEvents(siteUrl: string, messages: readonly PostedMessage[]): Map<number, string> {
-  const pattern = new RegExp(`${escapeRegExp(siteUrl)}/character/[^\\s)#]+#e(\\d+)`, "g");
+  const pattern = new RegExp(`${escapeRegExp(siteUrl)}/[^\\s)#]*#e(\\d+)`, "g");
   const found = new Map<number, string>();
   for (const message of messages) {
     for (const text of message.texts) {
@@ -211,4 +211,19 @@ function classColour(classFile: string | undefined): number {
 /** Names come from players: no Discord markdown from them (mentions are off through allowed_mentions too). */
 export function escapeMarkdown(text: string): string {
   return text.replace(/[\\*_~`|>[\]()<@#:]/g, "\\$&");
+}
+
+/** The admin's "Send a test post" (web WEB-39, BOT-API.md "test"): a short gold embed, marked like any post. */
+export function testMessage(eventId: number, siteUrl: string, siteHost: string): MessageContent {
+  return {
+    embeds: [
+      {
+        title: "Test post",
+        url: `${siteUrl}/discord${marker(eventId)}`,
+        description: `Posts from ${siteHost} arrive in this channel. Sent from the site's Discord page.`,
+        color: GOLD,
+      },
+    ],
+    allowed_mentions: { parse: [] },
+  };
 }

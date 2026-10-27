@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- "Send a test post" on the site's Discord page now posts a test message in the posts channel.
 - The bot tells the site the server's channels and mentionable roles, so the admin picks the posts channel and the run mention role from a list.
 - Releases: a `v*` tag on `main` publishes the bot's image; the bot logs its version at start. The web repo's `deploy/compose.yaml` runs it next to the site.
 - Milestones from uploads within 5 minutes of a post are added to that post, so friends logging off together give one post instead of several.
