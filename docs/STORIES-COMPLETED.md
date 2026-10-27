@@ -28,3 +28,9 @@ Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open 
 - The first milestone posts at once. Milestones from uploads within 5 minutes of that post are added to it by editing it, as long as it holds at most 10 milestones; after that a new post starts. Each event is acknowledged with the post's message id (web `docs/BOT-API.md` "Acknowledging", web PR #58).
 - Each upload in a post has its own marker, so a restart between an edit and its acknowledgement only acknowledges. A post that can't be edited (deleted) gets a new post instead.
 - Done (PR #7). Built: `groupedMessage` and `joinsPost` in `src/core/milestones.ts` (level 60s of any upload on top, at most 9 of them as embeds, the rest in the gold list), `edit` in `src/adapters/discord.ts`, the open post in `src/app/poster.ts` (bounded by 10 milestones, forgotten on a channel change or restart).
+
+### BOT-07 Release and deploy
+- Release workflow: a `v*` tag on `main` pushes `ghcr.io/nicoputten/communitiesforever-discord` (public). `CHANGELOG.md` section per release.
+- The web repo's `deploy/compose.yaml` and `deploy/README.md` get the bot container (env without values).
+- Manual: Nico adds the env in TrueNAS and sees the bot online in the real server.
+- Done (PR #8, web PR #65). Built: `.github/workflows/release.yml` (a copy of the web's: the tag must be `v*` and on `main`; plus a check that `CHANGELOG.md` has `## <tag>`, and lint and tests before the image; pushes `:<tag>` and `:latest`, `linux/amd64`, `APP_VERSION` from the tag; a manual run rebuilds a tag), the version line at start, README "Releasing". Web: the `bot` service in `deploy/compose.yaml` (no ports, no volume, the image's own user, `stop_grace_period: 15s`, `SITE_URL` the public URL) and "The Discord bot" in `deploy/README.md`. Decisions (Nico, 2026-10-27): as proposed; no GitHub Release page, the image is the release; first tag `v0.1.0` only on Nico's go.

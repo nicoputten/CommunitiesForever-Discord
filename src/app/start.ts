@@ -51,6 +51,8 @@ export async function start(env: Env, log: Log, deps: Deps, stop: AbortSignal): 
     }
   });
 
+  // The image sets APP_VERSION to the release tag (Dockerfile); "dev" when run from the repo.
+  log.info(`version ${env.APP_VERSION?.trim() || "dev"}`);
   log.info(stateText({ kind: "connecting" }));
   const code = await new Promise<number>((resolve) => {
     if (stop.aborted) return resolve(0);
