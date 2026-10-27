@@ -53,14 +53,26 @@ describe("isHealthy", () => {
 });
 
 describe("readSettings", () => {
-  it("reads the site name and tolerates missing or odd fields", () => {
-    expect(readSettings({ apiVersion: 1, siteName: " Doombringers " })).toEqual({
-      apiVersion: 1,
-      siteName: "Doombringers",
+  it("reads the site name, milestones switch and posts channel, tolerating missing or odd fields", () => {
+    expect(
+      readSettings({
+        apiVersion: 1,
+        siteName: " Doombringers ",
+        posts: { milestones: false },
+        channels: { posts: "100000000000000002" },
+      }),
+    ).toEqual({ apiVersion: 1, siteName: "Doombringers", milestones: false, postsChannel: "100000000000000002" });
+    expect(readSettings({ channels: { posts: null } }).postsChannel).toBeNull();
+    expect(readSettings({ siteName: 3, channels: { posts: "#general" } })).toEqual({
+      siteName: undefined,
+      apiVersion: undefined,
+      milestones: undefined,
+      postsChannel: undefined,
     });
-    expect(readSettings({ siteName: 3 })).toEqual({ siteName: undefined, apiVersion: undefined });
     expect(readSettings(null)).toEqual({});
-    expect(settingsText("https://example.com", {})).toBe("site: https://example.com answers as (no name)");
+    expect(settingsText("https://example.com", {})).toBe(
+      "site: https://example.com answers as (no name); posts channel not set",
+    );
   });
 });
 
