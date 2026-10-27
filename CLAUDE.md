@@ -24,7 +24,7 @@ A Discord bot for a small friend group playing **World of Warcraft: Forever**. I
 12. No dependencies beyond those listed in `docs/ARCHITECTURE.md` without asking.
 
 ## Commands
-Set up in BOT-01 (`npm ci`, `npm run lint`, `npm test`, `npm run build`).
+Node 24 (`.nvmrc`). `npm ci` installs; `npm run lint` (ESLint, Prettier, `tsc --noEmit`), `npm test` (Vitest), `npm run build` (to `dist/`), `npm start` runs the built bot (env from `.env.example`), `npm run format` fixes formatting.
 
 ## Branches
 Gitflow: `feature/bot-XX-<slug>` off `develop`, PRs into `develop`. `main` receives releases.

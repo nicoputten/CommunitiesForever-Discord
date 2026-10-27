@@ -2,13 +2,7 @@
 
 Open stories in build order. A done story moves to `docs/STORIES-COMPLETED.md` with a "Done (PR #n)" line. The bot depends on web stories (in the web repo's `docs/STORIES.md`): the bot API (WEB-38) first, then the site's parts of each feature.
 
-Build order: BOT-01, BOT-02, then per feature once its web story is merged: BOT-03 (milestones, WEB-38), BOT-06 (commands, WEB-39), BOT-04 (runs, WEB-40 and WEB-43), BOT-05 (recap, WEB-41), then BOT-07.
-
-### BOT-01 Repo skeleton and CI
-- Node 24 (`.nvmrc`), TypeScript, ESLint, Prettier, Vitest as in the web repo; `src/core`, `src/adapters`, `src/app` with an ESLint rule that `core` imports nothing from the others or from discord.js and Node.
-- CI on every push and PR: lint, test, build, Docker image build (not pushed), gitleaks over the full history. Dependabot for npm and GitHub Actions (grouped minor and patch, weekly).
-- `.env.example` with the four variables of `docs/ARCHITECTURE.md`, no values. `Dockerfile` (non-root, no secrets, `.dockerignore` as an allow-list).
-- Done when: CI is green on an empty bot that starts, logs "no token" and exits cleanly without env.
+Build order: BOT-02, then per feature once its web story is merged: BOT-03 (milestones, WEB-38), BOT-06 (commands, WEB-39), BOT-04 (runs, WEB-40 and WEB-43), BOT-05 (recap, WEB-41), then BOT-07.
 
 ### BOT-02 Discord application and connection
 - A guide in `docs/DISCORD-SETUP.md` for Nico: create the application and bot in the Discord developer portal, which intents (none privileged if possible) and permissions (send messages, embed links, attach files, use application commands), the invite link, where the token goes (TrueNAS env only).
