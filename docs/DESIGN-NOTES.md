@@ -19,16 +19,16 @@ The bot follows the web's "Night over Azeroth" design system: tokens, class colo
 
 ## Open questions (to settle in the stories)
 
-- **Data the addon may not record yet:** roles (tank / healer / DPS) for `/who` and the ask slots, dungeon runs and "evenings together" for the recap, shared quests, "online recently". Each card or field without data is left out or waits for an addon story; to be checked against the addon's `docs/ARCHITECTURE.md` per story.
-- **Group asks from the game:** the addon has asks between friends in game (CF stories); whether they are stored in SavedVariables so the site can pick them up is an addon question.
-- **No board for the site's Discord page and admin** (`BotAdmin` is named in §12 but not exported): the web stories need a board or Nico's OK to build it from existing components.
+- **Data the addon may not record yet:** roles are recorded (addon CF-18: from talents, or set by the player); dungeon runs and "evenings together" for the recap, shared quests, "online recently". Each card or field without data is left out or waits for an addon story; to be checked against the addon's `docs/ARCHITECTURE.md` per story.
+- ~~Group asks from the game.~~ Settled: the addon stores asks, plans, answers and pings for the site (addon CF-47, CF-48; web WEB-43).
+- ~~No board for the site's Discord page.~~ Exported: the web repo's `discord-settings` and `discord-settings-runs`.
 - **Map crops and card images** are rendered by the site; the map art is CC BY-SA 4.0 (Syrio, Wikimedia Commons, adapted), so images that show it need the attribution.
 
 ## Decisions
 
 - Repo, stack, data flow and hosting: the proposals of 2026-10-27, approved by Nico (see `docs/ARCHITECTURE.md`).
 - Recap text (Nico, 2026-10-27): the site writes it from templates, several phrasings per card, headline and challenge; a phrasing isn't used again until all of that card's phrasings were used. No pronouns anywhere. Details in the web repo's WEB-41.
-- Planned runs and group asks: being redesigned; the prompt for the new boards is `docs/DESIGN-PROMPT-PLANNED-RUNS.md`. The current `bot-posts` ask stays as it is until those boards are back.
+- Planned runs replace the group ask of `bot-posts` (Nico, 2026-10-27): boards `bot-posts-runs`, `bot-commands-runs`, `runs-flow` (from `docs/DESIGN-PROMPT-PLANNED-RUNS.md`). A separate runs channel; one message per run, edited per state; reminders mention only I'm in and Maybe; `/plan` times in the asker's time zone from the site; `/ask` can't whisper in game. One admin: the boards' "Admins: Nico, Mira" (web) is not built.
 
 ## Deviations
 

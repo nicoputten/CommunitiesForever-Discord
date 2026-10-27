@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discord bot posts · runs</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#070C15}
+.cap{font:20px 'Marcellus SC',serif;letter-spacing:.06em;color:#F0D08E;margin:0}
+.sub{font-size:13px;color:#8E98A8;line-height:1.5;margin:0}
+.chat{background:#313338;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:18px;font-family:Inter,sans-serif;color:#DBDEE1}
+.ch{font-size:13px;font-weight:600;color:#949BA4;padding-bottom:10px;border-bottom:1px solid #3F4147}
+.msg{display:grid;grid-template-columns:40px minmax(0,1fr);gap:14px}
+.av{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#1E2E48,#0A1322);display:flex;align-items:center;justify-content:center}
+.nm{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;color:#F0D08E}
+.tag{font:700 10px/1 Inter,sans-serif;padding:3px 5px;border-radius:3px;background:#D4AF6A;color:#0B0F14}
+.ts{font-size:12px;font-weight:400;color:#949BA4}
+.emb{margin-top:6px;background:#2B2D31;border-left:4px solid #D4AF6A;border-radius:4px;padding:12px 16px 14px;max-width:560px;display:flex;flex-direction:column;gap:8px}
+.ea{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#F2F3F5}
+.et{font-size:16px;font-weight:700;color:#F2F3F5}
+.ed{font-size:14px;line-height:1.45;color:#DBDEE1}
+.ef{font-size:12px;color:#949BA4}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.b{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 14px;border-radius:4px;font:500 14px Inter,sans-serif;color:#fff;border:0}
+.ok{background:#248046}.mid{background:#4E5058}.dis{background:#4E5058;opacity:.5}.red{background:#DA373C}
+.tsx{background:rgba(255,255,255,.08);border-radius:3px;padding:0 3px}
+.men{background:rgba(88,101,242,.3);color:#C9CDFB;border-radius:3px;padding:0 2px;font-weight:500}
+.slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:2px}
+.sl{padding:7px 6px;border-radius:6px;background:#1E1F22;font-size:12px;line-height:1.35;min-width:0}
+.sl .r{font-size:11px;color:#949BA4;text-transform:uppercase;letter-spacing:.06em}
+.sl .c{font-weight:600}
+.sl.open{border:1px dashed #F0A774;background:transparent}
+.sl.empty{color:#6D6F78;background:transparent;border:1px dashed #4E5058}
+.pill{display:inline-block;font:700 11px/1 Inter,sans-serif;padding:4px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
+.mini{background:#2B2D31;border-left:4px solid #D4AF6A;border-radius:4px;padding:10px 14px;display:flex;flex-direction:column;gap:5px}
+.mini .et{font-size:15px}
+.eph{font-size:12px;color:#949BA4;display:flex;align-items:center;gap:6px;margin-top:6px}
+.note{padding:14px 16px;border-radius:12px;background:rgba(12,18,30,.85);border:1px solid rgba(212,175,106,.25);font-size:13px;color:#AEB6C3;line-height:1.55}
+.note b{color:#F3EBDA;font-weight:600}
+</style>
+</helmet>
+<div style="width: 1440px; box-sizing: border-box; padding: 48px 56px 60px; background: radial-gradient(1200px 500px at 30% -10%, #12233A, rgba(7,12,21,0) 70%), #070C15; font-family: Inter, sans-serif; color: #E6E1D6; display: flex; flex-direction: column; gap: 28px">
+  <div>
+    <h1 style="margin: 0; font: 40px 'Marcellus SC', serif; letter-spacing: .05em; color: #F3DFAE">Doombringers bot · what it posts · runs</h1>
+    <p class="sub" style="font-size: 15px; margin-top: 6px">Planned runs and reminders go to <b style="color: #E6E1D6">#doombringers-runs</b>. Times are Discord timestamps, so everyone sees their own time zone. Posts use display names and full character names; never BattleTags or Discord IDs. Milestones and the weekly recap are unchanged.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start">
+    <!-- LEFT -->
+    <div style="display: flex; flex-direction: column; gap: 28px">
+      <section style="display: flex; flex-direction: column; gap: 12px">
+        <h2 class="cap">1 · Planned run</h2>
+        <p class="sub">Created on the website, with <b style="color: #E6E1D6">/plan</b>, or in the game (after /reload). Five slots from the roles the addon knows. The message edits itself as people answer.</p>
+        <div class="chat">
+          <div class="ch"># doombringers-runs</div>
+          <div class="msg"><span class="av"><svg width="22" height="22" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+            <div><div class="nm">Doombringers <span class="tag">BOT</span> <span class="ts">Today at 17:32</span></div>
+              <div class="ed" style="margin-top: 2px"><span class="men">@Doombringers</span> Nico planned a run</div>
+              <div class="emb">
+                <div class="ea"><span style="width: 18px; height: 18px; border-radius: 50%; background: #8788EE"></span>Nico on Ves Doombringer (39 Warlock)</div>
+                <div style="display: flex; align-items: center; gap: 10px"><span class="et">Scarlet Monastery: Armory</span><span class="pill" style="background: rgba(212,175,106,.18); color: #F3DFAE">Open</span></div>
+                <div class="ed"><span class="tsx">Today at 20:30</span> · <span class="tsx">in 3 hours</span><br>Levels 32–42 · “Bring water, we clear the courtyard first.”</div>
+                <div class="slots">
+                  <div class="sl open"><div class="r">Tank</div><div class="c" style="color: #F0A774">needed</div></div>
+                  <div class="sl"><div class="r">Healer</div><div class="c" style="color: #FFFFFF">Lia Thornwhisper</div><div style="color: #949BA4">37 · Femke</div></div>
+                  <div class="sl"><div class="r">Damage</div><div class="c" style="color: #A9AAF5">Ves Doombringer</div><div style="color: #949BA4">39 · Nico</div></div>
+                  <div class="sl"><div class="r">Damage</div><div class="c" style="color: #FFF468">Bob Example</div><div style="color: #949BA4">41 · Bob</div></div>
+                  <div class="sl" style="opacity: .75"><div class="r">Damage</div><div class="c" style="color: #4DA3FF">Tok Ironhide</div><div style="color: #949BA4">33 · Bob · maybe</div></div>
+                </div>
+                <div class="ed" style="font-size: 13px; color: #B5BAC1">Could fill the tank slot: nobody in range yet. Close: Grom Ashfeller 24 (Nico), 8 levels short.</div>
+                <div class="ef">3 in · 1 maybe · 1 slot open · wow.vestras.nl/runs</div>
+              </div>
+              <div class="btns"><span class="b ok">I'm in</span><span class="b mid">Maybe</span><span class="b mid">Can't</span><span class="b mid">Pick my character ▾</span><span class="b mid">Open run ↗</span></div>
+            </div>
+          </div>
+          <!-- ephemeral: pick character -->
+          <div class="msg"><span class="av"><svg width="22" height="22" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+            <div><div class="nm">Doombringers <span class="tag">BOT</span> <span class="ts">Today at 17:40</span></div>
+              <div class="ed">Which character joins Scarlet Monastery: Armory?</div>
+              <div style="margin-top: 8px; max-width: 420px; border-radius: 4px; background: #1E1F22; border: 1px solid #5865F2">
+                <div style="display: flex; justify-content: space-between; padding: 10px 12px; font-size: 14px; color: #949BA4; border-bottom: 1px solid #2B2D31">Pick my character <span>▴</span></div>
+                <div style="padding: 9px 12px; background: #35373C"><div style="font-size: 14px; color: #F2F3F5; font-weight: 500">Lia Thornwhisper · 37 Priest</div><div style="font-size: 12px; color: #B5BAC1">Healer · fits 32–42</div></div>
+                <div style="padding: 9px 12px; color: #6D6F78; font-size: 12px">Zul Kazrek (15) is below the level range and isn't listed.</div>
+              </div>
+              <div class="eph"><svg width="14" height="14" viewBox="0 0 16 16" fill="#949BA4"><path d="M8 3C4 3 1.5 8 1.5 8S4 13 8 13s6.5-5 6.5-5S12 3 8 3zm0 8a3 3 0 110-6 3 3 0 010 6z"></path></svg>Only you can see this · <span style="color: #00A8FC">Dismiss message</span></div>
+              <div class="ed" style="margin-top: 10px; color: #B5BAC1">→ <b style="color: #F2F3F5">You're in as Lia Thornwhisper (healer).</b> The game shows it after the next sync.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 12px">
+        <h2 class="cap">3 · Reminder and start</h2>
+        <p class="sub">30 minutes before (changeable on the Discord settings page) and at start. Mentions only people who answered I'm in or Maybe. The start message is always posted; the organiser can ping missing friends from the game.</p>
+        <div class="chat">
+          <div class="ch"># doombringers-runs</div>
+          <div class="msg"><span class="av"><svg width="22" height="22" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+            <div><div class="nm">Doombringers <span class="tag">BOT</span> <span class="ts">Today at 20:00</span></div>
+              <div class="ed" style="margin-top: 2px"><span class="men">@Nico</span> <span class="men">@Femke</span> <span class="men">@Bob</span> <span class="men">@Jorrit</span> Scarlet Monastery: Armory starts <span class="tsx">in 30 minutes</span></div>
+              <div class="mini" style="margin-top: 6px"><div class="et">Scarlet Monastery: Armory · <span class="tsx" style="font-weight: 500">Today at 20:30</span></div><div class="ed" style="font-size: 13px">Ves Doombringer, Lia Thornwhisper, Bob Example · maybe Tok Ironhide, Jorrit · <span style="color: #F0A774">tank still open</span></div></div>
+              <div class="btns"><span class="b mid">Open run ↗</span></div>
+            </div>
+          </div>
+          <div class="msg"><span class="av"><svg width="22" height="22" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+            <div><div class="nm">Doombringers <span class="tag">BOT</span> <span class="ts">Today at 20:30</span></div>
+              <div class="ed" style="margin-top: 2px"><span class="men">@Nico</span> <span class="men">@Femke</span> <span class="men">@Bob</span> <span class="men">@Jorrit</span> <b style="color: #F2F3F5">Starting now · invites go out in game</b></div>
+              <div class="mini" style="margin-top: 6px; border-left-color: #248046"><div class="et">Scarlet Monastery: Armory</div><div class="ed" style="font-size: 13px">In: Ves Doombringer, Lia Thornwhisper, Bob Example · maybe: Tok Ironhide, Jorrit<br>Nico invites from the game. Not grouped in 5 minutes? Log in and press <b>Request invite</b>.</div><div class="ef">Always posted at start time</div></div>
+            </div>
+          </div>
+          <div class="msg"><span class="av"><svg width="22" height="22" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+            <div><div class="nm">Doombringers <span class="tag">BOT</span> <span class="ts">Today at 20:33</span></div>
+              <div class="ed" style="margin-top: 2px"><span class="men">@Jorrit</span> Hey Jorrit, <b style="color: #F2F3F5">these people are waiting for you</b> in Scarlet Monastery: Armory</div>
+              <div class="mini" style="margin-top: 6px; border-left-color: #F0A774"><div class="ed" style="font-size: 13px"><span style="color: #A9AAF5">Ves Doombringer</span> · <span style="color: #FFFFFF">Lia Thornwhisper</span> · <span style="color: #FFF468">Bob Example</span><br>Log in and press Request invite on the Dungeons tab.</div><div class="ef">Ping sent from the game by Nico · via /reload</div></div>
+              <div class="btns"><span class="b mid">Open run ↗</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- RIGHT -->
+    <div style="display: flex; flex-direction: column; gap: 28px">
+      <section style="display: flex; flex-direction: column; gap: 12px">
+        <h2 class="cap">2 · The same post, in every state</h2>
+        <p class="sub">One message per run. The bot edits it instead of posting again; only the reminder and start are new messages.</p>
+        <div class="chat" style="gap: 10px">
+          <div class="mini"><div style="display: flex; gap: 10px; align-items: center"><span class="pill" style="background: rgba(212,175,106,.18); color: #F3DFAE">Open</span><span class="et">Scarlet Monastery: Armory · <span class="tsx" style="font-weight: 500">Today at 20:30</span></span></div><div class="ef">3 in · 1 maybe · 1 slot open · all buttons</div></div>
+          <div class="mini" style="border-left-color: #3BA55D"><div style="display: flex; gap: 10px; align-items: center"><span class="pill" style="background: rgba(59,165,93,.2); color: #8FE0A8">Full</span><span class="et">Scarlet Monastery: Armory · 5 of 5</span></div><div class="ef">Grom Ashfeller can still answer Maybe and is next in line if someone drops out</div><div class="btns" style="margin-top: 2px"><span class="b dis">I'm in · full</span><span class="b mid">Maybe</span><span class="b mid">Can't</span></div></div>
+          <div class="mini" style="border-left-color: #F0A774"><div style="display: flex; gap: 10px; align-items: center"><span class="pill" style="background: rgba(240,167,116,.2); color: #F6C29C">Starting soon</span><span class="et">Scarlet Monastery: Armory · <span class="tsx" style="font-weight: 500">in 30 minutes</span></span></div><div class="ef">From the reminder until start · answers still open</div></div>
+          <div class="mini" style="border-left-color: #248046"><div style="display: flex; gap: 10px; align-items: center"><span class="pill" style="background: rgba(36,128,70,.3); color: #8FE0A8">Started</span><span class="et">Scarlet Monastery: Armory · since 20:30</span></div><div class="ef">Invites are going out in game · buttons removed except Open run</div></div>
+          <div class="mini" style="border-left-color: #80848E"><div style="display: flex; gap: 10px; align-items: center"><span class="pill" style="background: rgba(128,132,142,.2); color: #C4C9D0">Done</span><span class="et">Ran it · 3 of 5 signed-up came</span></div><div class="ef">Seen in Nico's upload at 22:41 · counts for the weekly recap</div></div>
+          <div class="mini" style="border-left-color: #80848E"><div style="display: flex; gap: 10px; align-items: center"><span class="pill" style="background: rgba(128,132,142,.2); color: #C4C9D0">Didn't happen</span><span class="et">Blackfathom Deeps</span></div><div class="ef">No upload showed the run within 4 hours of start</div></div>
+          <div class="mini" style="border-left-color: #DA373C"><div style="display: flex; gap: 10px; align-items: center"><span class="pill" style="background: rgba(218,55,60,.2); color: #F59A9C">Cancelled</span><span class="et" style="text-decoration: line-through; color: #949BA4">Wailing Caverns · Saturday</span></div><div class="ef">Cancelled by Mira, the organiser · sign-ups were sent a quiet notice</div></div>
+          <div class="mini" style="border-left-color: #DA373C"><div style="display: flex; gap: 10px; align-items: center"><span class="pill" style="background: rgba(218,55,60,.2); color: #F59A9C">Cancelled</span><span class="et" style="text-decoration: line-through; color: #949BA4">Razorfen Kraul · Friday</span></div><div class="ef">Removed by an admin</div></div>
+        </div>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 12px">
+        <h2 class="cap">4 · Ask now, from the game</h2>
+        <p class="sub">Only when “Also post on Discord” was ticked. Answered live in game and on Discord; it expires 10 minutes after it was asked.</p>
+        <div class="chat">
+          <div class="ch"># doombringers-runs</div>
+          <div class="msg"><span class="av"><svg width="22" height="22" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+            <div><div class="nm">Doombringers <span class="tag">BOT</span> <span class="ts">Today at 21:06</span></div>
+              <div class="ed" style="margin-top: 2px"><span class="men">@Doombringers</span> Nico asks who's up <b style="color: #F2F3F5">right now</b></div>
+              <div class="emb" style="border-left-color: #9BE3B0">
+                <div class="ea"><span style="width: 18px; height: 18px; border-radius: 50%; background: #C69B6D"></span>Nico on Grom Ashfeller (24 Warrior · tank)</div>
+                <div style="display: flex; align-items: center; gap: 10px"><span class="et">The Deadmines · now</span><span class="pill" style="background: rgba(155,227,176,.18); color: #9BE3B0">Ask now</span></div>
+                <div class="ed" style="font-size: 13px">Levels 17–26 · expires <span class="tsx">in 8 minutes</span></div>
+                <div class="ed" style="font-size: 13px; display: flex; flex-direction: column; gap: 3px">
+                  <span><b style="color: #8FE0A8">In</b> · Grom Ashfeller (Nico) · Kel Dawnhammer (Mira) <span style="color: #949BA4">· answered in game</span></span>
+                  <span><b style="color: #949BA4">Can't</b> · Femke <span style="color: #949BA4">· answered on Discord</span></span>
+                </div>
+                <div class="ef">asked from the game · via /reload · ends in a party invite in game</div>
+              </div>
+              <div class="btns"><span class="b ok">I'm in</span><span class="b mid">Maybe</span><span class="b mid">Can't</span><span class="b mid">Pick my character ▾</span></div>
+            </div>
+          </div>
+          <div class="mini" style="border-left-color: #80848E; margin-left: 54px"><div style="display: flex; gap: 10px; align-items: center"><span class="pill" style="background: rgba(128,132,142,.2); color: #C4C9D0">Expired</span><span class="et" style="color: #B5BAC1">The Deadmines · asked at 21:04</span></div><div class="ef">After 10 minutes the buttons go away · 3 answered · the group formed in game</div></div>
+        </div>
+        <div class="note"><b>Why “via /reload”:</b> the game can't reach the internet. After ticking “Also post on Discord”, the player reloads; the uploader sees the saved file, waits 5 s and uploads; the site posts this in about 10–15 s. Discord answers reach the asker after their next sync and show as <b>answered on Discord</b>.</div>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1850}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
