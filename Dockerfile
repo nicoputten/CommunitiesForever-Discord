@@ -25,4 +25,6 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
 # The image's own unprivileged user (UID/GID 1000).
 USER node
+# Healthy while connected to Discord: the bot writes a heartbeat file every 15 s (BOT-02, no port needed).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 CMD ["node", "dist/app/health.js"]
 CMD ["node", "dist/app/main.js"]

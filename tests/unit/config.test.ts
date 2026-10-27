@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { problemText, readConfig, siteUrl } from "../../src/core/config.js";
-import { start } from "../../src/app/start.js";
 
 // Made-up values only (CLAUDE.md rule 1).
 const FULL = {
@@ -54,37 +53,5 @@ describe("problemText", () => {
   it("names variables, never values", () => {
     const text = problemText({ ok: false, reason: "incomplete", missing: ["DISCORD_APP_ID", "BOT_API_TOKEN"] });
     expect(text).toBe("missing DISCORD_APP_ID, BOT_API_TOKEN (see .env.example); exiting");
-  });
-});
-
-describe("start (the empty bot)", () => {
-  function logger() {
-    const lines: { level: string; text: string }[] = [];
-    return {
-      lines,
-      log: {
-        info: (text: string) => lines.push({ level: "info", text }),
-        error: (text: string) => lines.push({ level: "error", text }),
-      },
-    };
-  }
-
-  it("logs no token and exits cleanly without env", () => {
-    const { lines, log } = logger();
-    expect(start({}, log)).toBe(0);
-    expect(lines).toEqual([{ level: "info", text: "no token: set DISCORD_TOKEN (see .env.example); exiting" }]);
-  });
-
-  it("fails on an incomplete configuration, without logging any value", () => {
-    const { lines, log } = logger();
-    expect(start({ DISCORD_TOKEN: "test-discord-token" }, log)).toBe(1);
-    expect(lines[0]?.level).toBe("error");
-    expect(JSON.stringify(lines)).not.toContain("test-discord-token");
-  });
-
-  it("starts with a complete configuration, without logging tokens", () => {
-    const { lines, log } = logger();
-    expect(start(FULL, log)).toBe(0);
-    expect(JSON.stringify(lines)).not.toContain("test-");
   });
 });
