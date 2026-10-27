@@ -6,6 +6,21 @@ on:
     branches: [develop, main]
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: No merge-conflict markers
+        run: "! git grep -n -E '^(<<<<<<<|>>>>>>>)( |$)' -- . ':!design/'"
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
   # CLAUDE.md rule 1: no secrets in any commit of the push or PR, history included.
   secrets:
     runs-on: ubuntu-latest
@@ -16,3 +31,29 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # The release image, built but not pushed, so a broken Dockerfile shows up before a tag.
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: communitiesforever-discord:ci
+          build-args: APP_VERSION=ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # BOT-01: without env the empty bot logs "no token" and exits cleanly, as the non-root user.
+      - name: Starts and exits without env
+        run: |
+          out=$(docker run --rm communitiesforever-discord:ci 2>&1)
+          echo "$out"
+          echo "$out" | grep -q "no token"
+          [ "$(docker run --rm --entrypoint id communitiesforever-discord:ci -u)" != 0 ]
+      # BOT-02: the health check runs, and is unhealthy without a Discord connection.
+      - name: Health check is unhealthy when not connected
+        run: "! docker run --rm --entrypoint node communitiesforever-discord:ci dist/app/health.js"

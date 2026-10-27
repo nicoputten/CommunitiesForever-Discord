@@ -9,7 +9,7 @@ The bot follows the web's "Night over Azeroth" design system: tokens, class colo
 **Automatic posts** (one channel, set on the site)
 - *Milestones* (board `bot-posts`, part 1): every 10 levels, level 60 (with a generated card), a profession at its cap, a new character. Several from one upload are grouped into one message. They arrive after an upload.
 - *Group asks* (board `bot-posts`, part 2): from the addon ("Ask who's up for it"), the site or `/ask`. Dungeon, time, level range, five role slots, "N in · N maybe" and healers in range; buttons I'm in / Maybe / Can't tonight / Pick my character. The message updates itself. Asks made in the game reach Discord after the next save and upload; answers reach the game after the friend's next upload or sync.
-- *Weekly recap* (board `bot-recap`, Sunday 20:00): headline (10 templates) · 4 core numbers · Doombringer of the week · 4 rotating cards (one stat, one progress, one social, one fun) · weekly challenge (12 templates). Header image: the week's busiest zone or the award winner's portrait.
+- *Weekly recap* (board `bot-recap`, Sunday 13:00 in the admin's time zone, see Deviations): headline (10 templates) · 4 core numbers · Doombringer of the week · 4 rotating cards (one stat, one progress, one social, one fun) · weekly challenge (12 templates). Header image: the week's busiest zone or the award winner's portrait.
 
 **Recap rotation:** a card is eligible only if its threshold is met and it wasn't used in the last 4 weeks; highest interest score per slot; ties broken with the week number as seed, so re-runs are identical; at most one card per friend; quiet weeks get a short recap. The catalogue of 48 cards (A1–A10 awards, S1–S12 stats, P1–P13 progress, F1–F13 social and fun) is on the `bot-recap` board. The site computes the recap (ARCHITECTURE.md), the bot posts it.
 
@@ -19,14 +19,17 @@ The bot follows the web's "Night over Azeroth" design system: tokens, class colo
 
 ## Open questions (to settle in the stories)
 
-- **Data the addon may not record yet:** roles (tank / healer / DPS) for `/who` and the ask slots, dungeon runs and "evenings together" for the recap, shared quests, "online recently". Each card or field without data is left out or waits for an addon story; to be checked against the addon's `docs/ARCHITECTURE.md` per story.
-- **Group asks from the game:** the addon has asks between friends in game (CF stories); whether they are stored in SavedVariables so the site can pick them up is an addon question.
-- **No board for the site's Discord page and admin** (`BotAdmin` is named in §12 but not exported): the web stories need a board or Nico's OK to build it from existing components.
+- **Data the addon may not record yet:** roles are recorded (addon CF-18: from talents, or set by the player); dungeon runs and "evenings together" for the recap, shared quests, "online recently". Each card or field without data is left out or waits for an addon story; to be checked against the addon's `docs/ARCHITECTURE.md` per story.
+- ~~Group asks from the game.~~ Settled: the addon stores asks, plans, answers and pings for the site (addon CF-47, CF-48; web WEB-43).
+- ~~No board for the site's Discord page.~~ Exported: the web repo's `discord-settings` and `discord-settings-runs`.
 - **Map crops and card images** are rendered by the site; the map art is CC BY-SA 4.0 (Syrio, Wikimedia Commons, adapted), so images that show it need the attribution.
 
 ## Decisions
 
 - Repo, stack, data flow and hosting: the proposals of 2026-10-27, approved by Nico (see `docs/ARCHITECTURE.md`).
+- Recap text (Nico, 2026-10-27): the site writes it from templates, several phrasings per card, headline and challenge; a phrasing isn't used again until all of that card's phrasings were used. No pronouns anywhere. Details in the web repo's WEB-41.
+- Milestones from uploads within 5 minutes of a post are added to that post by editing it, up to 10 per post (Nico, 2026-10-27, BOT-09): a group session that ends together gives one post, not one per friend. Discord marks the post "(edited)".
+- Planned runs replace the group ask of `bot-posts` (Nico, 2026-10-27): boards `bot-posts-runs`, `bot-commands-runs`, `runs-flow` (from `docs/DESIGN-PROMPT-PLANNED-RUNS.md`). A separate runs channel; one message per run, edited per state; reminders mention only I'm in and Maybe; `/plan` times in the asker's time zone from the site; `/ask` can't whisper in game. One admin: the boards' "Admins: Nico, Mira" (web) is not built.
 
 ## Deviations
 
@@ -34,3 +37,9 @@ Approved departures from the boards (CLAUDE.md rule 8). Only Nico approves one; 
 
 | Date | What | Why | Approved |
 |---|---|---|---|
+| 2026-10-27 | Weekly recap on Sunday 13:00 in the admin's time zone (stored in UTC), not the board's Sunday 20:00 | Nico's choice | Nico |
+| 2026-10-27 | Milestone posts show only what the site's event carries (name, owner, level, class, profession and rank); the board's extra lines ("The first Doombringer at max level", "Took 5 weeks · 3rd character to 40+", "Mount time. Scarlet Monastery now fits …", "Next step: an Artisan trainer", "first seen in Durotar") wait until the site sends them | The bot computes no game facts (CLAUDE.md rule 2) | Nico |
+| 2026-10-27 | No Discord mention of the owner under a milestone ("Mira · @mira" is "Mira") | The event has no Discord id, and posts carry none (rule 5) | Nico |
+| 2026-10-27 | The level 60 post has no generated card image yet: an embed in the class colour with "Open character ↗" | The site doesn't render card images yet; they follow in their own story | Nico |
+| 2026-10-27 | The bot is called **DoomBot** (set in the developer portal), not the community's name | Nico's choice | Nico |
+| 2026-10-27 | No pronouns in any text: "Somebody pay a visit." instead of the board's "Somebody visit her." | We never infer pronouns | Nico |

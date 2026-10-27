@@ -61,7 +61,7 @@ Nico creates the Discord application and its token himself; secrets only go into
 
 ## Hosting
 
-A second container in the same TrueNAS Custom App as the website (`deploy/compose.yaml` in the web repo), reaching the site over the internal network or its public URL. It restarts on failure; on start it registers the slash commands and resumes from the site's cursor.
+A second container in the same TrueNAS Custom App as the website (`deploy/compose.yaml` in the web repo), reaching the site over the internal network or its public URL. It restarts on failure; on start it registers the slash commands (globally: one server, and the site's settings name none) and resumes from the site's cursor. It connects with the non-privileged `Guilds` intent only. Its health check needs no port: while connected the bot writes a heartbeat file every 15 s, and `node dist/app/health.js` calls it healthy when that is under a minute old. SIGTERM stops it gracefully (at most 10 s). Setting up the Discord application: `docs/DISCORD-SETUP.md`. Releases: a `v*` tag on `main` pushes the image (`.github/workflows/release.yml`, README "Releasing"); in the app it is the `bot` service, with `SITE_URL` the public URL because post links are built from it, and it logs its version at start.
 
 ## Privacy
 
