@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { heartbeatFile, readHeartbeat } from "../../src/adapters/heartbeat.js";
 import { type Deps, start } from "../../src/app/start.js";
+import { COMMANDS } from "../../src/core/commands.js";
 import { FakeDiscord, FakeSite, logger, milestonesEvent } from "./fakes.js";
 
 // Made-up values only (CLAUDE.md rule 1).
@@ -65,7 +66,7 @@ describe("start", () => {
     discord.report({ kind: "ready", servers: 1 });
     await vi.waitFor(() => expect(site.acked.has(12)).toBe(true));
     expect(texts()[0]).toBe("version v0.1.0");
-    expect(discord.registered).toEqual([[]]);
+    expect(discord.registered).toEqual([COMMANDS]);
     expect(texts()).toContain("site: https://example.com answers as Doombringers; posts channel set");
     expect(readHeartbeat(file)).toBe(now);
 
@@ -86,7 +87,7 @@ describe("start", () => {
       expect.arrayContaining([
         "discord: connecting",
         "discord: ready in 1 server",
-        "discord: registered 0 slash commands",
+        "discord: registered 1 slash command",
         "posted event 12",
         "stopping",
         "stopped",

@@ -1,6 +1,6 @@
 // Wiring: reads the configuration, connects to Discord, registers the slash commands and keeps the heartbeat while
-// connected (BOT-02), and runs the poster (BOT-03) and the channel and role reports (BOT-08) once Discord is ready. Runs until `stop` aborts (exit 0) or
-// Discord refuses the bot (1).
+// connected (BOT-02), and runs the poster (BOT-03), the channel and role reports (BOT-08) and the answers to the
+// slash commands (BOT-05) once Discord is ready. Runs until `stop` aborts (exit 0) or Discord refuses the bot (1).
 import type { Discord, DiscordConfig } from "../adapters/discord.js";
 import type { Heartbeat } from "../adapters/heartbeat.js";
 import type { Log } from "../adapters/log.js";
@@ -8,6 +8,7 @@ import type { Site, SiteConfig } from "../adapters/site.js";
 import { COMMANDS } from "../core/commands.js";
 import { type Env, problemText, readConfig } from "../core/config.js";
 import { type ConnectionEvent, HEARTBEAT_MS, isConnected, stateText } from "../core/connection.js";
+import { commandHandler } from "./commands.js";
 import { type GuildReporter, guildReporter } from "./guildReporter.js";
 import { runPoster } from "./poster.js";
 
@@ -49,6 +50,7 @@ export async function start(env: Env, log: Log, deps: Deps, stop: AbortSignal): 
       const site = deps.site(config);
       poster = runPoster({ siteUrl: config.siteUrl, site, discord, log, now: deps.now }, posterStop.signal);
       reporter = guildReporter(site, discord, log);
+      discord.onCommand(commandHandler({ siteUrl: config.siteUrl, site, log }, posterStop.signal));
     }
     // After a reconnect the server may have changed while the bot was away.
     if (event.kind === "ready" || event.kind === "resumed") reporter?.changed();
@@ -82,7 +84,7 @@ export async function start(env: Env, log: Log, deps: Deps, stop: AbortSignal): 
 async function register(discord: Discord, log: Log): Promise<void> {
   try {
     const count = await discord.registerCommands(COMMANDS);
-    log.info(`discord: registered ${count} slash commands`);
+    log.info(`discord: registered ${count} slash command${count === 1 ? "" : "s"}`);
   } catch {
     log.error("discord: registering the slash commands failed; they are registered again at the next start");
   }

@@ -1,14 +1,24 @@
 // The poster (BOT-03): reads the site's settings, long-polls its events, posts each one once and acknowledges it
 // (CLAUDE.md rule 9). Posts carry a marker (core/milestones.ts), so after a restart the bot finds what it already
 // posted in the channel and only acknowledges it. Never fatal: the site and Discord may be away for a while.
-// Milestones of uploads within 5 minutes of a post are added to that post by editing it (BOT-09).
-import type { Discord } from "../adapters/discord.js";
+// Milestones of uploads within 5 minutes of a post are added to that post by editing it (BOT-09). The weekly recap
+// goes to the recap channel (the posts channel when none is set) with the site's card images attached (BOT-05); a
+// recap missed while the bot was away comes when it is back, since the site keeps it until it is acknowledged.
+import type { Attachment, Discord } from "../adapters/discord.js";
 import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site, SiteAnswer } from "../adapters/site.js";
 import { MAX_BACKOFF_SECONDS, backoffSeconds } from "../core/connection.js";
 import { decide, readEvents } from "../core/events.js";
-import { type Group, type MessageContent, groupedMessage, joinsPost, markedEvents } from "../core/milestones.js";
+import {
+  type Group,
+  type MessageContent,
+  groupedMessage,
+  joinsPost,
+  markedEvents,
+  milestoneFiles,
+} from "../core/milestones.js";
+import { recapFiles, recapMessage } from "../core/recap.js";
 import { type SiteSettings, readSettings, settingsText } from "../core/settings.js";
 
 /**
@@ -35,8 +45,11 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
   let cursor = "0";
   let channel: string | undefined;
   let posted = new Map<number, string>();
+  // The recap channel whose posts were read for markers (BOT-05), when it isn't the posts channel.
+  let recapScanned: string | undefined;
   // The post that still takes milestones (BOT-09); at most MAX_LINES milestones, so bounded.
-  let open: { id: string; channel: string; at: number; groups: Group[] } | undefined;
+  // `attached`: its card images (BOT-05). An edit keeps them; milestones added by an edit go without an image.
+  let open: { id: string; channel: string; at: number; groups: Group[]; attached: string[] } | undefined;
 
   const retry = async (text: string, seconds = backoffSeconds(++attempt)) => {
     log.error(`${text}; trying again in ${seconds} s`);
@@ -80,6 +93,18 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       channel = wanted;
       cursor = "0";
       open = undefined;
+      recapScanned = undefined;
+    }
+    const recapChannel = settings.recapChannel ?? channel;
+    if (recapChannel !== channel && recapChannel !== recapScanned) {
+      try {
+        for (const [id, message] of markedEvents(siteUrl, await discord.recentPosts(recapChannel)))
+          posted.set(id, message);
+      } catch (error) {
+        await retry(`discord: reading the recap channel failed (${codeOf(error)})`);
+        continue;
+      }
+      recapScanned = recapChannel;
     }
 
     const answer = await site.events(cursor, signal);
@@ -106,13 +131,42 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         }
         posted.set(event.id, messageId);
         log.info(`posted event ${event.id} (test)`);
+      } else if (action.do === "recap") {
+        // The card images; one the site can't give is left out, the post goes out anyway (never twice, rule 9).
+        const files: Attachment[] = [];
+        for (const file of recapFiles(action.recap)) {
+          const data = await site.image(file.path, signal);
+          if (data !== undefined) files.push({ name: file.name, data });
+          else log.error(`site: card image ${file.name} unavailable; posting the recap without it`);
+        }
+        if (signal.aborted) return;
+        const content = recapMessage(
+          action.recap,
+          siteUrl,
+          host,
+          files.map((f) => f.name),
+          event.id,
+        );
+        try {
+          messageId = await discord.post(recapChannel, content, files);
+        } catch (error) {
+          failed = true;
+          await retry(`discord: posting the recap (event ${event.id}) failed (${codeOf(error)})`);
+          break;
+        }
+        posted.set(event.id, messageId);
+        log.info(`posted event ${event.id} (recap of week ${action.recap.week})`);
       } else {
         const group: Group = { eventId: event.id, milestones: action.milestones };
         const shownInOpen = open?.groups.reduce((n, g) => n + g.milestones.length, 0) ?? 0;
         if (open?.channel === channel && joinsPost(open.at, shownInOpen, group.milestones.length, deps.now())) {
           const groups = [...open.groups, group];
           try {
-            await discord.edit(channel, open.id, groupedMessage(groups, siteUrl, host) as MessageContent);
+            await discord.edit(
+              channel,
+              open.id,
+              groupedMessage(groups, siteUrl, host, open.attached) as MessageContent,
+            );
             open.groups = groups;
             messageId = open.id;
             log.info(`added event ${event.id} to the post of event ${groups[0]?.eventId}`);
@@ -123,14 +177,25 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
           }
         }
         if (messageId === undefined) {
+          const files: Attachment[] = [];
+          for (const file of milestoneFiles([group])) {
+            const data = await site.image(file.path, signal);
+            if (data !== undefined) files.push({ name: file.name, data });
+          }
+          if (signal.aborted) return;
+          const attached = files.map((f) => f.name);
           try {
-            messageId = await discord.post(channel, groupedMessage([group], siteUrl, host) as MessageContent);
+            messageId = await discord.post(
+              channel,
+              groupedMessage([group], siteUrl, host, attached) as MessageContent,
+              files,
+            );
           } catch (error) {
             failed = true;
             await retry(`discord: posting event ${event.id} failed (${codeOf(error)})`);
             break;
           }
-          open = { id: messageId, channel, at: deps.now(), groups: [group] };
+          open = { id: messageId, channel, at: deps.now(), groups: [group], attached };
           log.info(`posted event ${event.id}`);
         }
         posted.set(event.id, messageId);

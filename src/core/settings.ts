@@ -8,6 +8,10 @@ export interface SiteSettings {
   milestones?: boolean;
   /** channels.posts: the channel id for milestones, null until the admin picked one, undefined on older sites. */
   postsChannel?: string | null;
+  /** posts.recap (BOT-05): the weekly recap on or off; undefined when the site doesn't say. */
+  recap?: boolean;
+  /** channels.recap (BOT-05): the recap's channel; null or undefined means the posts channel. */
+  recapChannel?: string | null;
 }
 
 export function readSettings(body: unknown): SiteSettings {
@@ -19,6 +23,8 @@ export function readSettings(body: unknown): SiteSettings {
     apiVersion: typeof body.apiVersion === "number" ? body.apiVersion : undefined,
     milestones: typeof posts.milestones === "boolean" ? posts.milestones : undefined,
     postsChannel: channels.posts === null ? null : isSnowflake(channels.posts) ? (channels.posts as string) : undefined,
+    recap: typeof posts.recap === "boolean" ? posts.recap : undefined,
+    recapChannel: channels.recap === null ? null : isSnowflake(channels.recap) ? (channels.recap as string) : undefined,
   };
 }
 
@@ -34,5 +40,6 @@ export function isSnowflake(value: unknown): boolean {
 /** The log line for a settings answer: the site's name, never the token or channel ids. */
 export function settingsText(siteUrl: string, settings: SiteSettings): string {
   const channel = settings.postsChannel ? "set" : "not set";
-  return `site: ${siteUrl} answers as ${settings.siteName ?? "(no name)"}; posts channel ${channel}`;
+  const recap = settings.recapChannel ? "; recap channel set" : "";
+  return `site: ${siteUrl} answers as ${settings.siteName ?? "(no name)"}; posts channel ${channel}${recap}`;
 }

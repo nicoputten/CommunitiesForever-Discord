@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- The weekly recap: every week at the recap time set on the site (Sunday 13:00 by default) the bot posts the site's recap of the week in the recap channel (the posts channel when none is set), with its header image and the Zone of the week map. A recap missed while the bot was away is posted once it is back, never twice.
+- `/recap` shows the last weekly recap again, only to you.
+- Level 60, a new character at 60 and a profession at 300 get the site's card image in their milestone post.
 
 ## v0.1.0 (2026-10-27)
 - The bot reads the site's settings every 30 seconds instead of every 5 minutes, so a newly picked channel and a test post work at once.

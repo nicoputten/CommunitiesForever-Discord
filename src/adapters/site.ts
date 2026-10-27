@@ -15,6 +15,10 @@ export interface Site {
   posted(eventId: number, messageId: string, signal: AbortSignal): Promise<SiteAnswer>;
   /** The server's channels and roles (BOT-08, BOT-API.md "Guild"). */
   guild(report: unknown, signal: AbortSignal): Promise<SiteAnswer>;
+  /** A card image (BOT-05, BOT-API.md "Card images"), e.g. `cards/recap-3-header.png`; undefined when it can't be had. */
+  image(path: string, signal: AbortSignal): Promise<Uint8Array | undefined>;
+  /** The last weekly recap (BOT-05, `GET recap/latest`). */
+  recapLatest(signal: AbortSignal): Promise<SiteAnswer>;
 }
 
 const TIMEOUT_MS = 15_000;
@@ -45,5 +49,18 @@ export function siteClient(config: SiteConfig): Site {
     events: (after, signal) => call(`events?after=${encodeURIComponent(after)}`, signal, LONG_POLL_TIMEOUT_MS),
     posted: (eventId, messageId, signal) => call(`events/${eventId}/posted`, signal, TIMEOUT_MS, { messageId }),
     guild: (report, signal) => call("guild", signal, TIMEOUT_MS, report),
+    recapLatest: (signal) => call("recap/latest", signal, TIMEOUT_MS),
+    async image(path, signal) {
+      try {
+        const response = await fetch(`${config.siteUrl}/api/bot/v1/${path}`, {
+          headers: { Authorization: `Bearer ${config.botApiToken}`, Accept: "image/png" },
+          signal: AbortSignal.any([signal, AbortSignal.timeout(TIMEOUT_MS)]),
+        });
+        if (!response.ok || response.headers.get("content-type") !== "image/png") return undefined;
+        return new Uint8Array(await response.arrayBuffer());
+      } catch {
+        return undefined;
+      }
+    },
   };
 }

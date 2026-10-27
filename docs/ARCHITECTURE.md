@@ -44,7 +44,8 @@ The contract lives in the web repo (`docs/BOT-API.md`, made by WEB-38). Shape as
 - `GET /api/bot/v1/events?after=<cursor>`: new milestones, asks, ask updates and recaps, oldest first, each with an id. `POST /api/bot/v1/events/<id>/posted` with the Discord message id acknowledges one (rule 9).
 - `GET /api/bot/v1/lookup/...`: answers for the commands, for a Discord user id (the site checks the link).
 - `POST /api/bot/v1/asks`, `POST /api/bot/v1/asks/<id>/answers`: `/ask` and the ask buttons.
-- `GET /api/bot/v1/cards/<id>.png`: generated card images (level 60, recap header, map crops), rendered by the site.
+- `GET /api/bot/v1/cards/<id>.png`: generated card images (level 60, recap header, map crops), rendered by the site. The bot fetches each with its token and attaches it to the post (Discord can't fetch a URL that needs the token); a post goes out without an image the site can't give (BOT-05).
+- `GET /api/bot/v1/recap/latest`: the last weekly recap, for `/recap` (BOT-05).
 
 Polling every 30 s with backoff is enough for a friend group and needs no public endpoint on the bot.
 

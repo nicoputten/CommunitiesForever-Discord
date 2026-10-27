@@ -1,5 +1,5 @@
 // Fakes for the adapters: a site that serves events like BOT-API.md, and a Discord that keeps the channel's posts.
-import { type Discord, PostError } from "../../src/adapters/discord.js";
+import { type Attachment, type Discord, PostError, type SlashCommand } from "../../src/adapters/discord.js";
 import type { Site, SiteAnswer } from "../../src/adapters/site.js";
 import type { CommandDefinition } from "../../src/core/commands.js";
 import type { ConnectionEvent, FailReason } from "../../src/core/connection.js";
@@ -83,6 +83,18 @@ export class FakeSite implements Site {
     return { ok: true, body: { id: eventId, messageId } };
   }
 
+  /** Card images by path (BOT-05); a missing one is "unavailable". */
+  images = new Map<string, Uint8Array>();
+  recap: unknown;
+
+  async image(path: string): Promise<Uint8Array | undefined> {
+    return this.images.get(path);
+  }
+
+  async recapLatest(): Promise<SiteAnswer> {
+    return this.recap === undefined ? { ok: false, status: 404 } : { ok: true, body: this.recap };
+  }
+
   async guild(report: unknown): Promise<SiteAnswer> {
     if (this.guildStatus !== undefined) return { ok: false, status: this.guildStatus };
     this.guildReports.push(report);
@@ -102,7 +114,7 @@ export class FakeDiscord implements Discord {
   loginResult: Promise<FailReason | undefined> = new Promise(() => undefined);
   registerError = false;
   postFailures = 0;
-  messages: (PostedMessage & { channel: string; content: MessageContent })[] = [];
+  messages: (PostedMessage & { channel: string; content: MessageContent; files: string[] })[] = [];
   private next = 1100000000000000001n;
 
   login = () => this.loginResult;
@@ -111,7 +123,7 @@ export class FakeDiscord implements Discord {
     this.registered.push(commands);
     return commands.length;
   };
-  post = async (channel: string, content: MessageContent) => {
+  post = async (channel: string, content: MessageContent, files: readonly Attachment[] = []) => {
     if (this.postFailures > 0) {
       this.postFailures--;
       throw new PostError(50013);
@@ -121,6 +133,7 @@ export class FakeDiscord implements Discord {
       id,
       channel,
       content,
+      files: files.map((f) => f.name),
       texts: content.embeds.flatMap((e) => [e.url ?? "", e.description ?? ""]),
     });
     return id;
@@ -146,6 +159,11 @@ export class FakeDiscord implements Discord {
   onGuildChange = (listener: () => void) => {
     this.guildListeners.add(listener);
     return () => this.guildListeners.delete(listener);
+  };
+  commandListeners: ((command: SlashCommand) => void)[] = [];
+  onCommand = (listener: (command: SlashCommand) => void) => {
+    this.commandListeners.push(listener);
+    return () => undefined;
   };
   recentPosts = async (channel: string) => this.messages.filter((m) => m.channel === channel).slice(-50);
   destroy = async () => {

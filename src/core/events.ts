@@ -1,6 +1,7 @@
 // The site's event feed (web repo docs/BOT-API.md "Events") read defensively, and what the bot does with each event
 // (BOT-03). Pure: settings and what is already posted come in as arguments.
 import { type MessageContent, type Milestone, showable, testMessage } from "./milestones.js";
+import { type Recap, readRecap } from "./recap.js";
 import type { SiteSettings } from "./settings.js";
 
 export interface SiteEvent {
@@ -29,7 +30,7 @@ export function readEvents(body: unknown): EventsAnswer {
 
 export function readMilestones(data: unknown): Milestone[] {
   if (!isObject(data) || !Array.isArray(data.milestones)) return [];
-  return data.milestones.flatMap((m): Milestone[] => {
+  return data.milestones.flatMap((m, index): Milestone[] => {
     if (!isObject(m) || !isObject(m.character) || typeof m.character.guid !== "string") return [];
     const c = m.character;
     const character = {
@@ -42,10 +43,11 @@ export function readMilestones(data: unknown): Milestone[] {
     switch (m.kind) {
       case "level":
       case "maxLevel":
-        return [{ kind: m.kind, character, level: number(m.level), from: number(m.from) }];
+        return [{ index, kind: m.kind, character, level: number(m.level), from: number(m.from) }];
       case "professionCap":
         return [
           {
+            index,
             kind: m.kind,
             character,
             skillLine: number(m.skillLine),
@@ -54,7 +56,7 @@ export function readMilestones(data: unknown): Milestone[] {
           },
         ];
       case "newCharacter":
-        return [{ kind: m.kind, character }];
+        return [{ index, kind: m.kind, character }];
       default:
         return [];
     }
@@ -66,6 +68,8 @@ export type Action =
   | { do: "post"; milestones: Milestone[] }
   /** Post this message on its own (the test post). */
   | { do: "send"; content: MessageContent }
+  /** Post the weekly recap with its card images, in the recap channel (BOT-05). */
+  | { do: "recap"; recap: Recap }
   /** Already in the channel (found by its marker): only acknowledge it. */
   | { do: "ack"; messageId: string }
   /** Nothing to post: leave it; the site lets it expire. */
@@ -85,6 +89,13 @@ export function decide(
     if (kind !== undefined && kind !== "posts") return { do: "leave" };
     if (messageId !== undefined) return { do: "ack", messageId };
     return { do: "send", content: testMessage(event.id, siteUrl, siteHost) };
+  }
+  if (event.type === "recap") {
+    // Off on the site's Discord page: left, and the site lets it expire (BOT-API.md "recap").
+    if (settings.recap === false) return { do: "leave" };
+    if (messageId !== undefined) return { do: "ack", messageId };
+    const recap = readRecap(event.data);
+    return recap !== undefined ? { do: "recap", recap } : { do: "leave" };
   }
   if (event.type !== "milestones" || settings.milestones === false) return { do: "leave" };
   if (messageId !== undefined) return { do: "ack", messageId };
