@@ -174,4 +174,86 @@ describe("runPoster", () => {
     stop.abort();
     await running;
   });
+
+  describe("the weekly recap (BOT-05)", () => {
+    const RECAP_CHANNEL = "100000000000000003";
+    const recapEvent = (id: number, week = 3, zone = true) => ({
+      id,
+      type: "recap",
+      data: {
+        week,
+        headline: { id: "levels", text: "18 levels and a lot of Duskwood" },
+        numbers: { levels: 18, friendsPlayed: 5, runs: 7, newCharacters: 1 },
+        cards: zone
+          ? [{ id: "S1", slot: "stat", name: "Zone of the week", title: "Duskwood", text: "3 friends." }]
+          : [],
+        challenge: { id: "threeEvenings", text: "Log in on 3 evenings" },
+        closing: "See you next week.",
+      },
+    });
+    const png = new Uint8Array([137, 80, 78, 71]);
+
+    it("posts the recap in the recap channel with its card images, once", async () => {
+      site.settingsBody = { posts: { recap: true }, channels: { posts: CHANNEL, recap: RECAP_CHANNEL } };
+      site.images.set("cards/recap-3-header.png", png);
+      site.images.set("cards/recap-3-zone.png", png);
+      site.add(recapEvent(20));
+      const running = run();
+      await vi.waitFor(() => expect(site.acked.size).toBe(1));
+      expect(discord.messages).toHaveLength(1);
+      const post = discord.messages[0]!;
+      expect(post.channel).toBe(RECAP_CHANNEL);
+      expect(post.files).toEqual(["recap-3-header.png", "recap-3-zone.png"]);
+      expect(post.content.embeds[0]).toMatchObject({
+        title: "18 levels and a lot of Duskwood",
+        image: { url: "attachment://recap-3-header.png" },
+      });
+      expect(site.acked.get(20)).toBe(post.id);
+      expect(log.texts()).toContain("posted event 20 (recap of week 3)");
+      stop.abort();
+      await running;
+    });
+
+    it("posts in the posts channel when no recap channel is set, without an image the site can't give", async () => {
+      site.add(recapEvent(21, 4, false));
+      const running = run();
+      await vi.waitFor(() => expect(site.acked.size).toBe(1));
+      expect(discord.messages[0]).toMatchObject({ channel: CHANNEL, files: [] });
+      expect(discord.messages[0]?.content.embeds[0]?.image).toBeUndefined();
+      expect(log.texts()).toContain("site: card image recap-4-header.png unavailable; posting the recap without it");
+      stop.abort();
+      await running;
+    });
+
+    it("after a restart, finds the recap in the recap channel and only acknowledges it", async () => {
+      site.settingsBody = { posts: { recap: true }, channels: { posts: CHANNEL, recap: RECAP_CHANNEL } };
+      site.add(recapEvent(22));
+      site.ackDown = 1;
+      let running = run();
+      await vi.waitFor(() => expect(discord.messages).toHaveLength(1));
+      await vi.waitFor(() =>
+        expect(log.texts().some((t) => t.startsWith("site: acknowledging event 22 failed"))).toBe(true),
+      );
+      stop.abort();
+      await running;
+
+      stop = new AbortController();
+      running = run();
+      await vi.waitFor(() => expect(site.acked.get(22)).toBe(discord.messages[0]?.id));
+      expect(discord.messages).toHaveLength(1);
+      stop.abort();
+      await running;
+    });
+
+    it("leaves the recap while it is off on the site", async () => {
+      site.settingsBody = { posts: { recap: false }, channels: { posts: CHANNEL } };
+      site.add(recapEvent(23));
+      const running = run();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(discord.messages).toHaveLength(0);
+      expect(site.acked.size).toBe(0);
+      stop.abort();
+      await running;
+    });
+  });
 });

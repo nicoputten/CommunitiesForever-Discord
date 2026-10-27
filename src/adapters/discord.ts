@@ -21,8 +21,8 @@ export interface Discord {
   login(): Promise<FailReason | undefined>;
   /** Replaces the global slash commands with these; resolves the number registered. */
   registerCommands(commands: readonly CommandDefinition[]): Promise<number>;
-  /** Posts a message; resolves its id. Throws a PostError. */
-  post(channelId: string, content: MessageContent): Promise<string>;
+  /** Posts a message, with image files it references as `attachment://<name>` (BOT-05); resolves its id. Throws a PostError. */
+  post(channelId: string, content: MessageContent, files?: readonly Attachment[]): Promise<string>;
   /** Replaces a posted message's content (BOT-09). Throws a PostError. */
   edit(channelId: string, messageId: string, content: MessageContent): Promise<void>;
   /** The bot's own messages among the channel's last 50. Throws a PostError. */
@@ -32,6 +32,12 @@ export interface Discord {
   /** Calls `listener` when the server's channels or roles change; returns the unsubscribe. */
   onGuildChange(listener: () => void): () => void;
   destroy(): Promise<void>;
+}
+
+/** A file to attach to a post (a card image from the site, BOT-05). */
+export interface Attachment {
+  name: string;
+  data: Uint8Array;
 }
 
 export interface DiscordConfig {
@@ -94,9 +100,12 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
       await rest.put(Routes.applicationCommands(config.discordAppId), { body: commands });
       return commands.length;
     },
-    async post(channelId, content) {
+    async post(channelId, content, files = []) {
       try {
-        const message = (await rest.post(Routes.channelMessages(channelId), { body: content })) as ApiMessage;
+        const message = (await rest.post(Routes.channelMessages(channelId), {
+          body: content,
+          ...(files.length > 0 ? { files: files.map((f) => ({ name: f.name, data: Buffer.from(f.data) })) } : {}),
+        })) as ApiMessage;
         return message.id;
       } catch (error) {
         throw refused(error);

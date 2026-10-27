@@ -19,6 +19,10 @@ export interface Embed {
   url?: string;
   description?: string;
   color: number;
+  /** BOT-05: the recap's cards, `inline` two or three to a row. */
+  fields?: { name: string; value: string; inline?: boolean }[];
+  /** BOT-05: a card image attached to the message (`attachment://<name>`). */
+  image?: { url: string };
 }
 
 export interface MessageContent {
