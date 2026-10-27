@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discord bot commands</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#070C15}
+.chat{background:#2B2D31;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;font-family:Inter,sans-serif;color:#DBDEE1}
+.cmd{display:flex;align-items:center;gap:8px;font-size:14px;color:#949BA4}
+.cmd code{font:14px ui-monospace,Consolas,monospace;color:#C9CDFB;background:rgba(88,101,242,.18);padding:2px 6px;border-radius:4px}
+.msg{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px}
+.av{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#1E2E48,#0A1322);display:flex;align-items:center;justify-content:center}
+.nm{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:#F0D08E}
+.tag{font:700 10px/1 Inter,sans-serif;padding:3px 5px;border-radius:3px;background:#D4AF6A;color:#0B0F14}
+.eph{font-size:12px;color:#949BA4;display:flex;align-items:center;gap:6px}
+.emb{margin-top:6px;background:#232428;border-left:4px solid #D4AF6A;border-radius:4px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.et{font-size:15px;font-weight:700;color:#F2F3F5}
+.ed{font-size:14px;line-height:1.45;color:#DBDEE1}
+.row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:14px;padding:3px 0}
+.dot{width:12px;height:12px;border-radius:50%}
+.ef{font-size:12px;color:#949BA4}
+.b{display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border-radius:4px;font:500 13px Inter,sans-serif;color:#fff;background:#4E5058}
+.cap{font:18px 'Marcellus SC',serif;letter-spacing:.06em;color:#F0D08E;margin:0 0 8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:500;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7E8898;padding:8px 10px;border-bottom:1px solid rgba(212,175,106,.3)}
+td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);color:#C9CFD9;vertical-align:top}
+td code{font:13px ui-monospace,Consolas,monospace;color:#F3DFAE}
+</style>
+</helmet>
+<div style="width: 1440px; box-sizing: border-box; padding: 48px 56px 60px; background: radial-gradient(1200px 500px at 30% -10%, #12233A, rgba(7,12,21,0) 70%), #070C15; font-family: Inter, sans-serif; color: #E6E1D6; display: flex; flex-direction: column; gap: 26px">
+  <div>
+    <h1 style="margin: 0; font: 40px 'Marcellus SC', serif; letter-spacing: .05em; color: #F3DFAE">Look-up commands</h1>
+    <p style="margin: 6px 0 0; font-size: 15px; color: #8E98A8; line-height: 1.5">Slash commands for friends who linked their Discord on the site. Answers are only visible to you by default; <b style="color: #E6E1D6">Share</b> posts it in the channel.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start">
+    <!-- whereis -->
+    <div><h2 class="cap">/whereis</h2>
+    <div class="chat">
+      <div class="cmd"><code>/whereis</code> friend: Bob</div>
+      <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+        <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+          <div class="emb"><div class="et">Bob's characters</div>
+            <img src="./assets/9c2044d1797d9107f6b621cb17353da3.png" alt="Map crop of Westfall and Stranglethorn with Bob's markers" style="width: 100%; height: 130px; object-fit: cover; object-position: 66% 82%; border-radius: 6px">
+            <div class="row"><span class="dot" style="background: #FFF468; box-shadow: 0 0 8px #FFF468"></span><span><b style="color: #FFF468">Bob Example</b> 41 · The Deadmines</span><span class="ef">5 h</span></div>
+            <div class="row"><span class="dot" style="background: #0070DD"></span><span><b style="color: #4DA3FF">Tok Ironhide</b> 33 · Hillsbrad</span><span class="ef">1 d</span></div>
+            <div class="ef">Seen by the addon · wow.vestras.nl/map</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b">Share</span><span class="b">Open map ↗</span></div>
+        </div></div>
+    </div></div>
+
+    <!-- whocancraft -->
+    <div><h2 class="cap">/whocancraft</h2>
+    <div class="chat">
+      <div class="cmd"><code>/whocancraft</code> profession: Tailoring</div>
+      <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+        <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+          <div class="emb"><div class="et">Tailoring · covered</div>
+            <div class="row"><span style="color: #F0D08E">★</span><span><b style="color: #3FC7EB">Mira</b> 300 / 300</span><span class="ef">Mira</span></div>
+            <div class="row"><span></span><span><b style="color: #FFFFFF">Lia</b> 205 / 225</span><span class="ef">Femke</span></div>
+            <div class="row"><span></span><span><b style="color: #A9AAF5">Ves</b> 187 / 225</span><span class="ef">Nico</span></div>
+            <div class="ed" style="font-size: 13px; color: #949BA4">Later: <code style="color: #C9CDFB">/whocancraft item: Bolt of Silk Cloth</code> once the addon shares recipes.</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b">Share</span></div>
+        </div></div>
+    </div></div>
+
+    <!-- who -->
+    <div><h2 class="cap">/who</h2>
+    <div class="chat">
+      <div class="cmd"><code>/who</code> level: 30-40 role: healer</div>
+      <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+        <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+          <div class="emb"><div class="et">2 healers between 30 and 40</div>
+            <div class="row"><span class="dot" style="background: #FFFFFF"></span><span><b style="color: #FFFFFF">Lia Thornwhisper</b> 37 Priest</span><span class="ef">Femke · 1 h</span></div>
+            <div class="row"><span class="dot" style="background: #0070DD"></span><span><b style="color: #4DA3FF">Tok Ironhide</b> 33 Shaman</span><span class="ef">Bob · 1 d</span></div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b" style="background: #248046">Ask them for a dungeon</span><span class="b">Share</span></div>
+        </div></div>
+    </div></div>
+
+    <!-- character -->
+    <div><h2 class="cap">/character</h2>
+    <div class="chat">
+      <div class="cmd"><code>/character</code> name: Ves Doombringer</div>
+      <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+        <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+          <div class="emb" style="border-left-color: #8788EE">
+            <div style="display: flex; gap: 12px; align-items: center"><span style="width: 52px; height: 52px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #B9BAF7, #6B6CD0); box-shadow: 0 0 0 2px #232428, 0 0 0 3px #D4AF6A; font: 600 15px/52px Inter, sans-serif; text-align: center; color: #0B0F14">VD</span><div><div class="et" style="color: #A9AAF5">Ves Doombringer</div><div class="ed" style="font-size: 13px">39 Undead Warlock · Destruction · Nico</div></div></div>
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; font-size: 13px"><div><b style="display: block; color: #F2F3F5">Item level</b>34</div><div><b style="display: block; color: #F2F3F5">Talents</b>10/0/20</div><div><b style="display: block; color: #F2F3F5">Seen</b>STV · 2 h</div></div>
+            <div class="ed" style="font-size: 13px">Tailoring 187 · Enchanting 160 · Cooking 75</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b">Share</span><span class="b">Open on site ↗</span></div>
+        </div></div>
+    </div></div>
+
+    <!-- alts / me -->
+    <div><h2 class="cap">/alts · /me</h2>
+    <div class="chat">
+      <div class="cmd"><code>/alts</code> friend: Femke</div>
+      <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+        <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+          <div class="emb"><div class="et">Femke · 2 characters</div>
+            <div class="row"><span class="dot" style="background: #FFFFFF"></span><span><b style="color: #FFFFFF">Lia Thornwhisper</b> 37 Priest · Healer</span><span class="ef">1 h</span></div>
+            <div class="row"><span class="dot" style="background: #8788EE"></span><span><b style="color: #A9AAF5">Zul Kazrek</b> 15 Warlock · Damage</span><span class="ef">4 d</span></div>
+            <div class="ef">/me shows your own characters and your week</div>
+          </div>
+        </div></div>
+    </div></div>
+
+    <!-- not linked -->
+    <div><h2 class="cap">Not linked yet</h2>
+    <div class="chat">
+      <div class="cmd"><code>/whereis</code> friend: Mira</div>
+      <div class="msg"><span class="av"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+        <div><div class="nm">Doombringers <span class="tag">BOT</span></div><div class="eph">Only you can see this</div>
+          <div class="emb" style="border-left-color: #E08A4A"><div class="et">Link your Discord first</div><div class="ed">The bot only answers friends on the Doombringers guest list. Sign in on the site with Battle.net and click <b>Link Discord</b>; it takes 20 seconds.</div></div>
+          <div style="display: flex; gap: 8px; margin-top: 8px"><span class="b" style="background: #D4AF6A; color: #0B0F14">Link on wow.vestras.nl ↗</span></div>
+        </div></div>
+    </div></div>
+  </div>
+
+  <section style="padding: 18px 20px; border-radius: 14px; background: rgba(12,18,30,0.8); border: 1px solid rgba(212,175,106,0.22)">
+    <h2 class="cap">All commands</h2>
+    <table>
+      <thead><tr><th>Command</th><th>Options</th><th>Answer</th></tr></thead>
+      <tbody>
+        <tr><td><code>/whereis</code></td><td>friend or character</td><td>Last known zones with a map crop and how old each sighting is</td></tr>
+        <tr><td><code>/who</code></td><td>level range, role, class, online-recently</td><td>Matching characters, with a button to start a group ask</td></tr>
+        <tr><td><code>/whocancraft</code></td><td>profession (later: item)</td><td>Who has it, at what skill, best crafter starred</td></tr>
+        <tr><td><code>/character</code></td><td>name (autocomplete)</td><td>Character card with stats, professions, last seen</td></tr>
+        <tr><td><code>/alts</code> · <code>/me</code></td><td>friend · none</td><td>All characters of a friend, or your own plus your week</td></tr>
+        <tr><td><code>/ask</code></td><td>dungeon, time</td><td>Posts a group ask with I'm in / Maybe / Can't buttons</td></tr>
+        <tr><td><code>/recap</code></td><td>none</td><td>Last weekly recap again, only for you</td></tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1250}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

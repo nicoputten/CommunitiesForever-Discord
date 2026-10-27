@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discord bot automatic posts</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#070C15}
+.cap{font:20px 'Marcellus SC',serif;letter-spacing:.06em;color:#F0D08E;margin:0}
+.sub{font-size:13px;color:#8E98A8;line-height:1.5;margin:0}
+.chat{background:#2B2D31;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:18px;font-family:Inter,sans-serif;color:#DBDEE1}
+.ch{font-size:13px;font-weight:600;color:#949BA4;padding-bottom:10px;border-bottom:1px solid #3F4147}
+.msg{display:grid;grid-template-columns:40px minmax(0,1fr);gap:14px}
+.av{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#1E2E48,#0A1322);display:flex;align-items:center;justify-content:center}
+.nm{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;color:#F0D08E}
+.tag{font:700 10px/1 Inter,sans-serif;padding:3px 5px;border-radius:3px;background:#D4AF6A;color:#0B0F14}
+.ts{font-size:12px;font-weight:400;color:#949BA4}
+.emb{margin-top:6px;background:#232428;border-left:4px solid #D4AF6A;border-radius:4px;padding:12px 16px 14px;max-width:540px;display:flex;flex-direction:column;gap:8px}
+.ea{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#F2F3F5}
+.et{font-size:16px;font-weight:700;color:#F2F3F5}
+.ed{font-size:14px;line-height:1.45;color:#DBDEE1}
+.fl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 14px}
+.fl b{display:block;font-size:13px;color:#F2F3F5;font-weight:700}
+.fl span{font-size:14px;color:#DBDEE1}
+.ef{font-size:12px;color:#949BA4}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.b{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 14px;border-radius:4px;font:500 14px Inter,sans-serif;color:#fff;border:0}
+.ok{background:#248046}.mid{background:#4E5058}.no{background:#4E5058}.link{background:#4E5058}
+.note{padding:14px 16px;border-radius:12px;background:rgba(12,18,30,.85);border:1px solid rgba(212,175,106,.25);font-size:13px;color:#AEB6C3;line-height:1.55}
+.note b{color:#F3EBDA;font-weight:600}
+</style>
+</helmet>
+<div style="width: 1440px; box-sizing: border-box; padding: 48px 56px 60px; background: radial-gradient(1200px 500px at 30% -10%, #12233A, rgba(7,12,21,0) 70%), #070C15; font-family: Inter, sans-serif; color: #E6E1D6; display: flex; flex-direction: column; gap: 28px">
+  <div>
+    <h1 style="margin: 0; font: 40px 'Marcellus SC', serif; letter-spacing: .05em; color: #F3DFAE">Doombringers bot · what it posts</h1>
+    <p class="sub" style="font-size: 15px; margin-top: 6px">Milestones and group asks in <b style="color: #E6E1D6">#doombringers</b>, the weekly recap on Sunday evening. Every post links to the website.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start">
+    <!-- MILESTONES -->
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <h2 class="cap">1 · Milestones</h2>
+      <p class="sub">Big moments only, so the channel stays fun: every 10 levels, level 60, a profession at its cap, a new character.</p>
+      <div class="chat">
+        <div class="ch"># doombringers</div>
+        <div class="msg"><span class="av"><svg width="22" height="22" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+          <div><div class="nm">Doombringers <span class="tag">BOT</span> <span class="ts">Today at 21:14</span></div>
+            <div class="emb" style="border-left-color: #3FC7EB">
+              <div class="ea"><span style="width: 18px; height: 18px; border-radius: 50%; background: #3FC7EB"></span>Mira · @mira</div>
+              <div class="et">Mira Sunstrider reached level 60</div>
+              <div class="ed">The first Doombringer at max level. Undead Frost Mage, 41 points in Frost.</div>
+              <div style="border-radius: 8px; overflow: hidden; background: radial-gradient(circle at 30% 30%, #1E3352, #0A1322 70%); height: 150px; position: relative; display: flex; align-items: center; gap: 18px; padding: 0 22px">
+                <span style="width: 86px; height: 86px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #8FE3F7, #2BA7CA); box-shadow: 0 0 0 3px #0A1322, 0 0 0 5px #F0D08E, 0 0 30px rgba(63,199,235,0.6); font: 600 26px/86px Inter, sans-serif; text-align: center; color: #0B0F14">MS</span>
+                <div><div style="font: 44px/1 'Marcellus SC', serif; color: #F3DFAE; text-shadow: 0 0 20px rgba(240,208,142,0.4)">Level 60</div><div style="font: 16px 'Marcellus', serif; color: #3FC7EB; margin-top: 6px">Mira Sunstrider</div><div style="font-size: 12px; color: #AEB6C3; margin-top: 2px">Took 5 weeks · 3rd character to 40+</div></div>
+              </div>
+              <div class="ef">wow.vestras.nl · generated card</div>
+            </div>
+            <div class="btns"><span class="b link">Open character ↗</span></div>
+          </div>
+        </div>
+        <div class="msg"><span class="av"><svg width="22" height="22" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+          <div><div class="nm">Doombringers <span class="tag">BOT</span> <span class="ts">Today at 21:14</span></div>
+            <div class="emb" style="border-left-color: #8788EE"><div class="et" style="font-size: 15px">Ves Doombringer hit level 40 <span style="font-weight: 400; color: #949BA4">· Nico</span></div><div class="ed">Mount time. Scarlet Monastery now fits Ves, Lia and Tok.</div></div>
+            <div class="emb" style="border-left-color: #FFFFFF"><div class="et" style="font-size: 15px">Lia Thornwhisper maxed Tailoring at 225 <span style="font-weight: 400; color: #949BA4">· Femke</span></div><div class="ed">Next step: an Artisan trainer for 300.</div></div>
+            <div class="emb" style="border-left-color: #8788EE"><div class="et" style="font-size: 15px">New character: Zul Kazrek <span style="font-weight: 400; color: #949BA4">· Femke</span></div><div class="ed">Level 15 Orc Warlock, first seen in Durotar.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="note">Milestones arrive <b>after an upload</b> (manual or the uploader), because the game itself can't talk to the internet. Several milestones from one upload are grouped into one message.</div>
+    </section>
+
+    <!-- GROUP ASKS -->
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <h2 class="cap">2 · Group asks</h2>
+      <p class="sub">“Ask who's up for it” from the addon, the website or <b style="color: #E6E1D6">/ask</b> in Discord. Friends answer with a button; the message updates itself.</p>
+      <div class="chat">
+        <div class="ch"># doombringers</div>
+        <div class="msg"><span class="av"><svg width="22" height="22" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+          <div><div class="nm">Doombringers <span class="tag">BOT</span> <span class="ts">Today at 19:40</span></div>
+            <div class="ed" style="margin-top: 2px"><span style="background: rgba(88,101,242,0.3); color: #C9CDFB; border-radius: 3px; padding: 0 2px">@Doombringers</span> Nico asks who's up for a dungeon</div>
+            <div class="emb">
+              <div class="ea"><span style="width: 18px; height: 18px; border-radius: 50%; background: #8788EE"></span>Nico on Ves Doombringer (39)</div>
+              <div class="et">Shadowfang Keep · tonight 20:30</div>
+              <div class="ed">Levels 20–30 · 3 quests shared · asked from the game</div>
+              <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 4px">
+                <div style="padding: 8px 4px; border-radius: 6px; background: #2B2D31; text-align: center; font-size: 12px"><div style="color: #F48CBA; font-weight: 600">Lekthon 24</div><div style="color: #949BA4">Tank ✓</div></div>
+                <div style="padding: 8px 4px; border-radius: 6px; background: #2B2D31; border: 1px dashed #F0A774; text-align: center; font-size: 12px"><div style="color: #F0A774; font-weight: 600">Healer</div><div style="color: #949BA4">needed</div></div>
+                <div style="padding: 8px 4px; border-radius: 6px; background: #2B2D31; text-align: center; font-size: 12px"><div style="color: #A9AAF5; font-weight: 600">Ves 39</div><div style="color: #949BA4">DPS ✓</div></div>
+                <div style="padding: 8px 4px; border-radius: 6px; background: #2B2D31; text-align: center; font-size: 12px"><div style="color: #4DA3FF; font-weight: 600">Morgazh 27</div><div style="color: #949BA4">DPS · maybe</div></div>
+                <div style="padding: 8px 4px; border-radius: 6px; background: #2B2D31; text-align: center; font-size: 12px; color: #6D6F78"><div style="font-weight: 600">DPS</div><div>open</div></div>
+              </div>
+              <div class="ef">2 in · 1 maybe · Healers in range: Lia 37 (Femke), Tok 33 (Bob)</div>
+            </div>
+            <div class="btns"><span class="b ok">I'm in</span><span class="b mid">Maybe</span><span class="b no">Can't tonight</span><span class="b link">Pick my character ▾</span></div>
+          </div>
+        </div>
+        <div style="font-size: 13px; color: #949BA4; padding-left: 54px">Femke reacted: <span style="color: #DBDEE1">I'm in as Lia (healer)</span> → the message updates to 3 in · group complete except 1 DPS</div>
+      </div>
+      <div class="note"><b>Timing:</b> an ask made <b>in the game</b> reaches Discord after the next save (/reload or logout), since WoW addons can't send anything to the internet. Asks made with <b>/ask</b> or on the website are instant. Answers from Discord show up in the game for friends after their next upload/sync.</div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
