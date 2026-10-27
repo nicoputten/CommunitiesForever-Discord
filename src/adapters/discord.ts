@@ -13,6 +13,8 @@ export interface Discord {
   registerCommands(commands: readonly CommandDefinition[]): Promise<number>;
   /** Posts a message; resolves its id. Throws a PostError. */
   post(channelId: string, content: MessageContent): Promise<string>;
+  /** Replaces a posted message's content (BOT-09). Throws a PostError. */
+  edit(channelId: string, messageId: string, content: MessageContent): Promise<void>;
   /** The bot's own messages among the channel's last 50. Throws a PostError. */
   recentPosts(channelId: string): Promise<PostedMessage[]>;
   destroy(): Promise<void>;
@@ -68,6 +70,13 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
       try {
         const message = (await rest.post(Routes.channelMessages(channelId), { body: content })) as ApiMessage;
         return message.id;
+      } catch (error) {
+        throw refused(error);
+      }
+    },
+    async edit(channelId, messageId, content) {
+      try {
+        await rest.patch(Routes.channelMessage(channelId, messageId), { body: content });
       } catch (error) {
         throw refused(error);
       }

@@ -92,6 +92,24 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** The milestones a post can show: those with a name. */
+export function showable(milestones: readonly Milestone[]): Milestone[] {
+  return milestones.filter((m) => m.character.name);
+}
+
+/** How long a post keeps taking the milestones of later uploads (BOT-09), counted from the post. */
+export const GROUP_WINDOW_MS = 5 * 60_000;
+
+/** Whether an upload's milestones join the open post: within the window and still within MAX_LINES. */
+export function joinsPost(postedAt: number, shownInPost: number, adding: number, now: number): boolean {
+  return now - postedAt < GROUP_WINDOW_MS && shownInPost + adding <= MAX_LINES;
+}
+
+export interface Group {
+  eventId: number;
+  milestones: readonly Milestone[];
+}
+
 /** One upload's milestones as one message, or undefined when none can be shown. */
 export function milestoneMessage(
   eventId: number,
@@ -99,18 +117,36 @@ export function milestoneMessage(
   siteUrl: string,
   siteHost: string,
 ): MessageContent | undefined {
-  const shown = milestones.filter((m) => m.character.name).slice(0, MAX_LINES);
-  const hidden = milestones.filter((m) => m.character.name).length - shown.length;
+  return groupedMessage([{ eventId, milestones }], siteUrl, siteHost);
+}
+
+// Discord allows 10 embeds per message: at most 9 level 60 embeds, the gold list is the 10th.
+const MAX_LEVEL_EMBEDS = 9;
+
+/**
+ * The milestones of one or more uploads as one message (BOT-09: later uploads are added by editing it). Each upload's
+ * first character link carries its marker. Undefined when none can be shown.
+ */
+export function groupedMessage(
+  groups: readonly Group[],
+  siteUrl: string,
+  siteHost: string,
+): MessageContent | undefined {
+  const all = groups.flatMap((g) => showable(g.milestones).map((milestone) => ({ eventId: g.eventId, milestone })));
+  const shown = all.slice(0, MAX_LINES);
+  const hidden = all.length - shown.length;
   if (shown.length === 0) return undefined;
-  let marked = false;
-  const link = (character: Character) => {
-    const url = characterUrl(siteUrl, character.guid) + (marked ? "" : marker(eventId));
-    marked = true;
+  const marked = new Set<number>();
+  const linkFor = (eventId: number) => (character: Character) => {
+    const url = characterUrl(siteUrl, character.guid) + (marked.has(eventId) ? "" : marker(eventId));
+    marked.add(eventId);
     return url;
   };
 
+  const top = shown.filter((s) => s.milestone.kind === "maxLevel").slice(0, MAX_LEVEL_EMBEDS);
   const embeds: Embed[] = [];
-  for (const milestone of shown.filter((m) => m.kind === "maxLevel")) {
+  for (const { eventId, milestone } of top) {
+    const link = linkFor(eventId);
     embeds.push({
       title: headline(milestone),
       url: link(milestone.character),
@@ -126,8 +162,9 @@ export function milestoneMessage(
   }
 
   const lines = shown
-    .filter((m) => m.kind !== "maxLevel")
-    .map((milestone) => {
+    .filter((s) => !top.includes(s))
+    .map(({ eventId, milestone }) => {
+      const link = linkFor(eventId);
       const name = milestone.character.name as string;
       const title = headline(milestone).replace(name, `[${escapeMarkdown(name)}](${link(milestone.character)})`);
       const by = owner(milestone.character);

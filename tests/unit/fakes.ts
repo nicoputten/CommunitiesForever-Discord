@@ -116,6 +116,18 @@ export class FakeDiscord implements Discord {
     });
     return id;
   };
+  editFailures = 0;
+  edits = 0;
+  edit = async (channel: string, id: string, content: MessageContent) => {
+    const message = this.messages.find((m) => m.id === id && m.channel === channel);
+    if (this.editFailures > 0 || message === undefined) {
+      this.editFailures = Math.max(0, this.editFailures - 1);
+      throw new PostError(10008);
+    }
+    this.edits++;
+    message.content = content;
+    message.texts = content.embeds.flatMap((e) => [e.url ?? "", e.description ?? ""]);
+  };
   recentPosts = async (channel: string) => this.messages.filter((m) => m.channel === channel).slice(-50);
   destroy = async () => {
     this.destroyed = true;
