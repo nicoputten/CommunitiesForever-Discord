@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Look-up commands: `/whereis` (a friend's characters or one character, where and how long ago, with the map card), `/who` (by level, role, class or seen today), `/whocancraft` (who has a profession, the best starred), `/character` (the character card), `/alts` (a friend's characters) and `/me` (your characters and your week). Names fill in as you type. Answers are only for you; Share posts a copy in the channel.
 - The weekly recap: every week at the recap time set on the site (Sunday 13:00 by default) the bot posts the site's recap of the week in the recap channel (the posts channel when none is set), with its header image and the Zone of the week map. A recap missed while the bot was away is posted once it is back, never twice.
 - `/recap` shows the last weekly recap again, only to you.
 - Level 60, a new character at 60 and a profession at 300 get the site's card image in their milestone post.

@@ -35,6 +35,10 @@ export interface Discord {
    * `reply` fills it in. Returns the unsubscribe.
    */
   onCommand(listener: (command: SlashCommand) => void): () => void;
+  /** Calls `listener` for autocomplete requests (BOT-06). Returns the unsubscribe. */
+  onAutocomplete(listener: (request: Autocomplete) => void): () => void;
+  /** Calls `listener` for button presses (BOT-06). Returns the unsubscribe. */
+  onButton(listener: (press: ButtonPress) => void): () => void;
   /** Calls `listener` when the server's channels or roles change; returns the unsubscribe. */
   onGuildChange(listener: () => void): () => void;
   destroy(): Promise<void>;
@@ -43,7 +47,25 @@ export interface Discord {
 /** A slash command a user ran: its name, and the answer to give only to them. */
 export interface SlashCommand {
   name: string;
+  /** The asker's Discord user id: passed to the site only, never shown (CLAUDE.md rule 5). */
+  userId: string;
+  /** The options as given: text, or true/false. */
+  options: Readonly<Record<string, string | boolean>>;
   reply(content: MessageContent, files?: readonly Attachment[]): Promise<void>;
+}
+
+/** A user typing in an autocomplete option (BOT-06): answer with up to 25 choices. */
+export interface Autocomplete {
+  command: string;
+  option: string;
+  value: string;
+  respond(choices: readonly { name: string; value: string }[]): Promise<void>;
+}
+
+/** A button press (BOT-06: Share). `share` posts the given message in the channel the button is in. */
+export interface ButtonPress {
+  customId: string;
+  share(content: MessageContent, files?: readonly Attachment[]): Promise<void>;
 }
 
 /** A file to attach to a post (a card image from the site, BOT-05). */
@@ -94,19 +116,63 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     client.on(event, guildChanged);
   }
   const commandListeners = new Set<(command: SlashCommand) => void>();
+  const autocompleteListeners = new Set<(request: Autocomplete) => void>();
+  const buttonListeners = new Set<(press: ButtonPress) => void>();
+  const files = (list: readonly Attachment[]) => list.map((f) => ({ name: f.name, attachment: Buffer.from(f.data) }));
   client.on(Events.InteractionCreate, (interaction) => {
+    if (interaction.isAutocomplete()) {
+      const focused = interaction.options.getFocused(true);
+      const request: Autocomplete = {
+        command: interaction.commandName,
+        option: focused.name,
+        value: String(focused.value),
+        async respond(choices) {
+          await interaction
+            .respond(choices.slice(0, 25).map((c) => ({ name: c.name.slice(0, 100), value: c.value.slice(0, 100) })))
+            .catch(() => undefined);
+        },
+      };
+      autocompleteListeners.forEach((listener) => listener(request));
+      return;
+    }
+    if (interaction.isButton()) {
+      const press: ButtonPress = {
+        customId: interaction.customId,
+        async share(content, attachments = []) {
+          try {
+            // The ephemeral answer stays; the shared copy is a new message in the channel.
+            await interaction.reply({
+              embeds: content.embeds,
+              allowedMentions: { parse: [] },
+              files: files(attachments),
+            });
+          } catch (error) {
+            throw refused(error);
+          }
+        },
+      };
+      buttonListeners.forEach((listener) => listener(press));
+      return;
+    }
     if (!interaction.isChatInputCommand()) return;
     // Within Discord's 3 seconds; the answer follows when the site has given it.
     const deferred = interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => undefined);
+    const options: Record<string, string | boolean> = {};
+    for (const option of interaction.options.data) {
+      if (typeof option.value === "string" || typeof option.value === "boolean") options[option.name] = option.value;
+    }
     const command: SlashCommand = {
       name: interaction.commandName,
-      async reply(content, files = []) {
+      userId: interaction.user.id,
+      options,
+      async reply(content, attachments = []) {
         await deferred;
         try {
           await interaction.editReply({
             embeds: content.embeds,
             allowedMentions: { parse: [] },
-            files: files.map((f) => ({ name: f.name, attachment: Buffer.from(f.data) })),
+            files: files(attachments),
+            ...(content.components !== undefined ? { components: content.components } : {}),
           });
         } catch (error) {
           throw refused(error);
@@ -206,6 +272,14 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
       commandListeners.add(listener);
       return () => commandListeners.delete(listener);
     },
+    onAutocomplete(listener) {
+      autocompleteListeners.add(listener);
+      return () => autocompleteListeners.delete(listener);
+    },
+    onButton(listener) {
+      buttonListeners.add(listener);
+      return () => buttonListeners.delete(listener);
+    },
     onGuildChange(listener) {
       guildListeners.add(listener);
       return () => guildListeners.delete(listener);
@@ -213,6 +287,8 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     async destroy() {
       guildListeners.clear();
       commandListeners.clear();
+      autocompleteListeners.clear();
+      buttonListeners.clear();
       client.removeAllListeners();
       await client.destroy();
     },

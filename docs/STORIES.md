@@ -14,6 +14,3 @@ Decided with Nico, 2026-10-27 (the web repo's E7 has the whole flow; board `runs
 - **Runs v2** (Nico, 2026-10-27; the web repo's WEB-47 and boards `runs-v2-*`): any character can join and the role is picked apart from it. Pick my character becomes character and role: a select of all the asker's characters with the fit tag ("fits", "+3 over", "carry · +21", "4 below"; a character 6+ below can only answer Maybe), then the roles the class can play. The post shows each sign-up's chosen role, marks carries "carry", and lists reserves (I'm in for a full role). An organiser's move (another role, reserve, removed) reaches the moved person as a quiet notice, never a channel ping. All from the site's optional fields in `docs/BOT-API.md` (WEB-47).
 - Tests: the post in every state, the select menu, the time-passed and not-yours replies, edits instead of new posts, no double reminder after a restart.
 
-### BOT-06 Look-up commands
-- Needs the site's lookup endpoints and Discord linking (web stories).
-- `/whereis`, `/who`, `/whocancraft`, `/character` (autocomplete), `/alts`, `/me` as on the `bot-commands-runs` board (full character names); ephemeral with Share; "Link your Discord first" for unlinked users.

@@ -1,5 +1,12 @@
 // Fakes for the adapters: a site that serves events like BOT-API.md, and a Discord that keeps the channel's posts.
-import { type Attachment, type Discord, PostError, type SlashCommand } from "../../src/adapters/discord.js";
+import {
+  type Attachment,
+  type Autocomplete,
+  type ButtonPress,
+  type Discord,
+  PostError,
+  type SlashCommand,
+} from "../../src/adapters/discord.js";
 import type { Site, SiteAnswer } from "../../src/adapters/site.js";
 import type { CommandDefinition } from "../../src/core/commands.js";
 import type { ConnectionEvent, FailReason } from "../../src/core/connection.js";
@@ -91,6 +98,15 @@ export class FakeSite implements Site {
     return this.images.get(path);
   }
 
+  /** Look-up answers by `<what>` (BOT-06); `lookups` records each request's parameters. */
+  lookupAnswers = new Map<string, SiteAnswer>();
+  lookups: { what: string; params: Record<string, string> }[] = [];
+
+  async lookup(what: string, params: Readonly<Record<string, string>>): Promise<SiteAnswer> {
+    this.lookups.push({ what, params: { ...params } });
+    return this.lookupAnswers.get(what) ?? { ok: false, status: 404 };
+  }
+
   async recapLatest(): Promise<SiteAnswer> {
     return this.recap === undefined ? { ok: false, status: 404 } : { ok: true, body: this.recap };
   }
@@ -159,6 +175,16 @@ export class FakeDiscord implements Discord {
   onGuildChange = (listener: () => void) => {
     this.guildListeners.add(listener);
     return () => this.guildListeners.delete(listener);
+  };
+  autocompleteListeners: ((request: Autocomplete) => void)[] = [];
+  buttonListeners: ((press: ButtonPress) => void)[] = [];
+  onAutocomplete = (listener: (request: Autocomplete) => void) => {
+    this.autocompleteListeners.push(listener);
+    return () => undefined;
+  };
+  onButton = (listener: (press: ButtonPress) => void) => {
+    this.buttonListeners.push(listener);
+    return () => undefined;
   };
   commandListeners: ((command: SlashCommand) => void)[] = [];
   onCommand = (listener: (command: SlashCommand) => void) => {
