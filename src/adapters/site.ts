@@ -13,6 +13,8 @@ export interface Site {
   /** The long poll: the site may hold it for `longPollSeconds` (30). */
   events(after: string, signal: AbortSignal): Promise<SiteAnswer>;
   posted(eventId: number, messageId: string, signal: AbortSignal): Promise<SiteAnswer>;
+  /** The server's channels and roles (BOT-08, BOT-API.md "Guild"). */
+  guild(report: unknown, signal: AbortSignal): Promise<SiteAnswer>;
 }
 
 const TIMEOUT_MS = 15_000;
@@ -42,5 +44,6 @@ export function siteClient(config: SiteConfig): Site {
     settings: (signal) => call("settings", signal, TIMEOUT_MS),
     events: (after, signal) => call(`events?after=${encodeURIComponent(after)}`, signal, LONG_POLL_TIMEOUT_MS),
     posted: (eventId, messageId, signal) => call(`events/${eventId}/posted`, signal, TIMEOUT_MS, { messageId }),
+    guild: (report, signal) => call("guild", signal, TIMEOUT_MS, report),
   };
 }

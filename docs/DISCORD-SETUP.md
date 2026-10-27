@@ -46,7 +46,12 @@ Ctrl+C stops it gracefully. From BOT-07 on, the same variables go into the TrueN
 | `BOT_API_TOKEN` | the site's bot token (web repo `docs/BOT-API.md` "Token") |
 
 ## 5. The posts channel
-On the site's Discord page (admin) pick the channel for posts and keep Milestones on. Without a channel the bot posts nothing and logs `posts channel not set`; it reads the settings again every 5 minutes, so no restart is needed.
+On the site's Discord page (admin) pick the channel for posts and keep Milestones on. The dropdowns list what the running bot reports (BOT-08; the site needs WEB-46, in web releases after `v0.2.0`):
+- channels: text and announcement channels where the bot may view, send messages and embed links. A channel missing from the list: give the bot's role those permissions there.
+- roles (mention on new runs): roles set as **mentionable** in the server settings, without @everyone and bot roles.
+- Changes in the server show up within about 5 seconds. One exception: giving the bot itself another role isn't seen until the next change or restart (that event needs a privileged intent the bot doesn't use).
+
+Without a channel the bot posts nothing and logs `posts channel not set`; it reads the settings again every 5 minutes, so no restart is needed.
 
 ## 6. Check
 - The bot shows as online in the server's member list.
