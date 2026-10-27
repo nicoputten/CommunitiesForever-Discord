@@ -2,13 +2,7 @@
 
 Open stories in build order. A done story moves to `docs/STORIES-COMPLETED.md` with a "Done (PR #n)" line. The bot depends on web stories (in the web repo's `docs/STORIES.md`): the bot API (WEB-38) first, then the site's parts of each feature.
 
-Build order (2026-10-27): BOT-02, BOT-03 (milestones; WEB-38 is merged), BOT-07 (so milestones post from launch), then per feature once its web story is merged: BOT-06 (commands, WEB-39), BOT-04 (runs, WEB-40 and WEB-43), BOT-05 (recap, WEB-41).
-
-### BOT-02 Discord application and connection
-- A guide in `docs/DISCORD-SETUP.md` for Nico: create the application and bot in the Discord developer portal, which intents (none privileged if possible) and permissions (send messages, embed links, attach files, use application commands), the invite link, where the token goes (TrueNAS env only).
-- The bot connects, registers the slash commands for the guild set on the site (or globally), reconnects on failures and shuts down gracefully on SIGTERM.
-- Health: a log line per state change; the container's health check shows connected or not.
-- Manual: Nico invites the bot to a test server and sees it online.
+Build order (2026-10-27): BOT-03 (milestones; WEB-38 is merged), BOT-07 (so milestones post from launch), then per feature once its web story is merged: BOT-06 (commands, WEB-39), BOT-04 (runs, WEB-40 and WEB-43), BOT-05 (recap, WEB-41), BOT-08 (channels and roles, after the web's guild channels and roles story).
 
 ### BOT-03 Milestone posts
 - Needs WEB-38 (bot API, events) and the site's milestone events.
@@ -37,3 +31,8 @@ Decided with Nico, 2026-10-27 (the web repo's E7 has the whole flow; board `runs
 - Release workflow: a `v*` tag on `main` pushes `ghcr.io/nicoputten/communitiesforever-discord` (public). `CHANGELOG.md` section per release.
 - The web repo's `deploy/compose.yaml` and `deploy/README.md` get the bot container (env without values).
 - Manual: Nico adds the env in TrueNAS and sees the bot online in the real server.
+
+### BOT-08 Report the server's channels and roles
+- Once the web's channels and roles story has its endpoint in `docs/BOT-API.md`: the bot reports the server's text channels and roles (ids and names) to the site at start and when they change, so the admin picks the posts channel, runs channel and mention role from a list instead of typing ids.
+- Uses the `Guilds` intent BOT-02 already has; no new permission.
+- Only what the endpoint documents (CLAUDE.md rule 10); logs counts, never names or ids.

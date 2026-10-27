@@ -54,3 +54,6 @@ jobs:
           echo "$out"
           echo "$out" | grep -q "no token"
           [ "$(docker run --rm --entrypoint id communitiesforever-discord:ci -u)" != 0 ]
+      # BOT-02: the health check runs, and is unhealthy without a Discord connection.
+      - name: Health check is unhealthy when not connected
+        run: "! docker run --rm --entrypoint node communitiesforever-discord:ci dist/app/health.js"
