@@ -6,7 +6,7 @@ Discord's API calls a server a **guild**. That has nothing to do with WoW guilds
 
 ## 1. The application
 1. Open the [Discord developer portal](https://discord.com/developers/applications) → **New Application**.
-2. **General Information:** name and avatar as the designer decides (the bot shows in Discord under this name). Copy the **Application ID**: it is `DISCORD_APP_ID`. It isn't secret, but it stays out of the repo like every Discord id.
+2. **General Information:** name **DoomBot** (Nico, 2026-10-27; DESIGN-NOTES "Deviations"), avatar as the designer decides. The bot posts under this name. Copy the **Application ID**: it is `DISCORD_APP_ID`. It isn't secret, but it stays out of the repo like every Discord id.
 
 ## 2. The bot
 1. **Bot** in the left menu.
@@ -27,7 +27,16 @@ https://discord.com/oauth2/authorize?client_id=<APPLICATION_ID>&scope=bot+applic
 - One server only. In a second server it still works but logs a warning.
 
 ## 4. The environment
-In the TrueNAS app (the web repo's `deploy/compose.yaml`, the bot's container), the four variables of `.env.example`:
+The four variables of `.env.example`. **Until BOT-07** there is no bot container in the web repo's `deploy/compose.yaml` and no published image yet, so try the bot on your own PC first (Node 24):
+
+```
+npm ci
+npm run build
+copy .env.example .env      (fill in .env; it is git-ignored)
+node --env-file=.env dist/app/main.js
+```
+
+Ctrl+C stops it gracefully. From BOT-07 on, the same variables go into the TrueNAS app's environment for the bot's container.
 
 | Variable | Value |
 |---|---|
@@ -36,7 +45,10 @@ In the TrueNAS app (the web repo's `deploy/compose.yaml`, the bot's container), 
 | `SITE_URL` | `https://wow.vestras.nl` |
 | `BOT_API_TOKEN` | the site's bot token (web repo `docs/BOT-API.md` "Token") |
 
-## 5. Check
+## 5. The posts channel
+On the site's Discord page (admin) pick the channel for posts and keep Milestones on. Without a channel the bot posts nothing and logs `posts channel not set`; it reads the settings again every 5 minutes, so no restart is needed.
+
+## 6. Check
 - The bot shows as online in the server's member list.
 - The container is **healthy** (it writes a heartbeat while connected; the health check reads it).
 - The log shows, without any token or id:

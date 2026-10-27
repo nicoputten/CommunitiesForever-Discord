@@ -4,18 +4,35 @@
 export interface SiteSettings {
   siteName?: string;
   apiVersion?: number;
+  /** posts.milestones; undefined when the site doesn't say. */
+  milestones?: boolean;
+  /** channels.posts: the channel id for milestones, null until the admin picked one, undefined on older sites. */
+  postsChannel?: string | null;
 }
 
 export function readSettings(body: unknown): SiteSettings {
-  if (typeof body !== "object" || body === null) return {};
-  const raw = body as Record<string, unknown>;
+  if (!isObject(body)) return {};
+  const posts = isObject(body.posts) ? body.posts : {};
+  const channels = isObject(body.channels) ? body.channels : {};
   return {
-    siteName: typeof raw.siteName === "string" && raw.siteName.trim() ? raw.siteName.trim() : undefined,
-    apiVersion: typeof raw.apiVersion === "number" ? raw.apiVersion : undefined,
+    siteName: typeof body.siteName === "string" && body.siteName.trim() ? body.siteName.trim() : undefined,
+    apiVersion: typeof body.apiVersion === "number" ? body.apiVersion : undefined,
+    milestones: typeof posts.milestones === "boolean" ? posts.milestones : undefined,
+    postsChannel: channels.posts === null ? null : isSnowflake(channels.posts) ? (channels.posts as string) : undefined,
   };
 }
 
-/** The log line for a settings answer: the site's name, never the token. */
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/** A Discord id as text: digits only. */
+export function isSnowflake(value: unknown): boolean {
+  return typeof value === "string" && /^\d{1,20}$/.test(value);
+}
+
+/** The log line for a settings answer: the site's name, never the token or channel ids. */
 export function settingsText(siteUrl: string, settings: SiteSettings): string {
-  return `site: ${siteUrl} answers as ${settings.siteName ?? "(no name)"}`;
+  const channel = settings.postsChannel ? "set" : "not set";
+  return `site: ${siteUrl} answers as ${settings.siteName ?? "(no name)"}; posts channel ${channel}`;
 }

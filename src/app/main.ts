@@ -3,7 +3,7 @@
 import { connectDiscord } from "../adapters/discord.js";
 import { heartbeatFile } from "../adapters/heartbeat.js";
 import { consoleLog } from "../adapters/log.js";
-import { getSettings } from "../adapters/site.js";
+import { siteClient } from "../adapters/site.js";
 import { start } from "./start.js";
 
 const STOP_TIMEOUT_MS = 10_000;
@@ -19,7 +19,7 @@ process.once("SIGINT", onSignal);
 const code = await start(
   process.env,
   consoleLog,
-  { discord: connectDiscord, settings: getSettings, heartbeat: heartbeatFile(), now: Date.now },
+  { discord: connectDiscord, site: siteClient, heartbeat: heartbeatFile(), now: Date.now },
   stop.signal,
 );
 process.exit(code);

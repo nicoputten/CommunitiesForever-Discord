@@ -37,4 +37,8 @@ Approved departures from the boards (CLAUDE.md rule 8). Only Nico approves one; 
 | Date | What | Why | Approved |
 |---|---|---|---|
 | 2026-10-27 | Weekly recap on Sunday 13:00 in the admin's time zone (stored in UTC), not the board's Sunday 20:00 | Nico's choice | Nico |
+| 2026-10-27 | Milestone posts show only what the site's event carries (name, owner, level, class, profession and rank); the board's extra lines ("The first Doombringer at max level", "Took 5 weeks · 3rd character to 40+", "Mount time. Scarlet Monastery now fits …", "Next step: an Artisan trainer", "first seen in Durotar") wait until the site sends them | The bot computes no game facts (CLAUDE.md rule 2) | Nico |
+| 2026-10-27 | No Discord mention of the owner under a milestone ("Mira · @mira" is "Mira") | The event has no Discord id, and posts carry none (rule 5) | Nico |
+| 2026-10-27 | The level 60 post has no generated card image yet: an embed in the class colour with "Open character ↗" | The site doesn't render card images yet; they follow in their own story | Nico |
+| 2026-10-27 | The bot is called **DoomBot** (set in the developer portal), not the community's name | Nico's choice | Nico |
 | 2026-10-27 | No pronouns in any text: "Somebody pay a visit." instead of the board's "Somebody visit her." | We never infer pronouns | Nico |
