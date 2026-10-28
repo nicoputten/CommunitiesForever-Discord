@@ -252,6 +252,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
           files.map((f) => f.name),
           event.id,
           boardUrl(siteUrl, settings.doomsdayUrl),
+          deps.icons?.current,
         );
         try {
           messageId = await discord.post(recapChannel, content, files);

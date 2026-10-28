@@ -7,3 +7,4 @@
 !tsconfig.build.json
 !src/
 !assets/class-icons/*.png
+!assets/recap-icons/*.png

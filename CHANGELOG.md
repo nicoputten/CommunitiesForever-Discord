@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Recap cards about PvP, deaths, loot, mounts, battlegrounds, late nights and early mornings show a small icon, uploaded by the bot as its own emoji.
 - Feats can have their own channel (set on the site; the posts channel otherwise). The site's test buttons for feats, the recap and Doomsday post a made-up sample of each in its channel, marked as a test.
 - Doomsday ladder and `/doomsday`: on Sunday at the reset the bot posts the week's PvP and PvE top 5 side by side with movement, the duel champion, the most kills in one zone, the battlegrounds and the PvP Virgin of the week. `/doomsday` (or `/doom`) shows your goals today and this week, your points per track, your place on both ladders and your streak, only to you; `friend:` shows a friend's day. The weekly recap gets a Doomsday section.
 - Doomsday board: at each reset the bot posts the day's goals in the Doomsday channel (the posts channel when none is set), with a row of boxes per friend, and edits that one post as uploads come in: names struck through when the dailies are done, the crown for the first, points per track, and a final version with the day's summary. "My goals" shows your own goals, only to you. The green, red and open boxes are the bot's own emoji.

@@ -1,6 +1,7 @@
 // The weekly recap post (BOT-05, board `bot-recap`): the site computes the recap (web WEB-41, BOT-API.md "`recap`")
 // and the bot posts its texts exactly as the site wrote them. Pure: the event comes in as read from the site, the
 // message goes out as Discord's JSON, the card images (web WEB-41d) as files for the poster to fetch and attach.
+import { type ClassIcons, NO_ICONS, cardIcon } from "./classIcons.js";
 import { type RecapDoomsday, readRecapDoomsday, recapDoomsdayField } from "./ladder.js";
 import { type Embed, GOLD, type MessageContent, marker } from "./milestones.js";
 
@@ -116,7 +117,8 @@ export function recapFiles(recap: Recap): CardFile[] {
  * challenge and the closing line. Texts exactly as the site wrote them ("Who am I?" answers are Discord spoilers);
  * mentions are off. `attached`: the images the poster could fetch; a missing one is left out. `eventId` marks the post
  * (core/milestones.ts `marker`) so a restart finds it; undefined for `/recap`, which is not a post. BOT-16: the
- * Doomsday section before the challenge, its "Full ladder" linking to `doomsdayUrl`.
+ * Doomsday section before the challenge, its "Full ladder" linking to `doomsdayUrl`. BOT-14: a card's icon starts
+ * its first line, since Discord shows no custom emoji in a field name or title (DESIGN-NOTES "Deviations").
  */
 export function recapMessage(
   recap: Recap,
@@ -125,6 +127,7 @@ export function recapMessage(
   attached: readonly string[],
   eventId?: number,
   doomsdayUrl = `${siteUrl}/doomsday`,
+  icons: ClassIcons = NO_ICONS,
 ): MessageContent {
   const image = (name: string) => (attached.includes(name) ? { image: { url: `attachment://${name}` } } : {});
   const [header, zone] = recapFiles(recap).map((f) => f.name);
@@ -140,13 +143,16 @@ export function recapMessage(
   if (recap.award !== undefined) {
     embeds.push({
       title: clip(recap.award.name, LIMIT.title),
-      description: clip(`**${recap.award.title}**\n${recap.award.text}`, LIMIT.description),
+      description: clip(
+        `${cardIcon(icons, recap.award.id)}**${recap.award.title}**\n${recap.award.text}`,
+        LIMIT.description,
+      ),
       color: GOLD,
     });
   }
   const fields = recap.cards.map((c) => ({
     name: clip(c.name, LIMIT.title),
-    value: clip(`**${c.title}**\n${c.text}`, LIMIT.field),
+    value: clip(`${cardIcon(icons, c.id)}**${c.title}**\n${c.text}`, LIMIT.field),
     inline: true,
   }));
   const doomsday = recap.doomsday !== undefined ? recapDoomsdayField(recap.doomsday, doomsdayUrl) : undefined;

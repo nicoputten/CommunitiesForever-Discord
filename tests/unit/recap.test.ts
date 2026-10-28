@@ -110,3 +110,36 @@ describe("recapMessage", () => {
     expect(recapMessage(long, SITE, HOST, []).embeds.at(-1)?.fields?.[0]?.value.length).toBeLessThanOrEqual(1024);
   });
 });
+
+describe("recap card icons (BOT-14, board `bot-recap-v2-icons`)", () => {
+  const SKULL = "<:cf_recap_deaths_abcdef:100000000000000301>";
+  const SWORDS = "<:cf_recap_pvp_abcdef:100000000000000302>";
+  const icons = { RECAP_DEATHS: SKULL, RECAP_PVP: SWORDS };
+  const v2 = readRecap({
+    ...EVENT,
+    award: { id: "A11", name: "Doombringer of the week · Warmonger", title: "Ves took 142 kills", text: "Ouch." },
+    cards: [
+      { id: "F16", name: "Most deaths", title: "12 deaths", text: "The graveyard sends a fruit basket." },
+      { id: "S2", name: "Class census", title: "Mages", text: "3 of them." },
+      { id: "X99", name: "From a newer site", title: "Something", text: "New." },
+    ],
+  })!;
+
+  it("starts each card's first line with its icon, the award's too", () => {
+    const message = recapMessage(v2, SITE, HOST, [], 42, undefined, icons);
+    expect(message.embeds[1]?.description?.startsWith(`${SWORDS} **Ves took 142 kills**`)).toBe(true);
+    const values = message.embeds.at(-1)?.fields?.map((f) => f.value);
+    expect(values?.[0]?.startsWith(`${SKULL} **12 deaths**`)).toBe(true);
+  });
+
+  it("shows no icon for a card without one, an unknown card, or before the emoji are uploaded", () => {
+    const values = recapMessage(v2, SITE, HOST, [], 42, undefined, icons)
+      .embeds.at(-1)
+      ?.fields?.map((f) => f.value);
+    expect(values?.[1]?.startsWith("**Mages**")).toBe(true);
+    expect(values?.[2]?.startsWith("**Something**")).toBe(true);
+    expect(recapMessage(v2, SITE, HOST, [], 42).embeds.at(-1)?.fields?.[0]?.value.startsWith("**12 deaths**")).toBe(
+      true,
+    );
+  });
+});

@@ -47,6 +47,7 @@ export async function answerRecap(deps: CommandDeps, command: SlashCommand, sign
       files.map((f) => f.name),
       undefined,
       boardUrl(deps.siteUrl, deps.settings?.()?.doomsdayUrl),
+      deps.icons?.current,
     ),
     files,
   );
