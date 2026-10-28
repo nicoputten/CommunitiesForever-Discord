@@ -2,6 +2,7 @@
 // (BOT-03). Pure: settings and what is already posted come in as arguments.
 import { type FeatItem, type MessageContent, type Milestone, showable, testMessage } from "./milestones.js";
 import { type Board, readBoard } from "./doomsday.js";
+import { type Ladder, readLadder } from "./ladder.js";
 import { type Recap, readRecap } from "./recap.js";
 import { type Ask, type Ping, type Run, readAsk, readMention, readPing, readRun } from "./runs.js";
 import type { SiteSettings } from "./settings.js";
@@ -156,6 +157,8 @@ export type Action =
    * board's message found by its marker, when known.
    */
   | { do: "board"; board: Board; posted?: string }
+  /** BOT-16: the weekly Doomsday ladder, for the Doomsday channel. */
+  | { do: "ladder"; ladder: Ladder }
   /** Already in the channel (found by its marker): only acknowledge it. */
   | { do: "ack"; messageId: string }
   /** Nothing to post: leave it; the site lets it expire. */
@@ -256,6 +259,13 @@ export function decide(
     if (messageId !== undefined) return { do: "ack", messageId };
     const recap = readRecap(event.data);
     return recap !== undefined ? { do: "recap", recap } : { do: "leave" };
+  }
+  if (event.type === "doomsdayLadder") {
+    // Off on the site's Discord page: left (BOT-API.md "Doomsday").
+    if (settings.doomsdayLadder === false) return { do: "leave" };
+    if (messageId !== undefined) return { do: "ack", messageId };
+    const ladder = readLadder(event.data);
+    return ladder !== undefined ? { do: "ladder", ladder } : { do: "leave" };
   }
   if (event.type === "doomsdayBoard" || event.type === "doomsdayBoardUpdate") {
     // Off on the site's Discord page: left (BOT-API.md "Doomsday").

@@ -25,21 +25,3 @@ The feat card images are the site's (web `design/boards/doomsday-feat-cards`). W
 Order:
 1. BOT-14 after web WEB-56.
 2. BOT-15 and BOT-16 after web WEB-58. The formatting can be built earlier from the API contract in the web repo's `docs/BOT-API.md` and fixtures.
-
-### BOT-16 Weekly ladder post, `/doomsday` and the recap section
-After web WEB-58, as on `bot-doomsday-weekly` and `bot-recap-doomsday`.
-- **Weekly ladder post:** on the site's `doomsdayLadder` event (Sunday at the reset). It shows:
-  - "Doomsday ladder · week 44"
-  - PvP top 5 and PvE top 5 with movement
-  - the duel champion with rating, the most kills in one zone
-  - the battleground block ("kept apart from the kills above")
-  - the PvP Virgin of the week line, when the site sends one
-  - the link to the all-time ladder on the site
-- **`/doomsday`** (alias `/doom`), ephemeral, from the site's `doomsday` look-up:
-  - your goals today with progress
-  - this week and all time per track, your place on both ladders, the streak and best
-  - "resets in …"
-  
-  With an optional `friend:` (a display name, with autocomplete from the site's friends), it shows that friend's day the same way. Not linked: the usual "Link your Discord first" reply. An older site (404) or no data: "Doomsday isn't available yet."
-- **Recap section:** the recap's optional `doomsday` field renders as the Doomsday section on `bot-recap-doomsday`: Most devoted, Perfect week, and PvE and PvP points side by side.
-- Register the command globally with the others. Tests for each view's formatting and the fallbacks.

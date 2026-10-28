@@ -4,7 +4,7 @@
 import type { Attachment, Autocomplete, ButtonPress, SlashCommand } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site } from "../adapters/site.js";
-import { MY_GOALS } from "../core/doomsday.js";
+import { MY_GOALS, boardUrl } from "../core/doomsday.js";
 import { noRecapMessage, readRecap, recapFiles, recapMessage } from "../core/recap.js";
 import type { SiteSettings } from "../core/settings.js";
 import type { IconBox } from "./classIcons.js";
@@ -45,6 +45,8 @@ export async function answerRecap(deps: CommandDeps, command: SlashCommand, sign
       deps.siteUrl,
       host,
       files.map((f) => f.name),
+      undefined,
+      boardUrl(deps.siteUrl, deps.settings?.()?.doomsdayUrl),
     ),
     files,
   );
@@ -58,7 +60,7 @@ export interface Handlers {
 
 /** Routes slash commands, autocomplete and buttons to their answers. */
 export function commandHandlers(deps: CommandDeps, signal: AbortSignal): Handlers {
-  const lookups = { ...deps, shares: new SharedAnswers() };
+  const lookups = { ...deps, shares: new SharedAnswers(), doomsdayUrl: () => deps.settings?.()?.doomsdayUrl };
   const runs = new RunActions({ ...deps, settings: () => deps.settings?.() });
   const failed = (what: string) => () => deps.log.error(`discord: answering ${what} failed`);
   return {
