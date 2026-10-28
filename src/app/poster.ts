@@ -4,6 +4,7 @@
 // Milestones of uploads within 5 minutes of a post are added to that post by editing it (BOT-09). The weekly recap
 // goes to the recap channel (the posts channel when none is set) with the site's card images attached (BOT-05); a
 // recap missed while the bot was away comes when it is back, since the site keeps it until it is acknowledged.
+// Planned runs go to the runs channel (the posts channel when none is set): app/runPosts.ts (BOT-04).
 import type { Attachment, Discord } from "../adapters/discord.js";
 import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
@@ -20,6 +21,7 @@ import {
 } from "../core/milestones.js";
 import { recapFiles, recapMessage } from "../core/recap.js";
 import { type SiteSettings, readSettings, settingsText } from "../core/settings.js";
+import { RunPosts } from "./runPosts.js";
 
 /**
  * How often the settings are read again, so the admin's changes (a new posts channel, a test post) apply within about
@@ -33,6 +35,10 @@ export interface PosterDeps {
   discord: Discord;
   log: Log;
   now(): number;
+  /** BOT-04: the run posts, shared with the run commands; made here when not given. */
+  runPosts?: RunPosts;
+  /** BOT-04: the latest settings, for the run commands. */
+  shared?: { settings?: SiteSettings };
 }
 
 export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<void> {
@@ -47,6 +53,9 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
   let posted = new Map<number, string>();
   // The recap channel whose posts were read for markers (BOT-05), when it isn't the posts channel.
   let recapScanned: string | undefined;
+  // The runs channel whose posts were read for markers (BOT-04), when it isn't the posts channel.
+  let runsScanned: string | undefined;
+  const runs = deps.runPosts ?? new RunPosts({ siteUrl, discord, log, now: deps.now });
   // The post that still takes milestones (BOT-09); at most MAX_LINES milestones, so bounded.
   // `attached`: its card images (BOT-05). An edit keeps them; milestones added by an edit go without an image.
   let open: { id: string; channel: string; at: number; groups: Group[]; attached: string[] } | undefined;
@@ -66,6 +75,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       if (signal.aborted) return;
       if (answer.ok) {
         settings = readSettings(answer.body);
+        if (deps.shared !== undefined) deps.shared.settings = settings;
         const text = settingsText(siteUrl, settings);
         if (text !== lastSettingsText) log.info(text);
         lastSettingsText = text;
@@ -77,7 +87,9 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       settingsAt = deps.now();
     }
 
-    const wanted = settings.postsChannel ?? undefined;
+    // Without a posts channel the runs channel still takes the runs (BOT-04); the other posts wait for theirs.
+    const postsSet = typeof settings.postsChannel === "string";
+    const wanted = settings.postsChannel ?? settings.runsChannel ?? undefined;
     if (wanted === undefined) {
       channel = undefined;
       await sleep(SETTINGS_EVERY_MS - (deps.now() - settingsAt), signal);
@@ -85,7 +97,10 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
     }
     if (wanted !== channel) {
       try {
-        posted = markedEvents(siteUrl, await discord.recentPosts(wanted));
+        const recent = await discord.recentPosts(wanted);
+        posted = markedEvents(siteUrl, recent);
+        runs.forget();
+        runs.learn(recent);
       } catch (error) {
         await retry(`discord: reading the posts channel failed (${codeOf(error)})`);
         continue;
@@ -94,6 +109,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       cursor = "0";
       open = undefined;
       recapScanned = undefined;
+      runsScanned = undefined;
     }
     const recapChannel = settings.recapChannel ?? channel;
     if (recapChannel !== channel && recapChannel !== recapScanned) {
@@ -105,6 +121,18 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         continue;
       }
       recapScanned = recapChannel;
+    }
+    const runsChannel = settings.runsChannel ?? channel;
+    if (runsChannel !== channel && runsChannel !== runsScanned) {
+      try {
+        const recent = await discord.recentPosts(runsChannel);
+        for (const [id, message] of markedEvents(siteUrl, recent)) posted.set(id, message);
+        runs.learn(recent);
+      } catch (error) {
+        await retry(`discord: reading the runs channel failed (${codeOf(error)})`);
+        continue;
+      }
+      runsScanned = runsChannel;
     }
 
     const answer = await site.events(cursor, signal);
@@ -118,9 +146,22 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
     for (const event of events) {
       const action = decide(event, settings, posted, siteUrl, host);
       if (action.do === "leave") continue;
+      if (!postsSet && (action.do === "post" || action.do === "send")) continue;
+      if (!postsSet && action.do === "recap" && typeof settings.recapChannel !== "string") continue;
       let messageId: string | undefined;
       if (action.do === "ack") {
         messageId = action.messageId;
+      } else if (action.do === "run") {
+        try {
+          messageId = await runs.handle(action.event, event.id, runsChannel, settings, action.posted);
+        } catch (error) {
+          failed = true;
+          await retry(`discord: run event ${event.id} failed (${codeOf(error)})`);
+          break;
+        }
+        // Nothing to acknowledge with (a notice to someone unreachable, no post): left, the site lets it expire.
+        if (messageId === undefined) continue;
+        posted.set(event.id, messageId);
       } else if (action.do === "send") {
         try {
           messageId = await discord.post(channel, action.content);

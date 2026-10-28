@@ -34,6 +34,8 @@ The bot follows the web's "Night over Azeroth" design system: tokens, class colo
 - Milestone card images (Nico, 2026-10-28, BOT-05): level 60, a new character at 60 and a profession at 300 get their own embed with the site's card image. When a later upload is added to the post by editing (BOT-09), the earlier images stay; the added milestones go without one.
 - Planned runs replace the group ask of `bot-posts` (Nico, 2026-10-27): boards `bot-posts-runs`, `bot-commands-runs`, `runs-flow` (from `docs/DESIGN-PROMPT-PLANNED-RUNS.md`). A separate runs channel; one message per run, edited per state; reminders mention only I'm in and Maybe; `/plan` times in the asker's time zone from the site; `/ask` can't whisper in game. One admin: the boards' "Admins: Nico, Mira" (web) is not built.
 
+- Planned runs (Nico, 2026-10-28, BOT-04): asks from the game are posted without answer buttons until the site keeps asks (`/ask` follows with them); I'm in and Pick my character open a picker only for the presser (the character select with fit tags, then the roles of the class); one character answers at once; the run post is found again by its marker. A new start time sends sign-ups a quiet notice, as `/run edit`'s reply on the board says.
+
 ## Deviations
 
 Approved departures from the boards (CLAUDE.md rule 8). Only Nico approves one; add it here in the PR that builds it.
@@ -47,3 +49,6 @@ Approved departures from the boards (CLAUDE.md rule 8). Only Nico approves one; 
 | 2026-10-27 | No pronouns in any text: "Somebody pay a visit." instead of the board's "Somebody visit her." | We never infer pronouns | Nico |
 | 2026-10-28 | Look-up answers (BOT-06): names in bold, not in their class colour, with the class written next to every name (e.g. "**Ves Doombringer** 39 Warlock"); the embed's border takes the class colour where the answer is about one character | Discord can't colour text inside an embed | Nico |
 | 2026-10-28 | `/who` has no "Plan a run with them" button yet | It needs `/plan` (BOT-04), which adds it | Nico |
+| 2026-10-28 | Asks from the game (`bot-posts-runs` 4) have no answer buttons and no "Expired" edit: the post says when it ends with Discord's relative time; `/ask` and the time-passed reply's "Ask now instead" are not built yet | Answering an ask from Discord needs the site to keep asks first (a web story) | Nico |
+| 2026-10-28 | The run post's five slots are inline embed fields, which Discord shows three to a row, not the board's one row of five | Discord embeds have no grid | Nico |
+| 2026-10-28 | A full run names its reserves as next in line, not the board's "Grom Ashfeller can still answer Maybe"; I'm in on a full run stays clickable and makes a reserve | Runs v2 (web WEB-47): I'm in on a full role is a reserve | Nico |

@@ -1,10 +1,13 @@
-// The slash commands' answers (BOT-05 `/recap`, BOT-06 the look-ups in app/lookups.ts). Each answer is only for the
-// asker (the adapter defers it ephemerally). Never fatal: a failed answer is logged and the user can ask again.
+// The slash commands' answers (BOT-05 `/recap`, BOT-06 the look-ups in app/lookups.ts, BOT-04 the runs in
+// app/runActions.ts). Each answer is only for the asker (the adapter defers it ephemerally). Never fatal: a failed
+// answer is logged and the user can ask again.
 import type { Attachment, Autocomplete, ButtonPress, SlashCommand } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site } from "../adapters/site.js";
 import { noRecapMessage, readRecap, recapFiles, recapMessage } from "../core/recap.js";
+import type { SiteSettings } from "../core/settings.js";
 import { LOOKUPS, SharedAnswers, answerAutocomplete, answerLookup, answerShare } from "./lookups.js";
+import { RUN_COMMANDS, RunActions } from "./runActions.js";
 
 export interface CommandDeps {
   siteUrl: string;
@@ -12,6 +15,8 @@ export interface CommandDeps {
   log: Log;
   /** Milliseconds, for the Share buttons' lifetime and the sightings' ages. */
   now(): number;
+  /** BOT-04: the latest settings, as the poster read them. */
+  settings?(): SiteSettings | undefined;
 }
 
 /** `/recap`: the last weekly recap as it was posted, with its card images (without the post's marker). */
@@ -49,18 +54,29 @@ export interface Handlers {
 /** Routes slash commands, autocomplete and buttons to their answers. */
 export function commandHandlers(deps: CommandDeps, signal: AbortSignal): Handlers {
   const lookups = { ...deps, shares: new SharedAnswers() };
+  const runs = new RunActions({ ...deps, settings: () => deps.settings?.() });
   const failed = (what: string) => () => deps.log.error(`discord: answering ${what} failed`);
   return {
     command(command) {
       if (command.name === "recap") answerRecap(deps, command, signal).catch(failed("/recap"));
-      else if ((LOOKUPS as readonly string[]).includes(command.name)) {
+      else if ((RUN_COMMANDS as readonly string[]).includes(command.name)) {
+        runs.command(command, signal).catch(failed(`/${command.name}`));
+      } else if ((LOOKUPS as readonly string[]).includes(command.name)) {
         answerLookup(lookups, command, signal).catch(failed(`/${command.name}`));
       }
     },
     autocomplete(request) {
+      if ((RUN_COMMANDS as readonly string[]).includes(request.command)) {
+        runs.autocomplete(request, signal).catch(failed(`/${request.command} autocomplete`));
+        return;
+      }
       answerAutocomplete(lookups, request, signal).catch(failed(`/${request.command} autocomplete`));
     },
     button(press) {
+      if (RunActions.handles(press.customId)) {
+        runs.press(press, signal).catch(failed("a run button"));
+        return;
+      }
       answerShare(lookups, press).catch(failed("Share"));
     },
   };

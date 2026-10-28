@@ -8,6 +8,7 @@ import type { Site, SiteConfig } from "../adapters/site.js";
 import { COMMANDS } from "../core/commands.js";
 import { type Env, problemText, readConfig } from "../core/config.js";
 import { type ConnectionEvent, HEARTBEAT_MS, isConnected, stateText } from "../core/connection.js";
+import type { SiteSettings } from "../core/settings.js";
 import { commandHandlers } from "./commands.js";
 import { type GuildReporter, guildReporter } from "./guildReporter.js";
 import { runPoster } from "./poster.js";
@@ -48,9 +49,14 @@ export async function start(env: Env, log: Log, deps: Deps, stop: AbortSignal): 
     if (event.kind === "ready" && poster === undefined) {
       void register(discord, log);
       const site = deps.site(config);
-      poster = runPoster({ siteUrl: config.siteUrl, site, discord, log, now: deps.now }, posterStop.signal);
+      // The poster's latest settings, for the run commands (BOT-04).
+      const shared: { settings?: SiteSettings } = {};
+      poster = runPoster({ siteUrl: config.siteUrl, site, discord, log, now: deps.now, shared }, posterStop.signal);
       reporter = guildReporter(site, discord, log);
-      const handlers = commandHandlers({ siteUrl: config.siteUrl, site, log, now: deps.now }, posterStop.signal);
+      const handlers = commandHandlers(
+        { siteUrl: config.siteUrl, site, log, now: deps.now, settings: () => shared.settings },
+        posterStop.signal,
+      );
       discord.onCommand(handlers.command);
       discord.onAutocomplete(handlers.autocomplete);
       discord.onButton(handlers.button);

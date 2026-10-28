@@ -42,13 +42,30 @@ export interface Embed {
   fields?: { name: string; value: string; inline?: boolean }[];
   /** BOT-05: a card image attached to the message (`attachment://<name>`). */
   image?: { url: string };
+  /** BOT-04: the line above the title ("Nico on Ves Doombringer (39 Warlock)") and the small line under the embed. */
+  author?: { name: string };
+  footer?: { text: string };
+}
+
+/** A button (type 2) or, BOT-04, a select menu (type 3) in an action row. */
+export interface Component {
+  type: 2 | 3;
+  style?: number;
+  label?: string;
+  custom_id?: string;
+  url?: string;
+  placeholder?: string;
+  options?: { label: string; value: string; description?: string }[];
 }
 
 export interface MessageContent {
+  /** BOT-04: text above the embeds, where mentions notify (the reminder, a new run). */
+  content?: string;
   embeds: Embed[];
-  allowed_mentions: { parse: never[] };
-  /** BOT-06: buttons under the message (Discord's action rows), e.g. Share. */
-  components?: { type: 1; components: { type: 2; style: number; label: string; custom_id?: string; url?: string }[] }[];
+  /** Nothing is parsed; BOT-04 names the users and the role a message may notify. */
+  allowed_mentions: { parse: never[]; users?: string[]; roles?: string[] };
+  /** BOT-06: buttons under the message (Discord's action rows), e.g. Share; BOT-04 select menus too. */
+  components?: { type: 1; components: Component[] }[];
 }
 
 /** The gold embed border (web token `--gold`). */

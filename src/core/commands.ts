@@ -1,7 +1,9 @@
 // The slash commands the bot registers at start (BOT-02), as Discord's JSON. Registering replaces the whole set, so
-// commands removed here also disappear in Discord. `/recap` (BOT-05); BOT-06 adds the look-up commands.
+// commands removed here also disappear in Discord. `/recap` (BOT-05); BOT-06 adds the look-up commands; BOT-04 the
+// run commands.
 
 /** Discord's option types (application command option type). */
+export const SUB_COMMAND = 1;
 export const STRING = 3;
 export const BOOLEAN = 5;
 
@@ -12,6 +14,9 @@ export interface CommandOption {
   required?: boolean;
   autocomplete?: boolean;
   choices?: { name: string; value: string }[];
+  /** A sub-command's own options (BOT-04 `/run edit`). */
+  options?: CommandOption[];
+  max_length?: number;
 }
 
 export interface CommandDefinition {
@@ -73,5 +78,46 @@ export const COMMANDS: readonly CommandDefinition[] = [
     options: [{ type: STRING, name: "friend", description: "A friend", required: true, autocomplete: true }],
   },
   { name: "me", description: "Your characters and your week" },
+  // The runs (BOT-04, board `bot-commands-runs`): times are read in the asker's time zone from the site.
+  {
+    name: "plan",
+    description: "Plan a run; it is posted in the runs channel",
+    options: [
+      { type: STRING, name: "dungeon", description: "The dungeon", required: true, autocomplete: true },
+      {
+        type: STRING,
+        name: "day",
+        description: "Today, tomorrow or a day this week",
+        required: true,
+        autocomplete: true,
+      },
+      { type: STRING, name: "time", description: "24-hour, like 20:30, in your own time zone", required: true },
+      { type: STRING, name: "note", description: "A note for the group", max_length: 200 },
+    ],
+  },
+  { name: "runs", description: "Upcoming runs this week with your answers, only for you" },
+  {
+    name: "run",
+    description: "Change or cancel your run",
+    options: [
+      {
+        type: SUB_COMMAND,
+        name: "edit",
+        description: "Change the day, time or note of your run",
+        options: [
+          { type: STRING, name: "run", description: "Your run", required: true, autocomplete: true },
+          { type: STRING, name: "day", description: "A new day", autocomplete: true },
+          { type: STRING, name: "time", description: "A new time, 24-hour, like 21:00" },
+          { type: STRING, name: "note", description: "A new note", max_length: 200 },
+        ],
+      },
+      {
+        type: SUB_COMMAND,
+        name: "cancel",
+        description: "Cancel your run",
+        options: [{ type: STRING, name: "run", description: "Your run", required: true, autocomplete: true }],
+      },
+    ],
+  },
   { name: "recap", description: "The last weekly recap, again, only for you" },
 ];

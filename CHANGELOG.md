@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Planned runs: a run planned on the site, with `/plan` or in the game gets one post in the runs channel that updates itself as people answer, until it is done, didn't happen or was cancelled. I'm in, Maybe, Can't and Pick my character answer from the post (pick a character and its role, only you see it). A reminder and Starting now mention only those in and maybe; pings and asks from the game are posted too. Moves, a new time and a cancelled run reach sign-ups as a quiet direct message. `/plan` (in your own time zone), `/runs`, `/run edit` and `/run cancel`.
 - Look-up commands: `/whereis` (a friend's characters or one character, where and how long ago, with the map card), `/who` (by level, role, class or seen today), `/whocancraft` (who has a profession, the best starred), `/character` (the character card), `/alts` (a friend's characters) and `/me` (your characters and your week). Names fill in as you type. Answers are only for you; Share posts a copy in the channel.
 - The weekly recap: every week at the recap time set on the site (Sunday 13:00 by default) the bot posts the site's recap of the week in the recap channel (the posts channel when none is set), with its header image and the Zone of the week map. A recap missed while the bot was away is posted once it is back, never twice.
 - `/recap` shows the last weekly recap again, only to you.

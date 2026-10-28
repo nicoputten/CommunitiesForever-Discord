@@ -107,6 +107,18 @@ export class FakeSite implements Site {
     return this.lookupAnswers.get(what) ?? { ok: false, status: 404 };
   }
 
+  /**
+   * Run actions (BOT-04): answers by `<METHOD> <path without query>`, e.g. `POST runs/7/answers`; `runCalls` records
+   * each call.
+   */
+  runAnswers = new Map<string, SiteAnswer>();
+  runCalls: { method: string; path: string; body: unknown }[] = [];
+
+  async runs(method: string, path: string, body: unknown): Promise<SiteAnswer> {
+    this.runCalls.push({ method, path, body });
+    return this.runAnswers.get(`${method} ${path.split("?")[0]}`) ?? { ok: false, status: 404, error: "unknown_run" };
+  }
+
   async recapLatest(): Promise<SiteAnswer> {
     return this.recap === undefined ? { ok: false, status: 404 } : { ok: true, body: this.recap };
   }
@@ -190,6 +202,16 @@ export class FakeDiscord implements Discord {
   onCommand = (listener: (command: SlashCommand) => void) => {
     this.commandListeners.push(listener);
     return () => undefined;
+  };
+  dms: { user: string; content: MessageContent }[] = [];
+  dmFailures = 0;
+  dm = async (user: string, content: MessageContent) => {
+    if (this.dmFailures > 0) {
+      this.dmFailures--;
+      throw new PostError(50007);
+    }
+    this.dms.push({ user, content });
+    return String(this.next++);
   };
   recentPosts = async (channel: string) => this.messages.filter((m) => m.channel === channel).slice(-50);
   destroy = async () => {
