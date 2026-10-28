@@ -1,14 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { decide, readEvents, readMilestones } from "../../src/core/events.js";
-import {
-  EPIC_PURPLE,
-  type Milestone,
-  groupedMessage,
-  joinsPost,
-  milestoneFiles,
-  milestoneMessage,
-} from "../../src/core/milestones.js";
+import { EPIC_PURPLE, type Milestone, groupedMessage, joinsPost, milestoneFiles } from "../../src/core/milestones.js";
 import { GOLD, escapeMarkdown, markedEvents } from "../../src/core/message.js";
+
+/** One upload's feats as one message (the poster's first post of an upload). */
+const milestoneMessage = (eventId: number, milestones: readonly Milestone[], siteUrl: string, siteHost: string) =>
+  groupedMessage([{ eventId, milestones }], siteUrl, siteHost);
 
 // Made-up names (CLAUDE.md rule 1).
 const SITE = "https://example.com";

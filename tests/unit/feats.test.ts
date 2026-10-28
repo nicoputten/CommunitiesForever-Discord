@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { decide, readMilestones } from "../../src/core/events.js";
 import { featLine, featSentence, ordinal, thousands } from "../../src/core/feats.js";
-import { type Milestone, milestoneMessage } from "../../src/core/milestones.js";
+import { type Milestone, groupedMessage } from "../../src/core/milestones.js";
+
+/** One upload's feats as one message (the poster's first post of an upload). */
+const milestoneMessage = (eventId: number, milestones: readonly Milestone[], siteUrl: string, siteHost: string) =>
+  groupedMessage([{ eventId, milestones }], siteUrl, siteHost);
 
 // Made-up names (CLAUDE.md rule 1).
 const SITE = "https://example.com";

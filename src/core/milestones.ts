@@ -106,16 +106,6 @@ export interface Group {
   card?: string;
 }
 
-/** One upload's feats as one message, or undefined when none can be shown. */
-export function milestoneMessage(
-  eventId: number,
-  milestones: readonly Milestone[],
-  siteUrl: string,
-  siteHost: string,
-): MessageContent | undefined {
-  return groupedMessage([{ eventId, milestones }], siteUrl, siteHost);
-}
-
 /** The card image a post of these groups shows (fetched by the poster): the first upload's, one per post. */
 export function milestoneFiles(groups: readonly Group[]): { name: string; path: string }[] {
   const card = groups[0] !== undefined ? postCard(groups[0]) : undefined;
