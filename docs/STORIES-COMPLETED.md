@@ -132,3 +132,24 @@ After web WEB-58 (events `doomsdayBoard` and `doomsdayBoardUpdate`), as on `bot-
 - Decided with Nico (2026-10-28): the boxes are the bot's own application emoji, uploaded at start with the class icons (✅ and ▢ until then); the site is asked for `yesterdayCrown` (shown when sent), a friend with nothing done gets "—" instead of the board's joke, and `withoutData` is "No Doomsday data yet: Sanne."; "My goals" answers with the `/doomsday` reply, built here, and BOT-16 adds the command.
 - Done (PR #36): `src/core/doomsday.ts` (`readBoard`, `boardMessage`: the goals per track, a row per friend with a box per goal, the strike-through, the crown, "n / 5" and the points per track, the notes, "resets <t:…:R>", the buttons; the final with its summary and no buttons; `readLookup` and `doomsdayReply` for "My goals"), `src/app/doomsdayPosts.ts` (post, edit, the 30 s throttle with only the newest waiting update, posting again when the message is gone; "My goals"), the Doomsday settings and channel in the poster, and the box emoji in the icon sync. The board's marker is on its title link (`/doomsday#e<board event>`), so a restart finds it.
 - Manual (Nico, in Discord, once the site has WEB-58): pick a Doomsday channel on the site; at the reset the board appears with open boxes; after an upload it is edited (at most every 30 s), with ~~struck~~ names and the crown; My goals answers only you; delete the post and upload again: a new post comes; the next reset edits it to "final".
+
+### BOT-16 Weekly ladder post, `/doomsday` and the recap section
+After web WEB-58, as on `bot-doomsday-weekly` and `bot-recap-doomsday`.
+- **Weekly ladder post:** on the site's `doomsdayLadder` event (Sunday at the reset). It shows:
+  - "Doomsday ladder · week 44"
+  - PvP top 5 and PvE top 5 with movement
+  - the duel champion with rating, the most kills in one zone
+  - the battleground block ("kept apart from the kills above")
+  - the PvP Virgin of the week line, when the site sends one
+  - the link to the all-time ladder on the site
+- **`/doomsday`** (alias `/doom`), ephemeral, from the site's `doomsday` look-up:
+  - your goals today with progress
+  - this week and all time per track, your place on both ladders, the streak and best
+  - "resets in …"
+  
+  With an optional `friend:` (a display name, with autocomplete from the site's friends), it shows that friend's day the same way. Not linked: the usual "Link your Discord first" reply. An older site (404) or no data: "Doomsday isn't available yet."
+- **Recap section:** the recap's optional `doomsday` field renders as the Doomsday section on `bot-recap-doomsday`: Most devoted, Perfect week, and PvE and PvP points side by side.
+- Register the command globally with the others. Tests for each view's formatting and the fallbacks.
+- Decided with Nico (2026-10-28): the title takes the site's `label` ("week 44", asked of the site), else "Doomsday ladder" with "The week of <date>" in the text; the intro and the PvP Virgin line are fixed texts without facts ("Week 44 is done. Proud of the grind.", "Still pure. The Night Elves of Ashenvale send their thanks."); the recap section's crowns come once the site sends `crowns`, and "Full ladder" links to the site's Doomsday page, not `/doomsday`.
+- Done (PR #37): `src/core/ladder.ts` (`readLadder`, `ladderMessage`, `readRecapDoomsday`, `recapDoomsdayField`), the `doomsdayLadder` event in the poster (the Doomsday channel, marked like any post), `/doomsday` and `/doom` (one command under two names, Discord has no aliases) in `src/app/lookups.ts` with BOT-15's `doomsdayReply`, Share and the friend autocomplete, and the section in `recapMessage` before the challenge.
+- Manual (Nico, in Discord, once the site has WEB-58): `/doomsday` and `/doom` answer only you, `/doomsday friend:` fills in names and shows that friend's day, Share posts it; on Sunday at the reset the ladder post comes in the Doomsday channel; the next recap has the Doomsday section.

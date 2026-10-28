@@ -78,6 +78,12 @@ export const COMMANDS: readonly CommandDefinition[] = [
     options: [{ type: STRING, name: "friend", description: "A friend", required: true, autocomplete: true }],
   },
   { name: "me", description: "Your characters and your week" },
+  // BOT-16, board `bot-doomsday-weekly`: Discord has no aliases, so `/doom` is the same command under a short name.
+  ...(["doomsday", "doom"] as const).map((name) => ({
+    name,
+    description: "Your Doomsday today: goals, points, ladders and streak (or a friend's)",
+    options: [{ type: STRING, name: "friend", description: "A friend's day instead of yours", autocomplete: true }],
+  })),
   // The runs (BOT-04, board `bot-commands-runs`): times are read in the asker's time zone from the site.
   {
     name: "plan",

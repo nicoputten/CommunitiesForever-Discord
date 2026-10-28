@@ -1,7 +1,7 @@
 // The look-up commands (BOT-06, board `bot-commands-runs`): `/whereis`, `/who`, `/whocancraft`, `/character`,
 // `/alts`, `/me`, their autocomplete, and Share. Answers are only for the asker; Share posts a copy in the channel with
 // "Shared by <display name>". They answer anyone in the server (only friends are in it, Nico 2026-10-28); only `/me`
-// needs the asker's Discord linked on the site. The site has the data (CLAUDE.md rule 2); src/core formats it.
+// needs the asker's Discord linked on the site, and `/doomsday` (alias `/doom`, BOT-16) without a friend. The site has the data (CLAUDE.md rule 2); src/core formats it.
 import type { Attachment, Autocomplete, ButtonPress, SlashCommand } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site, SiteAnswer } from "../adapters/site.js";
@@ -18,10 +18,11 @@ import {
   whoMessage,
 } from "../core/lookups.js";
 import { NO_ICONS } from "../core/classIcons.js";
+import { boardUrl, boxes, doomsdayReply, notAvailableMessage, readLookup } from "../core/doomsday.js";
 import type { MessageContent } from "../core/milestones.js";
 import type { IconBox } from "./classIcons.js";
 
-export const LOOKUPS = ["whereis", "who", "whocancraft", "character", "alts", "me"] as const;
+export const LOOKUPS = ["whereis", "who", "whocancraft", "character", "alts", "me", "doomsday", "doom"] as const;
 
 /** How long a Share button works, and how many answers are kept for it: bounded (CLAUDE.md rule 11 spirit). */
 export const SHARE_FOR_MS = 15 * 60_000;
@@ -66,6 +67,8 @@ export interface LookupDeps {
   shares: SharedAnswers;
   /** BOT-11: the class icons, once the start-up sync has them. */
   icons?: IconBox;
+  /** BOT-16: the site's Doomsday page (settings `doomsday.url`), when it sent one. */
+  doomsdayUrl?(): string | undefined;
 }
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
@@ -196,6 +199,29 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         icons,
       );
       siteLink = `${deps.siteUrl}/roster`;
+      break;
+    }
+    case "doomsday":
+    case "doom": {
+      const friend = param("friend");
+      answer = await ask("doomsday", { friend });
+      if (!answer.ok) {
+        await command.reply(
+          answer.status === 403
+            ? notLinkedMessage(deps.siteUrl, host, undefined)
+            : friend !== undefined && answer.error === "not_found"
+              ? nothingMessage("Not found", "No friend by that name.")
+              : notAvailableMessage(answer.status),
+        );
+        return;
+      }
+      const look = readLookup(answer.body);
+      if (look === undefined) {
+        await command.reply(notAvailableMessage(404));
+        return;
+      }
+      siteLink = boardUrl(deps.siteUrl, deps.doomsdayUrl?.());
+      content = doomsdayReply(look, friend === undefined, siteLink, boxes(icons));
       break;
     }
     default:

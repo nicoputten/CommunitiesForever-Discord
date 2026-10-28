@@ -20,6 +20,8 @@ import {
   markedEvents,
   milestoneFiles,
 } from "../core/milestones.js";
+import { boardUrl } from "../core/doomsday.js";
+import { ladderMessage } from "../core/ladder.js";
 import { recapFiles, recapMessage } from "../core/recap.js";
 import { type SiteSettings, readSettings, settingsText } from "../core/settings.js";
 import type { IconBox } from "./classIcons.js";
@@ -171,7 +173,12 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       if (action.do === "leave") continue;
       if (!postsSet && (action.do === "post" || action.do === "send")) continue;
       if (!postsSet && action.do === "recap" && typeof settings.recapChannel !== "string") continue;
-      if (!postsSet && action.do === "board" && typeof settings.doomsdayChannel !== "string") continue;
+      if (
+        !postsSet &&
+        (action.do === "board" || action.do === "ladder") &&
+        typeof settings.doomsdayChannel !== "string"
+      )
+        continue;
       let messageId: string | undefined;
       if (action.do === "ack") {
         messageId = action.messageId;
@@ -197,6 +204,17 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         // Waiting for the edit throttle: acknowledged once shown.
         if (messageId === undefined) continue;
         posted.set(event.id, messageId);
+      } else if (action.do === "ladder") {
+        const content = ladderMessage(action.ladder, event.id, siteUrl, host, boardUrl(siteUrl, settings.doomsdayUrl));
+        try {
+          messageId = await discord.post(doomsdayChannel, content);
+        } catch (error) {
+          failed = true;
+          await retry(`discord: posting the Doomsday ladder (event ${event.id}) failed (${codeOf(error)})`);
+          break;
+        }
+        posted.set(event.id, messageId);
+        log.info(`posted event ${event.id} (Doomsday ladder)`);
       } else if (action.do === "send") {
         try {
           messageId = await discord.post(channel, action.content);
@@ -222,6 +240,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
           host,
           files.map((f) => f.name),
           event.id,
+          boardUrl(siteUrl, settings.doomsdayUrl),
         );
         try {
           messageId = await discord.post(recapChannel, content, files);
