@@ -1,4 +1,5 @@
-# Weekly dependency updates (BOT-01): minor and patch versions grouped into one PR per ecosystem; majors one by one.
+# Weekly dependency updates (BOT-01): minor and patch versions grouped into one PR per ecosystem; majors one by one, except
+# @types/node and TypeScript (below).
 version: 2
 updates:
   - package-ecosystem: npm
@@ -6,6 +7,13 @@ updates:
     target-branch: develop
     schedule:
       interval: weekly
+    ignore:
+      # The types follow the Node the bot runs on (.nvmrc, Dockerfile: 24); their major moves with a Node upgrade.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # typescript-eslint supports TypeScript below 6.1 (BOT-18, 2026-10-29); take 7 once it does.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       minor-and-patch:
         update-types: [minor, patch]
