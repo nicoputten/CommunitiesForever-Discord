@@ -9,3 +9,9 @@ Decided with Nico (2026-10-28): Discord can't colour text in an embed, so every 
 - The bot owns them as **application emoji** (uploaded by the bot itself at start when missing or changed, so no server emoji slots and no manual upload), named `cf_warrior` … `cf_druid`.
 - Used wherever a character name shows: look-ups (BOT-06), milestones (BOT-03), runs (BOT-04), recap (BOT-05). Without the emoji (upload failed) the name shows without icon, never a broken one.
 - Tests: the class to emoji mapping for all 9, the fallback without emoji, the start-up sync (missing, changed, unchanged).
+
+### BOT-12 /ask and answering asks
+Needs the web's WEB-51 (asks on the site). Split from BOT-04 (Nico, 2026-10-28). Board `bot-posts-runs` (ask now) and `bot-commands-runs` (`/ask`).
+- `/ask`: a run that starts now (dungeon with autocomplete, note); the asker's character and role as for `/plan`; says it can't whisper anyone in game. Posted in the runs channel like an ask from the game.
+- The ask post (from the game or `/ask`) gets the answer buttons and Pick my character (character and role, BOT-04's picker), edited as answers come in, buttons removed and "Expired" after 10 minutes.
+- Tests: `/ask`, answers before and after expiry, the expiry edit after a restart.
