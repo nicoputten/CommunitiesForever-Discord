@@ -87,7 +87,9 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       settingsAt = deps.now();
     }
 
-    const wanted = settings.postsChannel ?? undefined;
+    // Without a posts channel the runs channel still takes the runs (BOT-04); the other posts wait for theirs.
+    const postsSet = typeof settings.postsChannel === "string";
+    const wanted = settings.postsChannel ?? settings.runsChannel ?? undefined;
     if (wanted === undefined) {
       channel = undefined;
       await sleep(SETTINGS_EVERY_MS - (deps.now() - settingsAt), signal);
@@ -144,6 +146,8 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
     for (const event of events) {
       const action = decide(event, settings, posted, siteUrl, host);
       if (action.do === "leave") continue;
+      if (!postsSet && (action.do === "post" || action.do === "send")) continue;
+      if (!postsSet && action.do === "recap" && typeof settings.recapChannel !== "string") continue;
       let messageId: string | undefined;
       if (action.do === "ack") {
         messageId = action.messageId;

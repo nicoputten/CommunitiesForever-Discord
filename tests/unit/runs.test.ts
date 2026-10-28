@@ -7,7 +7,7 @@ import type { MessageContent } from "../../src/core/milestones.js";
 import { dayChoices, dungeonChoices, readPlanChoices, runChoices } from "../../src/core/runReplies.js";
 import { type Run, markedRuns, postState, readRun, runMessage, slots } from "../../src/core/runs.js";
 import { readSettings } from "../../src/core/settings.js";
-import { CHANNEL, FakeDiscord, FakeSite, logger } from "./fakes.js";
+import { CHANNEL, FakeDiscord, FakeSite, logger, milestonesEvent } from "./fakes.js";
 
 // BOT-04: the run post in every state, the reminder and Starting now, the picker, `/plan`, `/run` and the notices.
 // Made-up names and ids only (CLAUDE.md rule 1), the run from the web repo's docs/BOT-API.md.
@@ -361,6 +361,18 @@ describe("run events in the runs channel", () => {
     expect(ask.content.embeds[0]?.description).toContain(`ends <t:${NOW + 600}:R>`);
     expect(ask.content.components).toBeUndefined();
     expect(discord.messages[0]?.content.embeds[0]?.title).toBe("Scarlet Monastery: Armory · Cancelled");
+    stop.abort();
+    await running;
+  });
+
+  it("posts runs in the runs channel when no posts channel is set; milestones wait for theirs", async () => {
+    site.settingsBody = { posts: { milestones: true, runs: true }, channels: { posts: null, runs: RUNS_CHANNEL } };
+    site.add(milestonesEvent(1));
+    site.add({ id: 2, type: "runCreated", data: { run: siteRun() } });
+    const running = start();
+    await vi.waitFor(() => expect(site.acked.size).toBe(1));
+    expect(site.acked.has(2)).toBe(true);
+    expect(discord.messages.map((m) => m.channel)).toEqual([RUNS_CHANNEL]);
     stop.abort();
     await running;
   });
