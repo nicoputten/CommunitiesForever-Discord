@@ -1,6 +1,6 @@
 // Wiring: reads the configuration, connects to Discord, registers the slash commands and keeps the heartbeat while
-// connected (BOT-02), and runs the poster (BOT-03) and the channel and role reports (BOT-08) once Discord is ready. Runs until `stop` aborts (exit 0) or
-// Discord refuses the bot (1).
+// connected (BOT-02), and runs the poster (BOT-03), the channel and role reports (BOT-08) and the answers to the
+// slash commands (BOT-05) once Discord is ready. Runs until `stop` aborts (exit 0) or Discord refuses the bot (1).
 import type { Discord, DiscordConfig } from "../adapters/discord.js";
 import type { Heartbeat } from "../adapters/heartbeat.js";
 import type { Log } from "../adapters/log.js";
@@ -8,6 +8,10 @@ import type { Site, SiteConfig } from "../adapters/site.js";
 import { COMMANDS } from "../core/commands.js";
 import { type Env, problemText, readConfig } from "../core/config.js";
 import { type ConnectionEvent, HEARTBEAT_MS, isConnected, stateText } from "../core/connection.js";
+import { NO_ICONS } from "../core/classIcons.js";
+import type { SiteSettings } from "../core/settings.js";
+import { type IconBox, type ReadIcon, syncClassIcons } from "./classIcons.js";
+import { commandHandlers } from "./commands.js";
 import { type GuildReporter, guildReporter } from "./guildReporter.js";
 import { runPoster } from "./poster.js";
 
@@ -16,6 +20,8 @@ export interface Deps {
   site(config: SiteConfig): Site;
   heartbeat: Heartbeat;
   now(): number;
+  /** BOT-11: reads a class icon file (tests give their own). */
+  readIcon?: ReadIcon;
 }
 
 /** Runs the bot. Resolves the exit code: 0 without a token or when stopped, 1 for a broken configuration or login. */
@@ -47,8 +53,23 @@ export async function start(env: Env, log: Log, deps: Deps, stop: AbortSignal): 
     if (event.kind === "ready" && poster === undefined) {
       void register(discord, log);
       const site = deps.site(config);
-      poster = runPoster({ siteUrl: config.siteUrl, site, discord, log, now: deps.now }, posterStop.signal);
+      // The poster's latest settings, for the run commands (BOT-04).
+      const shared: { settings?: SiteSettings } = {};
+      // The class icons (BOT-11): names show without them until the sync is done, or when it fails.
+      const icons: IconBox = { current: NO_ICONS };
+      void syncClassIcons(discord, log, deps.readIcon).then((found) => (icons.current = found));
+      poster = runPoster(
+        { siteUrl: config.siteUrl, site, discord, log, now: deps.now, shared, icons },
+        posterStop.signal,
+      );
       reporter = guildReporter(site, discord, log);
+      const handlers = commandHandlers(
+        { siteUrl: config.siteUrl, site, log, now: deps.now, settings: () => shared.settings, icons },
+        posterStop.signal,
+      );
+      discord.onCommand(handlers.command);
+      discord.onAutocomplete(handlers.autocomplete);
+      discord.onButton(handlers.button);
     }
     // After a reconnect the server may have changed while the bot was away.
     if (event.kind === "ready" || event.kind === "resumed") reporter?.changed();
@@ -82,7 +103,7 @@ export async function start(env: Env, log: Log, deps: Deps, stop: AbortSignal): 
 async function register(discord: Discord, log: Log): Promise<void> {
   try {
     const count = await discord.registerCommands(COMMANDS);
-    log.info(`discord: registered ${count} slash commands`);
+    log.info(`discord: registered ${count} slash command${count === 1 ? "" : "s"}`);
   } catch {
     log.error("discord: registering the slash commands failed; they are registered again at the next start");
   }

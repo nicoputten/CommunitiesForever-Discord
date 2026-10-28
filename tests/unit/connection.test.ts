@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COMMANDS } from "../../src/core/commands.js";
+import { COMMANDS, type CommandOption } from "../../src/core/commands.js";
 import { backoffSeconds, isConnected, isHealthy, stateText } from "../../src/core/connection.js";
 import { readSettings, settingsText } from "../../src/core/settings.js";
 
@@ -77,7 +77,31 @@ describe("readSettings", () => {
 });
 
 describe("COMMANDS", () => {
-  it("is empty until BOT-06", () => {
-    expect(COMMANDS).toEqual([]);
+  it("has the look-ups (BOT-06), the runs (BOT-04) and /recap (BOT-05), within Discord's limits", () => {
+    expect(COMMANDS.map((c) => c.name)).toEqual([
+      "whereis",
+      "who",
+      "whocancraft",
+      "character",
+      "alts",
+      "me",
+      "plan",
+      "ask",
+      "runs",
+      "run",
+      "recap",
+    ]);
+    const options = (list: readonly CommandOption[]): CommandOption[] =>
+      list.flatMap((o) => [o, ...options(o.options ?? [])]);
+    for (const c of COMMANDS) {
+      expect(c.name).toMatch(/^[a-z]{1,32}$/);
+      expect(c.description.length).toBeLessThanOrEqual(100);
+      for (const o of options(c.options ?? [])) {
+        expect(o.name).toMatch(/^[a-z]{1,32}$/);
+        expect(o.description.length).toBeLessThanOrEqual(100);
+        expect(o.choices === undefined || o.autocomplete !== true).toBe(true);
+      }
+    }
+    expect(COMMANDS.find((c) => c.name === "run")?.options?.map((o) => o.name)).toEqual(["edit", "cancel"]);
   });
 });

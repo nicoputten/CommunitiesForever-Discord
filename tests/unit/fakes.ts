@@ -1,6 +1,14 @@
 // Fakes for the adapters: a site that serves events like BOT-API.md, and a Discord that keeps the channel's posts.
-import { type Discord, PostError } from "../../src/adapters/discord.js";
+import {
+  type Attachment,
+  type Autocomplete,
+  type ButtonPress,
+  type Discord,
+  PostError,
+  type SlashCommand,
+} from "../../src/adapters/discord.js";
 import type { Site, SiteAnswer } from "../../src/adapters/site.js";
+import type { Emoji } from "../../src/core/classIcons.js";
 import type { CommandDefinition } from "../../src/core/commands.js";
 import type { ConnectionEvent, FailReason } from "../../src/core/connection.js";
 import type { GuildSnapshot } from "../../src/core/guild.js";
@@ -83,6 +91,39 @@ export class FakeSite implements Site {
     return { ok: true, body: { id: eventId, messageId } };
   }
 
+  /** Card images by path (BOT-05); a missing one is "unavailable". */
+  images = new Map<string, Uint8Array>();
+  recap: unknown;
+
+  async image(path: string): Promise<Uint8Array | undefined> {
+    return this.images.get(path);
+  }
+
+  /** Look-up answers by `<what>` (BOT-06); `lookups` records each request's parameters. */
+  lookupAnswers = new Map<string, SiteAnswer>();
+  lookups: { what: string; params: Record<string, string> }[] = [];
+
+  async lookup(what: string, params: Readonly<Record<string, string>>): Promise<SiteAnswer> {
+    this.lookups.push({ what, params: { ...params } });
+    return this.lookupAnswers.get(what) ?? { ok: false, status: 404 };
+  }
+
+  /**
+   * Run actions (BOT-04): answers by `<METHOD> <path without query>`, e.g. `POST runs/7/answers`; `runCalls` records
+   * each call.
+   */
+  runAnswers = new Map<string, SiteAnswer>();
+  runCalls: { method: string; path: string; body: unknown }[] = [];
+
+  async runs(method: string, path: string, body: unknown): Promise<SiteAnswer> {
+    this.runCalls.push({ method, path, body });
+    return this.runAnswers.get(`${method} ${path.split("?")[0]}`) ?? { ok: false, status: 404, error: "unknown_run" };
+  }
+
+  async recapLatest(): Promise<SiteAnswer> {
+    return this.recap === undefined ? { ok: false, status: 404 } : { ok: true, body: this.recap };
+  }
+
   async guild(report: unknown): Promise<SiteAnswer> {
     if (this.guildStatus !== undefined) return { ok: false, status: this.guildStatus };
     this.guildReports.push(report);
@@ -102,7 +143,7 @@ export class FakeDiscord implements Discord {
   loginResult: Promise<FailReason | undefined> = new Promise(() => undefined);
   registerError = false;
   postFailures = 0;
-  messages: (PostedMessage & { channel: string; content: MessageContent })[] = [];
+  messages: (PostedMessage & { channel: string; content: MessageContent; files: string[] })[] = [];
   private next = 1100000000000000001n;
 
   login = () => this.loginResult;
@@ -111,7 +152,7 @@ export class FakeDiscord implements Discord {
     this.registered.push(commands);
     return commands.length;
   };
-  post = async (channel: string, content: MessageContent) => {
+  post = async (channel: string, content: MessageContent, files: readonly Attachment[] = []) => {
     if (this.postFailures > 0) {
       this.postFailures--;
       throw new PostError(50013);
@@ -121,6 +162,7 @@ export class FakeDiscord implements Discord {
       id,
       channel,
       content,
+      files: files.map((f) => f.name),
       texts: content.embeds.flatMap((e) => [e.url ?? "", e.description ?? ""]),
     });
     return id;
@@ -146,6 +188,53 @@ export class FakeDiscord implements Discord {
   onGuildChange = (listener: () => void) => {
     this.guildListeners.add(listener);
     return () => this.guildListeners.delete(listener);
+  };
+  autocompleteListeners: ((request: Autocomplete) => void)[] = [];
+  buttonListeners: ((press: ButtonPress) => void)[] = [];
+  onAutocomplete = (listener: (request: Autocomplete) => void) => {
+    this.autocompleteListeners.push(listener);
+    return () => undefined;
+  };
+  onButton = (listener: (press: ButtonPress) => void) => {
+    this.buttonListeners.push(listener);
+    return () => undefined;
+  };
+  commandListeners: ((command: SlashCommand) => void)[] = [];
+  onCommand = (listener: (command: SlashCommand) => void) => {
+    this.commandListeners.push(listener);
+    return () => undefined;
+  };
+  /** BOT-11: the bot's application emoji. */
+  emojiList: Emoji[] = [];
+  emojiFailures = 0;
+  emojiReadFails = false;
+  deletedEmoji: string[] = [];
+  emojis = async () => {
+    if (this.emojiReadFails) throw new PostError(50001);
+    return [...this.emojiList];
+  };
+  createEmoji = async (name: string) => {
+    if (this.emojiFailures > 0) {
+      this.emojiFailures--;
+      throw new PostError(50035);
+    }
+    const emoji = { id: String(this.next++), name };
+    this.emojiList.push(emoji);
+    return emoji;
+  };
+  deleteEmoji = async (id: string) => {
+    this.deletedEmoji.push(id);
+    this.emojiList = this.emojiList.filter((e) => e.id !== id);
+  };
+  dms: { user: string; content: MessageContent }[] = [];
+  dmFailures = 0;
+  dm = async (user: string, content: MessageContent) => {
+    if (this.dmFailures > 0) {
+      this.dmFailures--;
+      throw new PostError(50007);
+    }
+    this.dms.push({ user, content });
+    return String(this.next++);
   };
   recentPosts = async (channel: string) => this.messages.filter((m) => m.channel === channel).slice(-50);
   destroy = async () => {
