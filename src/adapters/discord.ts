@@ -13,6 +13,7 @@ import {
   REST,
   Routes,
 } from "discord.js";
+import type { Emoji } from "../core/classIcons.js";
 import type { CommandDefinition } from "../core/commands.js";
 import type { ConnectionEvent, FailReason } from "../core/connection.js";
 import type { GuildSnapshot } from "../core/guild.js";
@@ -29,6 +30,12 @@ export interface Discord {
   edit(channelId: string, messageId: string, content: MessageContent): Promise<void>;
   /** A direct message to a user (BOT-04's quiet notices); resolves its id. Throws a PostError (50007: DMs closed). */
   dm(userId: string, content: MessageContent): Promise<string>;
+  /** BOT-11: the bot's own application emoji (the class icons). Throws a PostError. */
+  emojis(): Promise<Emoji[]>;
+  /** BOT-11: uploads a PNG as an application emoji; resolves it. Throws a PostError. */
+  createEmoji(name: string, png: Uint8Array): Promise<Emoji>;
+  /** BOT-11: deletes an application emoji. Throws a PostError. */
+  deleteEmoji(id: string): Promise<void>;
   /** The bot's own messages among the channel's last 50. Throws a PostError. */
   recentPosts(channelId: string): Promise<PostedMessage[]>;
   /** The (first) server's channels and roles as Discord's cache knows them; undefined when not in a server. */
@@ -295,6 +302,32 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
         const channel = (await rest.post(Routes.userChannels(), { body: { recipient_id: userId } })) as { id: string };
         const message = (await rest.post(Routes.channelMessages(channel.id), { body: content })) as ApiMessage;
         return message.id;
+      } catch (error) {
+        throw refused(error);
+      }
+    },
+    async emojis() {
+      try {
+        const list = (await rest.get(Routes.applicationEmojis(config.discordAppId))) as { items?: Emoji[] };
+        return (list.items ?? []).map((e) => ({ id: e.id, name: e.name }));
+      } catch (error) {
+        throw refused(error);
+      }
+    },
+    async createEmoji(name, png) {
+      try {
+        const image = `data:image/png;base64,${Buffer.from(png).toString("base64")}`;
+        const emoji = (await rest.post(Routes.applicationEmojis(config.discordAppId), {
+          body: { name, image },
+        })) as Emoji;
+        return { id: emoji.id, name: emoji.name };
+      } catch (error) {
+        throw refused(error);
+      }
+    },
+    async deleteEmoji(id) {
+      try {
+        await rest.delete(Routes.applicationEmoji(config.discordAppId, id));
       } catch (error) {
         throw refused(error);
       }

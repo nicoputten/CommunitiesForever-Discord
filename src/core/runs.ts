@@ -2,6 +2,7 @@
 // repo docs/BOT-API.md "Run events"), the run post in every state, the reminder, Starting now, the ping, the ask from
 // the game and the quiet notices. Pure: the time comes in as an argument; the site decides every game fact (who fits,
 // who could fill a slot), the bot only formats it (CLAUDE.md rule 2).
+import { type ClassIcons, NO_ICONS, icon } from "./classIcons.js";
 import { type Component, type Embed, type MessageContent, GOLD, escapeMarkdown, marker } from "./milestones.js";
 import { isSnowflake } from "./settings.js";
 
@@ -39,6 +40,7 @@ export interface Candidate {
   name?: string;
   character?: string;
   level?: number;
+  classFile?: string;
   fit?: Fit;
 }
 
@@ -145,6 +147,7 @@ function readCandidate(value: unknown): Candidate[] {
       ...optional("name", text(value.name)),
       ...optional("character", text(value.character)),
       ...optional("level", number(value.level)),
+      ...optional("classFile", text(value.classFile)),
       ...optional("fit", readFit(value.fit)),
     },
   ];
@@ -210,6 +213,8 @@ export interface PostContext {
   mentionRole?: string;
   /** From `runCancelled`: who cancelled it (a name). */
   cancelledBy?: string;
+  /** BOT-11: the class icons before character names. */
+  icons?: ClassIcons;
   /** The admin's test post (BOT-API.md "Run events": `test`, run id 0); its event id is its marker. */
   test?: { eventId: number };
 }
@@ -255,15 +260,16 @@ const CLASS_NAMES: Readonly<Record<string, string>> = {
 
 const esc = (value: string | undefined) => (value === undefined ? undefined : escapeMarkdown(value));
 
-/** "Lia Thornwhisper 37", or the friend's name without a character. */
-function characterText(p: RunPerson | Candidate): string {
-  const name = esc(p.character) ?? esc(p.name) ?? "Someone";
-  return p.level !== undefined && p.character !== undefined ? `${name} ${p.level}` : name;
+/** "[icon] Lia Thornwhisper 37" (BOT-11), or the friend's name without a character. */
+function characterText(p: RunPerson | Candidate, icons: ClassIcons): string {
+  if (p.character === undefined) return esc(p.name) ?? "Someone";
+  const name = `${icon(icons, p.classFile)}${escapeMarkdown(p.character)}`;
+  return p.level !== undefined ? `${name} ${p.level}` : name;
 }
 
 /** "Lia Thornwhisper 37 · Femke", with "carry" for a carry (WEB-47). */
-function slotText(a: RunAnswer): string {
-  const parts = [characterText(a)];
+function slotText(a: RunAnswer, icons: ClassIcons): string {
+  const parts = [characterText(a, icons)];
   if (a.character !== undefined && a.name !== undefined) parts.push(escapeMarkdown(a.name));
   if (a.fit?.kind === "carry") parts.push("carry");
   return parts.join(" · ");
@@ -304,19 +310,19 @@ export function slots(run: Run): { role: SlotRole; who?: RunAnswer; maybe: boole
   return out;
 }
 
-function candidateText(c: Candidate): string {
-  return `${characterText(c)}${c.name !== undefined && c.character !== undefined ? ` (${escapeMarkdown(c.name)})` : ""}`;
+function candidateText(c: Candidate, icons: ClassIcons): string {
+  return `${characterText(c, icons)}${c.name !== undefined && c.character !== undefined ? ` (${escapeMarkdown(c.name)})` : ""}`;
 }
 
 /** "Could fill the tank slot: …" per open role, from the site's `couldFill`. */
-function couldFillLines(run: Run): string[] {
+function couldFillLines(run: Run, icons: ClassIcons): string[] {
   return (run.couldFill ?? []).map((c) => {
     const slot = `Could fill the ${c.role} slot`;
-    if (c.characters.length > 0) return `${slot}: ${c.characters.map(candidateText).join(", ")}`;
+    if (c.characters.length > 0) return `${slot}: ${c.characters.map((x) => candidateText(x, icons)).join(", ")}`;
     const close = c.close[0];
     return close === undefined
       ? `${slot}: nobody in range yet.`
-      : `${slot}: nobody in range yet. Close: ${candidateText(close)}${close.fit?.label ? `, ${close.fit.label}` : ""}.`;
+      : `${slot}: nobody in range yet. Close: ${candidateText(close, icons)}${close.fit?.label ? `, ${close.fit.label}` : ""}.`;
   });
 }
 
@@ -334,11 +340,12 @@ function countsText(run: Run): string {
 
 /** The line under the time for a state that isn't open. */
 function stateLine(run: Run, state: PostState, ctx: PostContext): string | undefined {
+  const icons = ctx.icons ?? NO_ICONS;
   switch (state) {
     case "full": {
       const reserves = run.answers.filter((a) => a.answer === "maybe" && a.reserve);
       return reserves.length > 0
-        ? `5 of 5 · ${reserves.map(slotText).join(", ")} ${reserves.length === 1 ? "is" : "are"} next in line if someone drops out`
+        ? `5 of 5 · ${reserves.map((a) => slotText(a, icons)).join(", ")} ${reserves.length === 1 ? "is" : "are"} next in line if someone drops out`
         : "5 of 5 · Maybe and I'm in are next in line if someone drops out";
     }
     case "soon":
@@ -388,6 +395,7 @@ export function runMessage(run: Run, ctx: PostContext): MessageContent {
     description: lines.join("\n"),
     color: GOLD,
   };
+  const icons = ctx.icons ?? NO_ICONS;
   if (state !== "cancelled" && state !== "didntHappen") {
     embed.fields = slots(run).map((s) => ({
       name: roleName(s.role),
@@ -396,18 +404,20 @@ export function runMessage(run: Run, ctx: PostContext): MessageContent {
           ? s.role === "damage"
             ? "open"
             : "needed"
-          : `${slotText(s.who)}${s.maybe ? " · maybe" : ""}`,
+          : `${slotText(s.who, icons)}${s.maybe ? " · maybe" : ""}`,
       inline: true,
     }));
     const extra = [
-      ...(answering(state) ? couldFillLines(run) : []),
+      ...(answering(state) ? couldFillLines(run, icons) : []),
       ...listLine(
         "Reserve",
         run.answers.filter((a) => a.answer === "maybe" && a.reserve),
+        icons,
       ),
       ...listLine(
         "Also maybe",
         run.answers.filter((a) => a.answer === "maybe" && !a.reserve && !slots(run).some((s) => s.who === a)),
+        icons,
       ),
     ];
     if (extra.length > 0) embed.fields.push({ name: "\u200b", value: extra.join("\n") });
@@ -440,15 +450,18 @@ export function runMessage(run: Run, ctx: PostContext): MessageContent {
   };
 }
 
-function listLine(label: string, answers: RunAnswer[]): string[] {
-  return answers.length === 0 ? [] : [`${label}: ${answers.map(slotText).join(", ")}`];
+function listLine(label: string, answers: RunAnswer[], icons: ClassIcons): string[] {
+  return answers.length === 0 ? [] : [`${label}: ${answers.map((a) => slotText(a, icons)).join(", ")}`];
 }
 
 // --- reminder, Starting now, ping ------------------------------------------------------------------------------------
 
 /** "Ves Doombringer, Lia Thornwhisper · maybe: Tok Ironhide, Jorrit · tank still open". */
-function whoLine(run: Run, prefix: boolean): string {
-  const names = (a: RunAnswer) => esc(a.character) ?? esc(a.name) ?? "Someone";
+function whoLine(run: Run, prefix: boolean, icons: ClassIcons): string {
+  const names = (a: RunAnswer) =>
+    a.character !== undefined
+      ? `${icon(icons, a.classFile)}${escapeMarkdown(a.character)}`
+      : (esc(a.name) ?? "Someone");
   const ins = run.answers.filter((a) => a.answer === "in").map(names);
   const maybes = run.answers.filter((a) => a.answer === "maybe").map(names);
   const open = SLOT_ROLES.filter((r) => r !== "damage" && (run.open?.[r] ?? 0) > 0);
@@ -476,6 +489,7 @@ export function reminderMessage(
   mention: readonly string[],
   eventId: number,
   siteUrl: string,
+  icons: ClassIcons = NO_ICONS,
 ): MessageContent {
   return {
     content: `${mentions(mention)} ${run.dungeon.name} starts in ${minutes} minutes`.trim(),
@@ -483,7 +497,7 @@ export function reminderMessage(
       {
         title: run.dungeon.name,
         url: eventUrl(siteUrl, run.id, eventId),
-        description: `<t:${run.startsAt}:f>\n${whoLine(run, false)}`,
+        description: `<t:${run.startsAt}:f>\n${whoLine(run, false, icons)}`,
         color: GOLD,
       },
     ],
@@ -498,6 +512,7 @@ export function startingMessage(
   mention: readonly string[],
   eventId: number,
   siteUrl: string,
+  icons: ClassIcons = NO_ICONS,
 ): MessageContent {
   const by = esc(run.organiser.name) ?? "The organiser";
   return {
@@ -507,7 +522,7 @@ export function startingMessage(
         title: run.dungeon.name,
         url: eventUrl(siteUrl, run.id, eventId),
         description: [
-          whoLine(run, true),
+          whoLine(run, true, icons),
           `${by} invites from the game. Not grouped in 5 minutes? Log in and press **Request invite**.`,
         ].join("\n"),
         footer: { text: "Always posted at start time" },
@@ -530,9 +545,21 @@ export function readPing(data: unknown): Ping | undefined {
 }
 
 /** A ping from the game (board `bot-posts-runs` 3): "Hey Jorrit, these people are waiting for you". */
-export function pingMessage(run: Run, ping: Ping, eventId: number, siteUrl: string): MessageContent {
+export function pingMessage(
+  run: Run,
+  ping: Ping,
+  eventId: number,
+  siteUrl: string,
+  icons: ClassIcons = NO_ICONS,
+): MessageContent {
   const to = esc(ping.to.name) ?? esc(ping.to.character) ?? "there";
-  const ins = run.answers.filter((a) => a.answer === "in").map((a) => esc(a.character) ?? esc(a.name) ?? "Someone");
+  const ins = run.answers
+    .filter((a) => a.answer === "in")
+    .map((a) =>
+      a.character !== undefined
+        ? `${icon(icons, a.classFile)}${escapeMarkdown(a.character)}`
+        : (esc(a.name) ?? "Someone"),
+    );
   const id = ping.to.discordId;
   return {
     content: `${id !== undefined ? `<@${id}> ` : ""}Hey ${to}, these people are waiting for you in ${run.dungeon.name}`,

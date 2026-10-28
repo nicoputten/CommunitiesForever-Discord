@@ -1,6 +1,7 @@
 // The answers to the run commands and buttons (BOT-04, board `bot-commands-runs`): `/plan`'s confirmation and the
 // time-passed reply, "This run isn't yours", the character and role picker, what an answer did, `/runs` and the site's
 // refusals. Only for the asker. Pure: the site's answers and the time come in as arguments.
+import { type ClassIcons, NO_ICONS, icon, optionEmoji } from "./classIcons.js";
 import { type Component, type MessageContent, GOLD, escapeMarkdown } from "./milestones.js";
 import { type Run, type SlotRole, runButton, runUrl } from "./runs.js";
 
@@ -253,11 +254,12 @@ export function plannedMessage(
   timeZone: string | undefined,
   runsChannel: string | undefined,
   siteUrl: string,
+  icons: ClassIcons = NO_ICONS,
 ): MessageContent {
   const leads =
     lead === undefined
       ? "None of your characters can join, so you organise without one."
-      : `You lead as ${escapeMarkdown(lead.name)} (${roleText(lead)}).`;
+      : `You lead as ${icon(icons, lead.classFile)}${escapeMarkdown(lead.name)} (${roleText(lead)}).`;
   const where = runsChannel !== undefined ? `Posted in <#${runsChannel}>.` : "Posted in the runs channel.";
   const zone =
     timeZone !== undefined
@@ -267,7 +269,7 @@ export function plannedMessage(
     `Planned · ${run.dungeon.name}`,
     `<t:${run.startsAt}:f> · <t:${run.startsAt}:R>\n${leads} ${where}${zone}`,
     [openRun(siteUrl, run.id)],
-    others.length > 0 ? [characterSelect(run.id, "lead", "Lead with another character", others)] : [],
+    others.length > 0 ? [characterSelect(run.id, "lead", "Lead with another character", others, icons)] : [],
   );
 }
 
@@ -318,7 +320,13 @@ export function cancelledMessage(run: Run, siteUrl: string): MessageContent {
 
 // --- answering from the post ----------------------------------------------------------------------------------------
 
-function characterSelect(runId: number, what: string, placeholder: string, chars: readonly PickCharacter[]): Component {
+function characterSelect(
+  runId: number,
+  what: string,
+  placeholder: string,
+  chars: readonly PickCharacter[],
+  icons: ClassIcons,
+): Component {
   return {
     type: 3,
     custom_id: runButton(runId, what),
@@ -330,6 +338,7 @@ function characterSelect(runId: number, what: string, placeholder: string, chars
           100,
         ),
       value: c.guid,
+      ...(optionEmoji(icons, c.classFile) !== undefined ? { emoji: optionEmoji(icons, c.classFile) } : {}),
       description: [c.roles.map(capital).join(" / "), c.fit].filter(Boolean).join(" · ").slice(0, 100),
     })),
   };
@@ -338,7 +347,12 @@ function characterSelect(runId: number, what: string, placeholder: string, chars
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** Pick my character (board `bot-posts-runs`, Runs v2): the asker's characters with their fit tag. */
-export function pickerMessage(run: Run, chars: readonly PickCharacter[], siteUrl: string): MessageContent {
+export function pickerMessage(
+  run: Run,
+  chars: readonly PickCharacter[],
+  siteUrl: string,
+  icons: ClassIcons = NO_ICONS,
+): MessageContent {
   if (chars.length === 0) {
     const range = run.dungeon.min !== undefined ? ` (${run.dungeon.min}–${run.dungeon.max})` : "";
     return reply(
@@ -351,7 +365,7 @@ export function pickerMessage(run: Run, chars: readonly PickCharacter[], siteUrl
     `Which character joins ${run.dungeon.name}?`,
     "Characters 6 or more levels below the range aren't listed: they can answer Maybe.",
     [],
-    [characterSelect(run.id, "char", "Pick my character", chars)],
+    [characterSelect(run.id, "char", "Pick my character", chars, icons)],
   );
 }
 
@@ -370,8 +384,15 @@ export function rolePickerMessage(run: Run, c: PickCharacter): MessageContent {
 }
 
 /** What an answer did: "You're in as Lia Thornwhisper (healer)", reserve, Maybe, Can't, or the new lead. */
-export function answeredMessage(run: Run, stored: Stored, character: string | undefined, lead = false): MessageContent {
-  const name = character !== undefined ? escapeMarkdown(character) : undefined;
+export function answeredMessage(
+  run: Run,
+  stored: Stored,
+  character: string | undefined,
+  lead = false,
+  classFile?: string,
+  icons: ClassIcons = NO_ICONS,
+): MessageContent {
+  const name = character !== undefined ? `${icon(icons, classFile)}${escapeMarkdown(character)}` : undefined;
   if (stored.answer === "maybe" && stored.reserve) {
     return reply(
       `Reserve · ${run.dungeon.name}`,
@@ -424,6 +445,7 @@ export function runsListMessage(
   now: number,
   siteUrl: string,
   siteHost: string,
+  icons: ClassIcons = NO_ICONS,
 ): MessageContent {
   const week = runs.filter((r) => r.startsAt < now + 7 * 86400).sort((a, b) => a.startsAt - b.startsAt);
   if (week.length === 0) {
@@ -438,7 +460,7 @@ export function runsListMessage(
         : mine === undefined
           ? "You haven't answered"
           : mine.answer === "in"
-            ? `You're in${mine.character ? ` as ${escapeMarkdown(mine.character)}` : ""} (${mine.role})`
+            ? `You're in${mine.character ? ` as ${icon(icons, mine.classFile)}${escapeMarkdown(mine.character)}` : ""} (${mine.role})`
             : mine.answer === "maybe"
               ? mine.reserve
                 ? "You're reserve"

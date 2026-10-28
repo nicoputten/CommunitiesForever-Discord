@@ -1,4 +1,4 @@
-# Allow-list: the image build needs only the sources and the build config. design/, docs, tests, local
+# Allow-list: the image build needs only the sources, the build config and the class icons (BOT-11). design/, docs, tests, local
 # .env files and node_modules stay out.
 *
 !package.json
@@ -6,3 +6,4 @@
 !tsconfig.json
 !tsconfig.build.json
 !src/
+!assets/class-icons/*.png

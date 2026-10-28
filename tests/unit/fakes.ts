@@ -8,6 +8,7 @@ import {
   type SlashCommand,
 } from "../../src/adapters/discord.js";
 import type { Site, SiteAnswer } from "../../src/adapters/site.js";
+import type { Emoji } from "../../src/core/classIcons.js";
 import type { CommandDefinition } from "../../src/core/commands.js";
 import type { ConnectionEvent, FailReason } from "../../src/core/connection.js";
 import type { GuildSnapshot } from "../../src/core/guild.js";
@@ -202,6 +203,28 @@ export class FakeDiscord implements Discord {
   onCommand = (listener: (command: SlashCommand) => void) => {
     this.commandListeners.push(listener);
     return () => undefined;
+  };
+  /** BOT-11: the bot's application emoji. */
+  emojiList: Emoji[] = [];
+  emojiFailures = 0;
+  emojiReadFails = false;
+  deletedEmoji: string[] = [];
+  emojis = async () => {
+    if (this.emojiReadFails) throw new PostError(50001);
+    return [...this.emojiList];
+  };
+  createEmoji = async (name: string) => {
+    if (this.emojiFailures > 0) {
+      this.emojiFailures--;
+      throw new PostError(50035);
+    }
+    const emoji = { id: String(this.next++), name };
+    this.emojiList.push(emoji);
+    return emoji;
+  };
+  deleteEmoji = async (id: string) => {
+    this.deletedEmoji.push(id);
+    this.emojiList = this.emojiList.filter((e) => e.id !== id);
   };
   dms: { user: string; content: MessageContent }[] = [];
   dmFailures = 0;

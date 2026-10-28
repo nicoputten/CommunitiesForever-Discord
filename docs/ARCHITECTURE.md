@@ -51,6 +51,10 @@ The contract lives in the web repo (`docs/BOT-API.md`, made by WEB-38). Shape as
 
 Polling every 30 s with backoff is enough for a friend group and needs no public endpoint on the bot.
 
+## Class icons (BOT-11)
+
+The class icons in `assets/class-icons/` (copied into the image) are the bot's own application emoji: at start it reads them (`GET /applications/<id>/emojis`), uploads each icon whose `cf_<class>_<hash>` name is missing and deletes its older `cf_` emoji after. Discord can't replace an emoji's picture, so the hash in the name is how a changed icon is noticed. Until that is done, or when it fails, names show without icon.
+
 ## Configuration (env, documented in `.env.example` without values)
 
 | Variable | What |

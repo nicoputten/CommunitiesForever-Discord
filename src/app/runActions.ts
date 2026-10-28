@@ -31,6 +31,8 @@ import {
 } from "../core/runReplies.js";
 import { type Run, type SlotRole, readRun } from "../core/runs.js";
 import type { SiteSettings } from "../core/settings.js";
+import type { IconBox } from "./classIcons.js";
+import { NO_ICONS } from "../core/classIcons.js";
 
 export const RUN_COMMANDS = ["plan", "runs", "run"] as const;
 
@@ -54,6 +56,8 @@ export interface RunActionDeps {
   now(): number;
   /** The latest settings (for "Posted in #runs"), as the poster read them. */
   settings(): SiteSettings | undefined;
+  /** BOT-11: the class icons, once the start-up sync has them. */
+  icons?: IconBox;
 }
 
 export class RunActions {
@@ -61,6 +65,10 @@ export class RunActions {
   private readonly plans = new Map<number, Plan>();
 
   constructor(private readonly deps: RunActionDeps) {}
+
+  private icons() {
+    return this.deps.icons?.current ?? NO_ICONS;
+  }
 
   private call(method: "GET" | "POST" | "PATCH", path: string, body: unknown, signal: AbortSignal) {
     return this.deps.site.runs(method, path, body, signal);
@@ -106,6 +114,7 @@ export class RunActions {
           Math.floor(this.deps.now() / 1000),
           this.deps.siteUrl,
           new URL(this.deps.siteUrl).host,
+          this.icons(),
         ),
       );
     }
@@ -204,6 +213,7 @@ export class RunActions {
       choices.timeZone,
       settings?.runsChannel ?? settings?.postsChannel ?? undefined,
       this.deps.siteUrl,
+      this.icons(),
     );
   }
 
@@ -308,7 +318,7 @@ export class RunActions {
     const only = list.length === 1 ? list[0] : undefined;
     if (what === "in" && only !== undefined)
       return show(await this.answer(runId, press.userId, "in", signal, only.guid));
-    return show(pickerMessage(run, list, this.deps.siteUrl));
+    return show(pickerMessage(run, list, this.deps.siteUrl, this.icons()));
   }
 
   /** After a character is picked: its role when its class plays only one, else the role buttons. */
@@ -338,7 +348,7 @@ export class RunActions {
     const stored = readStored(body);
     if (run === undefined || stored === undefined) return refusalMessage(undefined, 500);
     const mine = characterId === undefined ? undefined : run.answers.find((a) => a.guid === characterId);
-    return answeredMessage(run, stored, mine?.character, lead);
+    return answeredMessage(run, stored, mine?.character, lead, mine?.classFile, this.icons());
   }
 }
 
