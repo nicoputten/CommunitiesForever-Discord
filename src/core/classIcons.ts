@@ -27,8 +27,60 @@ export const BOX_ICONS: readonly { classFile: string; file: string }[] = [
   { classFile: "BOX_OPEN", file: "box-open.png" },
 ];
 
-/** Every emoji the bot keeps as its own: the class icons and the boxes. */
-export const BOT_EMOJI: readonly { classFile: string; file: string }[] = [...CLASS_ICONS, ...BOX_ICONS];
+/**
+ * BOT-14: the recap card icons (board `bot-recap-v2-icons`), in `assets/recap-icons/` (the path is relative to the
+ * class icons' folder). Keyed like a class: `icons.RECAP_PVP`.
+ */
+export const RECAP_ICONS: readonly { classFile: string; file: string }[] = [
+  "pvp",
+  "deaths",
+  "fall",
+  "fire",
+  "epic",
+  "mount",
+  "night_owl",
+  "early_bird",
+  "battleground",
+  "marathon",
+  "untouchable",
+  "group",
+].map((name) => ({ classFile: `RECAP_${name.toUpperCase()}`, file: `../recap-icons/recap_${name}.png` }));
+
+/**
+ * The recap card ids (web WEB-57) with an icon, as board `bot-recap-v2-icons` maps them; a card not listed shows none.
+ */
+export const RECAP_CARD_ICONS: Readonly<Record<string, string>> = {
+  A11: "RECAP_PVP", // Warmonger
+  A14: "RECAP_PVP", // Duelist
+  S13: "RECAP_PVP", // Bloodbath zone
+  P14: "RECAP_PVP", // Rank race
+  F14: "RECAP_PVP", // Revenge
+  F15: "RECAP_PVP", // Duel rivals
+  S15: "RECAP_DEATHS", // Deadliest zone
+  F16: "RECAP_DEATHS", // Most deaths
+  F17: "RECAP_FALL", // Fell to their death
+  F18: "RECAP_FIRE", // Died by fire
+  A13: "RECAP_EPIC", // Loot goblin
+  F21: "RECAP_EPIC", // Purple rain
+  F20: "RECAP_MOUNT", // Big spender
+  F7: "RECAP_NIGHT_OWL", // Night owl
+  F8: "RECAP_EARLY_BIRD", // Early bird
+  A12: "RECAP_BATTLEGROUND", // Battlemaster
+  S14: "RECAP_BATTLEGROUND", // Battleground of the week
+  F22: "RECAP_MARATHON", // Marathon
+  F19: "RECAP_UNTOUCHABLE", // Untouchable
+  A7: "RECAP_GROUP", // Social butterfly
+  S11: "RECAP_GROUP", // Biggest group night
+};
+
+/** The icon and a space before a recap card's first line, or nothing (an unknown card, or no emoji yet). */
+export function cardIcon(icons: ClassIcons, cardId: string): string {
+  const key = RECAP_CARD_ICONS[cardId];
+  return key === undefined ? "" : icon(icons, key);
+}
+
+/** Every emoji the bot keeps as its own: the class icons, the boxes and the recap card icons. */
+export const BOT_EMOJI: readonly { classFile: string; file: string }[] = [...CLASS_ICONS, ...BOX_ICONS, ...RECAP_ICONS];
 
 /** Class file → the emoji markup (`<:cf_mage_3fa9c1:123>`); a class without one shows no icon. */
 export type ClassIcons = Readonly<Record<string, string>>;

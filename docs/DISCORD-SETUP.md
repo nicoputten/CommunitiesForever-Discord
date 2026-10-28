@@ -54,7 +54,7 @@ On the site's Discord page (admin) pick the channel for posts and keep Milestone
 Without a channel the bot posts nothing and logs `posts channel not set`; it reads the settings again every 30 seconds, so a new channel (and a test post) works without a restart.
 
 ## 6. Emoji (class icons and Doomsday boxes)
-Nothing to upload by hand. At start the bot uploads its own **application emoji** from `assets/class-icons/`: the nine class icons (BOT-11) and the three Doomsday boxes (BOT-15: `box-pve.png` green, `box-pvp.png` red, `box-open.png` open). They belong to the application, not to the server, so they take none of the server's emoji slots; the developer portal lists them under **Emojis**. A changed picture is uploaded again under a new name (`cf_<name>_<hash>`) and the old one deleted. Until they are there, or when the upload fails (the log says `class icons: N of 12 ready`), names show without icon and the Doomsday board uses ✅ and ▢.
+Nothing to upload by hand. At start the bot uploads its own **application emoji** from `assets/class-icons/`: the nine class icons (BOT-11) the three Doomsday boxes (BOT-15: `box-pve.png` green, `box-pvp.png` red, `box-open.png` open), and from `assets/recap-icons/` the 12 recap card icons (BOT-14). They belong to the application, not to the server, so they take none of the server's emoji slots; the developer portal lists them under **Emojis**. A changed picture is uploaded again under a new name (`cf_<name>_<hash>`) and the old one deleted. Until they are there, or when the upload fails (the log says `class icons: N of 24 ready`), names show without icon and the Doomsday board uses ✅ and ▢.
 
 ## 7. Check
 - The bot shows as online in the server's member list.

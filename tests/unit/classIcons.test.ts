@@ -58,19 +58,19 @@ describe("the start-up sync", () => {
     expect(plan.remove).toEqual([{ id: "2", name: "cf_priest_999999" }]);
   });
 
-  it("uploads all nine class icons and the three Doomsday boxes the first time, nothing when unchanged, and only a changed one after that", async () => {
+  it("uploads all nine class icons and the three Doomsday boxes and the 12 recap card icons the first time, nothing when unchanged, and only a changed one after that", async () => {
     const discord = new FakeDiscord();
     const log = logger();
     const first = await syncClassIcons(discord, log.log);
-    expect(Object.keys(first)).toHaveLength(12);
+    expect(Object.keys(first)).toHaveLength(24);
     expect(first.BOX_PVE).toMatch(/^<:cf_box_pve_[0-9a-f]{6}:\d+>$/);
     expect(discord.emojiList.map((e) => e.name).every((n) => /^cf_[a-z_]+_[0-9a-f]{6}$/.test(n))).toBe(true);
-    expect(log.texts()).toContain("class icons: 12 of 12 ready (12 uploaded)");
+    expect(log.texts()).toContain("class icons: 24 of 24 ready (24 uploaded)");
 
     const again = await syncClassIcons(discord, log.log);
     expect(again).toEqual(first);
-    expect(discord.emojiList).toHaveLength(12);
-    expect(log.texts().at(-1)).toBe("class icons: 12 of 12 ready (0 uploaded)");
+    expect(discord.emojiList).toHaveLength(24);
+    expect(log.texts().at(-1)).toBe("class icons: 24 of 24 ready (0 uploaded)");
 
     // A new mage picture: the mage is uploaded again and its old emoji deleted after.
     const oldMage = discord.emojiList.find((e) => e.name.startsWith("cf_mage_"))!;
@@ -79,7 +79,7 @@ describe("the start-up sync", () => {
     );
     expect(changed.MAGE).not.toBe(first.MAGE);
     expect(discord.deletedEmoji).toEqual([oldMage.id]);
-    expect(discord.emojiList).toHaveLength(12);
+    expect(discord.emojiList).toHaveLength(24);
   });
 
   it("goes on without icons when Discord refuses, and without one icon when its upload fails", async () => {
@@ -92,7 +92,7 @@ describe("the start-up sync", () => {
     discord.emojiReadFails = false;
     discord.emojiFailures = 1;
     const icons = await syncClassIcons(discord, log.log);
-    expect(Object.keys(icons)).toHaveLength(11);
+    expect(Object.keys(icons)).toHaveLength(23);
     expect(icons.WARRIOR).toBeUndefined();
     expect(log.texts()).toContain("discord: uploading the warrior icon failed (code 50035)");
   });
