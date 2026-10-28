@@ -96,6 +96,27 @@ Needs the web's WEB-51 (asks on the site). Split from BOT-04 (Nico, 2026-10-28).
 - Nico (2026-10-28, after testing v0.2.0): the slots as lines in the embed, one per slot, instead of inline fields (3 + 2 didn't line up), keeping Could fill and the footer; I'm in opens the Pick my character flow (character with its fit tag, then the role) with the best fitting character preselected, the separate Pick my character button goes; Maybe and Can't stay one click; any level may say I'm in (web WEB-52, "recommend, never restrict").
 - Done (PR #28, web PR #90): `runMessage` (slot lines), the run and ask posts without Pick my character, `pickerMessage` (the select with the site's first character preselected and its role buttons; another pick swaps them; a one-role class answers at once; "tough" for low and 6+ below). Posts from before keep their Pick my character button, which opens the same picker.
 
+## Doomsday (BOT-14 to BOT-17) (decided with Nico, 2026-10-28)
+Daily and weekly goals with points per track (PvE and PvP, never added together), a streak, a crown, feats and a ladder. **The rules are in the addon repo's `docs/DOOMSDAY.md`**; the site computes everything (web E8, WEB-56 and WEB-58), and the bot formats and posts. It replaces the workshop stories for milestones, `/ladder` and dailies (their PRs were closed unmerged).
+
+Boards (`design/README.md`):
+- `bot-doomsday-daily`
+- `bot-doomsday-weekly`
+- `bot-doomsday-feats`
+- `bot-recap-doomsday`
+
+The feat card images are the site's (web `design/boards/doomsday-feat-cards`). Where a board and `DOOMSDAY.md` disagree, `DOOMSDAY.md` wins: the day resets at **19:00** realm time (a setting on the site), not 09:00, and the weekly post comes on Sunday at that time. The crown gives no points.
+
+**Rules:**
+- No pings.
+- No BattleTags or Discord IDs in posts.
+- Gold never as an amount.
+- "PvE" and "PvP" points are never summed.
+
+Order:
+1. BOT-14 after web WEB-56.
+2. BOT-15 and BOT-16 after web WEB-58. The formatting can be built earlier from the API contract in the web repo's `docs/BOT-API.md` and fixtures.
+
 ### BOT-14 "Feat unlocked" posts
 After web WEB-56. Every milestone becomes a feat. The event type stays `milestones`; the post becomes "Feat unlocked" as on `bot-doomsday-feats`.
 - One feat: "Feat unlocked", the character, the feat text, a "First in the group" line when the site marks it, and the site's card image when there is one.
@@ -173,3 +194,19 @@ With web WEB-58 part 2 (the reorganised Discord page; contract in web `docs/BOT-
 - Tests: the feats channel (posting, grouping, marker scan, fallback); each test kind, its channel, its marks, and the unknown kind.
 - Done (PR #39): `featsChannel` in `src/core/settings.ts`; the poster posts and groups feats in it and reads every other channel (recap, runs, Doomsday, feats) for markers in one loop; `src/core/samples.ts` (`testSample` per kind, from the real formatting with made-up data); `decide` answers `sample` for `feats`, `recap` and `doomsday`, and the plain test for any other kind.
 - Manual (Nico, in Discord, once the site has WEB-58 part 2): pick a feats channel and press each test button on the Discord page; each sample appears once in its channel, titled "Test ·"; an upload's feats go to the feats channel.
+
+### BOT-18 Clean-up before the Doomsday release
+Nico, 2026-10-29: one clean-up before the Doomsday release, across the addon, the site and the bot.
+- **Dependencies:**
+  - Handle the open Dependabot PRs (eslint 10, `@types/node` 26, gitleaks-action 3) and any other outdated packages.
+  - Take a major bump only when lint, tests and build pass. A Dependabot PR that needs changes is redone on our own branch, and the original is closed with a pointer.
+- **Technical debt:** first a list of refactors with effort and risk for Nico to pick from, then build his picks.
+- **Docs:**
+  - Finished stories go to `docs/STORIES-COMPLETED.md`.
+  - The README, DESIGN-NOTES, DISCORD-SETUP and `design/README.md` are brought up to date.
+  - `CHANGELOG.md` `## Unreleased` reads well as release notes.
+- **Dead code, leftovers and CI:** remove dead code and leftovers, and fix flaky tests.
+- Not part of it: branches (cleaned up separately) and the NAS deployment.
+- No user-facing change, so no manual steps beyond a smoke test of the next release.
+- Decided with Nico (2026-10-29): @types/node stays on the Node the bot runs on (24) and TypeScript on 6 until typescript-eslint supports 7, so Dependabot skips both majors; eslint 10 and gitleaks-action 3 as Dependabot made them. All five refactors of the list: the shared readers, the message module, the emoji sync naming, the look-up parsing in core, the poster split.
+- Done: the story (PR #42), dependencies (PR #43, Dependabot #14 and #16 as they are, #15 closed), refactors (PR #44), dead code and CI (PR #45), docs (PR #?). No flaky tests were found; the one CI flake was gitleaks-action v2 ("stderr is not empty"), which v3 addresses.
