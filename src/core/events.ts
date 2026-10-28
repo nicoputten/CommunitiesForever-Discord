@@ -4,6 +4,7 @@ import { type FeatItem, type MessageContent, type Milestone, showable, testMessa
 import { type Board, readBoard } from "./doomsday.js";
 import { type Ladder, readLadder } from "./ladder.js";
 import { type Recap, readRecap } from "./recap.js";
+import type { TestKind } from "./samples.js";
 import { type Ask, type Ping, type Run, readAsk, readMention, readPing, readRun } from "./runs.js";
 import type { SiteSettings } from "./settings.js";
 
@@ -148,6 +149,8 @@ export type Action =
   | { do: "post"; milestones: Milestone[]; card?: string }
   /** Post this message on its own (the test post). */
   | { do: "send"; content: MessageContent }
+  /** BOT-17: a test of a kind: its made-up sample, in that kind's channel. */
+  | { do: "sample"; kind: TestKind }
   /** Post the weekly recap with its card images, in the recap channel (BOT-05). */
   | { do: "recap"; recap: Recap }
   /** A run event (BOT-04), for the runs channel; `posted`: its own message, when one was found by its marker. */
@@ -247,10 +250,11 @@ export function decide(
 ): Action {
   const messageId = posted.get(event.id);
   if (event.type === "test") {
-    // Only the posts channel's test so far (BOT-API.md "test"); kinds for other channels come with their stories.
+    // The posts channel's plain test; BOT-17: feats, the recap and Doomsday get a sample of their own, and a kind the
+    // bot doesn't know the plain test in the posts channel (BOT-API.md "test").
     const kind = isObject(event.data) ? event.data.kind : undefined;
-    if (kind !== undefined && kind !== "posts") return { do: "leave" };
     if (messageId !== undefined) return { do: "ack", messageId };
+    if (kind === "feats" || kind === "recap" || kind === "doomsday") return { do: "sample", kind };
     return { do: "send", content: testMessage(event.id, siteUrl, siteHost) };
   }
   if (event.type === "recap") {

@@ -26,6 +26,8 @@ export interface SiteSettings {
   doomsdayLadder?: boolean;
   /** channels.doomsday (BOT-15): the Doomsday channel; null or undefined means the posts channel. */
   doomsdayChannel?: string | null;
+  /** channels.feats (BOT-17): the feats' channel (the `milestones` event); null or undefined means the posts channel. */
+  featsChannel?: string | null;
   /** doomsday.url (BOT-15): the site's Doomsday page, for "Open the board ↗". */
   doomsdayUrl?: string;
 }
@@ -54,6 +56,7 @@ export function readSettings(body: unknown): SiteSettings {
     doomsdayLadder: typeof posts.doomsdayLadder === "boolean" ? posts.doomsdayLadder : undefined,
     doomsdayChannel:
       channels.doomsday === null ? null : isSnowflake(channels.doomsday) ? (channels.doomsday as string) : undefined,
+    featsChannel: channels.feats === null ? null : isSnowflake(channels.feats) ? (channels.feats as string) : undefined,
     doomsdayUrl: typeof doomsday.url === "string" && /^https?:\/\/\S+$/.test(doomsday.url) ? doomsday.url : undefined,
   };
 }
@@ -72,6 +75,6 @@ export function settingsText(siteUrl: string, settings: SiteSettings): string {
   const channel = settings.postsChannel ? "set" : "not set";
   const recap = settings.recapChannel ? "; recap channel set" : "";
   const runs = settings.runsChannel ? "; runs channel set" : "";
-  const doomsday = settings.doomsdayChannel ? "; Doomsday channel set" : "";
+  const doomsday = `${settings.doomsdayChannel ? "; Doomsday channel set" : ""}${settings.featsChannel ? "; feats channel set" : ""}`;
   return `site: ${siteUrl} answers as ${settings.siteName ?? "(no name)"}; posts channel ${channel}${recap}${runs}${doomsday}`;
 }

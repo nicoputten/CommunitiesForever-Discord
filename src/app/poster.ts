@@ -23,6 +23,7 @@ import {
 import { boardUrl } from "../core/doomsday.js";
 import { ladderMessage } from "../core/ladder.js";
 import { recapFiles, recapMessage } from "../core/recap.js";
+import { testSample } from "../core/samples.js";
 import { type SiteSettings, readSettings, settingsText } from "../core/settings.js";
 import type { IconBox } from "./classIcons.js";
 import { DoomsdayBoards } from "./doomsdayPosts.js";
@@ -58,12 +59,8 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
   let cursor = "0";
   let channel: string | undefined;
   let posted = new Map<number, string>();
-  // The recap channel whose posts were read for markers (BOT-05), when it isn't the posts channel.
-  let recapScanned: string | undefined;
-  // The runs channel whose posts were read for markers (BOT-04), when it isn't the posts channel.
-  let runsScanned: string | undefined;
-  // The Doomsday channel whose posts were read for markers (BOT-15), when it isn't the posts channel.
-  let doomsdayScanned: string | undefined;
+  // The other channels (recap BOT-05, runs BOT-04, Doomsday BOT-15, feats BOT-17) whose posts were read for markers.
+  let scanned = new Set<string>();
   const runs = deps.runPosts ?? new RunPosts({ siteUrl, discord, log, now: deps.now, ...opt("icons", deps.icons) });
   const boards = new DoomsdayBoards(
     { siteUrl, site, discord, log, now: deps.now, ...opt("icons", deps.icons), pageUrl: () => settings?.doomsdayUrl },
@@ -100,9 +97,10 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       settingsAt = deps.now();
     }
 
-    // Without a posts channel the runs and Doomsday channels still take theirs; the other posts wait for theirs.
+    // Without a posts channel the runs, Doomsday and feats channels still take theirs; the other posts wait.
     const postsSet = typeof settings.postsChannel === "string";
-    const wanted = settings.postsChannel ?? settings.runsChannel ?? settings.doomsdayChannel ?? undefined;
+    const wanted =
+      settings.postsChannel ?? settings.runsChannel ?? settings.doomsdayChannel ?? settings.featsChannel ?? undefined;
     if (wanted === undefined) {
       channel = undefined;
       await sleep(SETTINGS_EVERY_MS - (deps.now() - settingsAt), signal);
@@ -121,43 +119,33 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       channel = wanted;
       cursor = "0";
       open = undefined;
-      recapScanned = undefined;
-      runsScanned = undefined;
-      doomsdayScanned = undefined;
+      scanned = new Set([wanted]);
     }
     const recapChannel = settings.recapChannel ?? channel;
-    if (recapChannel !== channel && recapChannel !== recapScanned) {
-      try {
-        for (const [id, message] of markedEvents(siteUrl, await discord.recentPosts(recapChannel)))
-          posted.set(id, message);
-      } catch (error) {
-        await retry(`discord: reading the recap channel failed (${codeOf(error)})`);
-        continue;
-      }
-      recapScanned = recapChannel;
-    }
     const runsChannel = settings.runsChannel ?? channel;
-    if (runsChannel !== channel && runsChannel !== runsScanned) {
+    const doomsdayChannel = settings.doomsdayChannel ?? channel;
+    const featsChannel = settings.featsChannel ?? channel;
+    let unread: string | undefined;
+    for (const [what, other] of [
+      ["recap", recapChannel],
+      ["runs", runsChannel],
+      ["Doomsday", doomsdayChannel],
+      ["feats", featsChannel],
+    ] as const) {
+      if (scanned.has(other)) continue;
       try {
-        const recent = await discord.recentPosts(runsChannel);
+        const recent = await discord.recentPosts(other);
         for (const [id, message] of markedEvents(siteUrl, recent)) posted.set(id, message);
         runs.learn(recent);
+        scanned.add(other);
       } catch (error) {
-        await retry(`discord: reading the runs channel failed (${codeOf(error)})`);
-        continue;
+        unread = `discord: reading the ${what} channel failed (${codeOf(error)})`;
+        break;
       }
-      runsScanned = runsChannel;
     }
-    const doomsdayChannel = settings.doomsdayChannel ?? channel;
-    if (doomsdayChannel !== channel && doomsdayChannel !== doomsdayScanned) {
-      try {
-        for (const [id, message] of markedEvents(siteUrl, await discord.recentPosts(doomsdayChannel)))
-          posted.set(id, message);
-      } catch (error) {
-        await retry(`discord: reading the Doomsday channel failed (${codeOf(error)})`);
-        continue;
-      }
-      doomsdayScanned = doomsdayChannel;
+    if (unread !== undefined) {
+      await retry(unread);
+      continue;
     }
 
     const answer = await site.events(cursor, signal);
@@ -171,7 +159,14 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
     for (const event of events) {
       const action = decide(event, settings, posted, siteUrl, host);
       if (action.do === "leave") continue;
-      if (!postsSet && (action.do === "post" || action.do === "send")) continue;
+      if (!postsSet && action.do === "post" && typeof settings.featsChannel !== "string") continue;
+      const testOf = action.do === "sample" ? action.kind : undefined;
+      if (
+        !postsSet &&
+        (action.do === "send" || action.do === "sample") &&
+        typeof settingFor(settings, testOf) !== "string"
+      )
+        continue;
       if (!postsSet && action.do === "recap" && typeof settings.recapChannel !== "string") continue;
       if (
         !postsSet &&
@@ -215,16 +210,32 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         }
         posted.set(event.id, messageId);
         log.info(`posted event ${event.id} (Doomsday ladder)`);
-      } else if (action.do === "send") {
+      } else if (action.do === "send" || action.do === "sample") {
+        // BOT-17: a test of a kind is that kind's made-up sample, in that kind's channel.
+        const content =
+          action.do === "sample"
+            ? testSample(
+                action.kind,
+                event.id,
+                siteUrl,
+                host,
+                Math.floor(deps.now() / 1000),
+                boardUrl(siteUrl, settings.doomsdayUrl),
+              )
+            : action.content;
+        const to =
+          testOf === undefined
+            ? channel
+            : { feats: featsChannel, recap: recapChannel, doomsday: doomsdayChannel }[testOf];
         try {
-          messageId = await discord.post(channel, action.content);
+          messageId = await discord.post(to, content);
         } catch (error) {
           failed = true;
           await retry(`discord: posting event ${event.id} failed (${codeOf(error)})`);
           break;
         }
         posted.set(event.id, messageId);
-        log.info(`posted event ${event.id} (test)`);
+        log.info(`posted event ${event.id} (test${testOf !== undefined ? ` of ${testOf}` : ""})`);
       } else if (action.do === "recap") {
         // The card images; one the site can't give is left out, the post goes out anyway (never twice, rule 9).
         const files: Attachment[] = [];
@@ -258,11 +269,11 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
           ...(action.card !== undefined ? { card: action.card } : {}),
         };
         const shownInOpen = open?.groups.reduce((n, g) => n + g.milestones.length, 0) ?? 0;
-        if (open?.channel === channel && joinsPost(open.at, shownInOpen, group.milestones.length, deps.now())) {
+        if (open?.channel === featsChannel && joinsPost(open.at, shownInOpen, group.milestones.length, deps.now())) {
           const groups = [...open.groups, group];
           try {
             await discord.edit(
-              channel,
+              featsChannel,
               open.id,
               groupedMessage(groups, siteUrl, host, open.attached, deps.icons?.current) as MessageContent,
             );
@@ -285,7 +296,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
           const attached = files.map((f) => f.name);
           try {
             messageId = await discord.post(
-              channel,
+              featsChannel,
               groupedMessage([group], siteUrl, host, attached, deps.icons?.current) as MessageContent,
               files,
             );
@@ -294,7 +305,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
             await retry(`discord: posting event ${event.id} failed (${codeOf(error)})`);
             break;
           }
-          open = { id: messageId, channel, at: deps.now(), groups: [group], attached };
+          open = { id: messageId, channel: featsChannel, at: deps.now(), groups: [group], attached };
           log.info(`posted event ${event.id}`);
         }
         posted.set(event.id, messageId);
@@ -317,6 +328,14 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       cursor = next ?? cursor;
     }
   }
+}
+
+/** The channel setting of a test post's kind (BOT-17); the posts channel's for the plain test. */
+function settingFor(settings: SiteSettings, to: "feats" | "recap" | "doomsday" | undefined): string | null | undefined {
+  if (to === "feats") return settings.featsChannel ?? settings.postsChannel;
+  if (to === "recap") return settings.recapChannel ?? settings.postsChannel;
+  if (to === "doomsday") return settings.doomsdayChannel ?? settings.postsChannel;
+  return settings.postsChannel;
 }
 
 function codeOf(error: unknown): string {

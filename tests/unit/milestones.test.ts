@@ -207,7 +207,7 @@ describe("groupedMessage and joinsPost (BOT-09)", () => {
 });
 
 describe("the test post", () => {
-  it("posts the admin's test with a marker, acknowledges a posted one, and leaves other channels' tests", () => {
+  it("posts the admin's test with a marker, acknowledges a posted one, and samples other kinds", () => {
     const test = { id: 40, type: "test", data: { kind: "posts" } };
     const action = decide(test, { milestones: false }, new Map(), SITE, HOST);
     expect(action).toEqual({
@@ -231,7 +231,12 @@ describe("the test post", () => {
       do: "ack",
       messageId: "1100000000000000040",
     });
-    expect(decide({ ...test, data: { kind: "recap" } }, {}, new Map(), SITE, HOST).do).toBe("leave");
+    // BOT-17: a kind with a sample of its own, and a kind the bot doesn't know as the plain test.
+    expect(decide({ ...test, data: { kind: "recap" } }, {}, new Map(), SITE, HOST)).toEqual({
+      do: "sample",
+      kind: "recap",
+    });
+    expect(decide({ ...test, data: { kind: "somethingNew" } }, {}, new Map(), SITE, HOST).do).toBe("send");
   });
 });
 
