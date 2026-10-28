@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Feats: milestone posts become "Feat unlocked" posts (several from one upload: "Feats unlocked · 4"), with "First in the group" and one card image per post. New feats: honorable kills, PvP ranks with their "a.k.a." titles, duel wins, first battleground wins, 100 deaths, the first epic, mounts, the first catch, Jack of all trades and notable items (Arcanite Reaper, Mooncloth, the Fishing Extravaganza, ...). Feats from a newer site are posted with the site's text.
 - Run posts list the slots one per line ("Tank · Vesgar Bloodhoof 27 · Vestras", "Healer · needed"), so they line up. I'm in opens the character picker with your best fitting character already chosen; pick a role, or another character. Any character may say I'm in, also one far below the dungeon ("tough"). The separate Pick my character button is gone.
 
 ## v0.2.0 (2026-10-28)

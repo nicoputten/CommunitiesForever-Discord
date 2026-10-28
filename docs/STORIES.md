@@ -26,22 +26,6 @@ Order:
 1. BOT-14 after web WEB-56.
 2. BOT-15 and BOT-16 after web WEB-58. The formatting can be built earlier from the API contract in the web repo's `docs/BOT-API.md` and fixtures.
 
-### BOT-14 "Feat unlocked" posts
-After web WEB-56. Every milestone becomes a feat. The event type stays `milestones`; the post becomes "Feat unlocked" as on `bot-doomsday-feats`.
-- One feat: "Feat unlocked", the character, the feat text, a "First in the group" line when the site marks it, and the site's card image when there is one.
-- Several feats from one upload: "Feats unlocked · 4", the character, one line per feat. The one card image is the most special feat's (the site says which).
-- The existing kinds (`level`, `maxLevel`, `professionCap`, `newCharacter`) move to the feat look too.
-- **The new kinds** (texts from web WEB-56):
-  - `honorKills`: first ("First blood"), 100, 1,000, 5,000, 10,000
-  - `pvpRank`: the official rank, then "a.k.a." our title; the site sends both. Below rank 6: "Cards start at rank 6, keep going."
-  - `duelWins`, `bgFirstWin`, `deaths100`
-  - `firstEpic`: the item name in epic purple, its slot, the level
-  - `mount`, `epicMount`: with "the 3rd mount in the group"
-  - `firstCatch`, `jackOfAllTrades`, `notableItem`
-  - the flavour title on profession cap 300
-- The recap card icons for WEB-57's new cards (PvP, death, fall, fire, epic, mount, night owl, early bird).
-- Kinds the bot doesn't know are still skipped and acknowledged. Tests for each kind's formatting, one and several feats.
-
 ### BOT-15 The daily Doomsday board post
 After web WEB-58 (events `doomsdayBoard` and `doomsdayBoardUpdate`), as on `bot-doomsday-daily`.
 - At each reset the site sends `doomsdayBoard`; the bot posts it in the Doomsday channel (a site setting) and acknowledges it with the message id. The post shows:

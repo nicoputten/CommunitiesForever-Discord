@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { decide, readEvents, readMilestones } from "../../src/core/events.js";
 import {
-  CLASS_COLOURS,
+  EPIC_PURPLE,
   GOLD,
   type Milestone,
   escapeMarkdown,
@@ -20,62 +20,69 @@ const ves = { guid: "Player-1-VES", name: "Ves Doombringer", classFile: "WARRIOR
 const lia = { guid: "Player-1-LIA", name: "Lia Thornwhisper", classFile: "PRIEST", ownerName: "Femke" };
 const zul = { guid: "Player-1-ZUL", name: "Zul Kazrek", classFile: "WARLOCK", level: 15, ownerName: "Femke" };
 
-describe("milestoneMessage", () => {
-  it("gives level 60 its own embed in the class colour, with the marker on its link", () => {
+describe("milestoneMessage (feats, BOT-14)", () => {
+  it('posts one feat as "Feat unlocked" with a sentence, the marker on the character link', () => {
     const message = milestoneMessage(12, [{ kind: "maxLevel", character: mira, level: 60, from: 58 }], SITE, HOST);
     expect(message).toEqual({
       embeds: [
         {
-          title: "Mira Sunstrider reached level 60",
-          url: "https://example.com/character/Player-1-MIRA#e12",
-          description: "Mira\nMage\n[Open character ↗](https://example.com/character/Player-1-MIRA)",
-          color: CLASS_COLOURS.MAGE,
+          title: "Feat unlocked",
+          description: "**[Mira Sunstrider](https://example.com/character/Player-1-MIRA#e12)** reached level 60.",
+          color: GOLD,
+          footer: { text: "example.com · feats" },
         },
       ],
       allowed_mentions: { parse: [] },
     });
   });
 
-  it("groups the other milestones of one upload in one gold embed, the marker on the first link only", () => {
+  it('posts several feats as "Feats unlocked · N", a block per character, the marker on each upload\'s first link', () => {
     const milestones: Milestone[] = [
       { kind: "level", character: ves, level: 40, from: 38 },
-      { kind: "professionCap", character: lia, profession: "Tailoring", rank: 225, skillLine: 197 },
+      { kind: "professionCap", character: lia, profession: "Tailoring", rank: 225, skillLine: 197, firstInGroup: true },
       { kind: "newCharacter", character: zul },
     ];
     const message = milestoneMessage(13, milestones, SITE, HOST);
     expect(message?.embeds).toHaveLength(1);
-    expect(message?.embeds[0]?.color).toBe(GOLD);
+    expect(message?.embeds[0]).toMatchObject({
+      title: "Feats unlocked · 3",
+      color: GOLD,
+      footer: { text: "3 feats from one upload · example.com · feats" },
+    });
     expect(message?.embeds[0]?.description).toBe(
       [
-        "**[Ves Doombringer](https://example.com/character/Player-1-VES#e13) hit level 40** · Nico",
-        "**[Lia Thornwhisper](https://example.com/character/Player-1-LIA) maxed Tailoring at 225** · Femke",
-        "**New character: [Zul Kazrek](https://example.com/character/Player-1-ZUL)** · Femke\nLevel 15 Warlock",
+        "**[Ves Doombringer](https://example.com/character/Player-1-VES#e13)**\n- Level 40",
+        "**[Lia Thornwhisper](https://example.com/character/Player-1-LIA)**\n- Tailoring 225, maxed · **First in the group**",
+        "**[Zul Kazrek](https://example.com/character/Player-1-ZUL)**\n- New character · level 15 Warlock",
       ].join("\n\n"),
     );
   });
 
-  it("puts level 60 first and the rest after it in one message", () => {
+  it('says "had a big upload" when all feats are one character\'s', () => {
     const message = milestoneMessage(
       14,
       [
         { kind: "maxLevel", character: mira, level: 60 },
-        { kind: "level", character: ves, level: 40 },
+        { kind: "epicMount", character: mira, riding: 150, level: 60, place: 3 },
       ],
       SITE,
       HOST,
     );
-    expect(message?.embeds.map((e) => e.color)).toEqual([CLASS_COLOURS.MAGE, GOLD]);
-    expect(message?.embeds[1]?.description).not.toContain("#e14");
+    expect(message?.embeds[0]?.description).toBe(
+      "**[Mira Sunstrider](https://example.com/character/Player-1-MIRA#e14)** had a big upload.\n" +
+        "- Level 60\n- Epic mount · riding 150 · the 3rd epic mount in the group",
+    );
   });
 
-  it("shows at most 10 milestones and points to the site for the rest", () => {
+  it("shows at most 10 feats and points to the site for the rest", () => {
     const many: Milestone[] = Array.from({ length: 13 }, (_, i) => ({
       kind: "newCharacter",
       character: { guid: `Player-1-${i}`, name: `Alt ${i}` },
     }));
-    const description = milestoneMessage(15, many, SITE, HOST)?.embeds[0]?.description ?? "";
-    expect(description.match(/New character/g)).toHaveLength(10);
-    expect(description).toMatch(/and 3 more on example\.com$/);
+    const embed = milestoneMessage(15, many, SITE, HOST)?.embeds[0];
+    expect(embed?.title).toBe("Feats unlocked · 13");
+    expect(embed?.description?.match(/New character/g)).toHaveLength(10);
+    expect(embed?.description).toMatch(/and 3 more on example\.com$/);
   });
 
   it("falls back for missing fields and leaves out characters without a name", () => {
@@ -84,15 +91,13 @@ describe("milestoneMessage", () => {
       [
         { kind: "level", character: { guid: "Player-1-X", name: "Xan" } },
         { kind: "professionCap", character: { guid: "Player-1-Y", name: "Yri" } },
-        { kind: "maxLevel", character: { guid: "Player-1-Z", name: "Zed", classFile: "UNKNOWN" } },
         { kind: "newCharacter", character: { guid: "Player-1-N" } },
       ],
       SITE,
       HOST,
     );
-    expect(message?.embeds[0]).toMatchObject({ title: "Zed reached level 60", color: GOLD });
-    expect(message?.embeds[1]?.description).toContain("Xan](https://example.com/character/Player-1-X) levelled up**");
-    expect(message?.embeds[1]?.description).toContain("maxed a profession**");
+    expect(message?.embeds[0]?.description).toContain("**\n- Levelled up");
+    expect(message?.embeds[0]?.description).toContain("**\n- A profession, maxed");
     expect(milestoneMessage(17, [{ kind: "newCharacter", character: { guid: "Player-1-N" } }], SITE, HOST)).toBe(
       undefined,
     );
@@ -102,11 +107,11 @@ describe("milestoneMessage", () => {
     expect(escapeMarkdown("*Bo_b* @everyone")).toBe("\\*Bo\\_b\\* \\@everyone");
     const message = milestoneMessage(
       18,
-      [{ kind: "level", character: { guid: "Player-1-Q", name: "Q", ownerName: "@everyone" }, level: 10 }],
+      [{ kind: "level", character: { guid: "Player-1-Q", name: "@everyone" }, level: 10 }],
       SITE,
       HOST,
     );
-    expect(message?.embeds[0]?.description).toContain("· \\@everyone");
+    expect(message?.embeds[0]?.description).toContain("**[\\@everyone](");
     expect(message?.allowed_mentions).toEqual({ parse: [] });
   });
 });
@@ -171,7 +176,7 @@ describe("decide", () => {
 });
 
 describe("groupedMessage and joinsPost (BOT-09)", () => {
-  it("puts a later upload's level 60 on top and marks each upload once", () => {
+  it("adds later uploads as blocks, each marked once", () => {
     const message = groupedMessage(
       [
         { eventId: 30, milestones: [{ kind: "level", character: ves, level: 40 }] },
@@ -181,9 +186,11 @@ describe("groupedMessage and joinsPost (BOT-09)", () => {
       SITE,
       HOST,
     );
-    expect(message?.embeds[0]?.url).toBe("https://example.com/character/Player-1-MIRA#e31");
-    expect(message?.embeds[1]?.description).toContain("Player-1-VES#e30)");
-    expect(message?.embeds[1]?.description).toContain("Player-1-ZUL#e32)");
+    expect(message?.embeds).toHaveLength(1);
+    expect(message?.embeds[0]?.footer).toEqual({ text: "example.com · feats" });
+    expect(message?.embeds[0]?.description).toContain("Player-1-VES#e30)");
+    expect(message?.embeds[0]?.description).toContain("Player-1-MIRA#e31)");
+    expect(message?.embeds[0]?.description).toContain("Player-1-ZUL#e32)");
     expect(
       markedEvents(SITE, [{ id: "1", texts: message?.embeds.flatMap((e) => [e.url ?? "", e.description ?? ""]) ?? [] }])
         .size,
@@ -228,27 +235,44 @@ describe("the test post", () => {
   });
 });
 
-describe("milestone card images (BOT-05)", () => {
+describe("feat card images (BOT-05, BOT-14)", () => {
   const sixty = { index: 2, kind: "maxLevel" as const, character: mira, level: 60, from: 58 };
   const tailor = { index: 0, kind: "professionCap" as const, character: lia, profession: "Tailoring", rank: 300 };
-  const newSixty = { index: 1, kind: "newCharacter" as const, character: { ...ves, level: 60 } };
   const low = { index: 3, kind: "professionCap" as const, character: zul, profession: "Alchemy", rank: 150 };
 
-  it("gives level 60, a new character at 60 and a profession at 300 their own embed with the site's card", () => {
-    const groups = [{ eventId: 30, milestones: [tailor, newSixty, sixty, low] }];
-    expect(milestoneFiles(groups).map((f) => f.path)).toEqual([
+  it("shows one card per post: the event's, the most special feat's", () => {
+    const epic = {
+      index: 1,
+      kind: "firstEpic" as const,
+      character: mira,
+      item: { name: "Robes of the Exalted", slot: "Chest", level: 58 },
+      card: "milestone-30-1",
+    };
+    const groups = [{ eventId: 30, milestones: [tailor, epic, sixty], card: "milestone-30-1" }];
+    expect(milestoneFiles(groups)).toEqual([{ name: "milestone-30-1.png", path: "cards/milestone-30-1.png" }]);
+    const message = groupedMessage(groups, SITE, HOST, ["milestone-30-1.png"])!;
+    expect(message.embeds).toHaveLength(1);
+    expect(message.embeds[0]?.image).toEqual({ url: "attachment://milestone-30-1.png" });
+    // The first epic's card: the border in epic purple (board `bot-doomsday-feats`).
+    expect(message.embeds[0]?.color).toBe(EPIC_PURPLE);
+  });
+
+  it("takes the first feat's card without an event card, and an older site's level 60 card", () => {
+    const withCard = { ...low, card: "milestone-31-3" };
+    expect(milestoneFiles([{ eventId: 31, milestones: [withCard] }]).map((f) => f.path)).toEqual([
+      "cards/milestone-31-3.png",
+    ]);
+    expect(milestoneFiles([{ eventId: 30, milestones: [low, tailor, sixty] }]).map((f) => f.path)).toEqual([
       "cards/milestone-30-0.png",
-      "cards/milestone-30-1.png",
-      "cards/milestone-30-2.png",
     ]);
-    const message = groupedMessage(groups, SITE, HOST, ["milestone-30-0.png", "milestone-30-2.png"])!;
-    expect(message.embeds.map((e) => e.image?.url)).toEqual([
-      "attachment://milestone-30-0.png",
-      undefined,
-      "attachment://milestone-30-2.png",
-      undefined,
-    ]);
-    // The rank 150 cap stays a line in the gold list.
-    expect(message.embeds.at(-1)?.description).toContain("Zul Kazrek");
+    expect(milestoneFiles([{ eventId: 30, milestones: [low] }])).toEqual([]);
+    // Ids that aren't a card name are never fetched.
+    expect(milestoneFiles([{ eventId: 30, milestones: [low], card: "../settings" }])).toEqual([]);
+  });
+
+  it("leaves the image out when the poster couldn't fetch it", () => {
+    const message = groupedMessage([{ eventId: 30, milestones: [sixty] }], SITE, HOST, [])!;
+    expect(message.embeds[0]?.image).toBeUndefined();
+    expect(message.embeds[0]?.color).toBe(GOLD);
   });
 });
