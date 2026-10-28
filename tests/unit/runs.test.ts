@@ -53,6 +53,9 @@ const ctx = { siteUrl: SITE, siteHost: HOST, now: NOW, reminderMinutes: 30 };
 const allText = (m: MessageContent) =>
   JSON.stringify([m.content, m.embeds.map((e) => [e.author, e.title, e.description, e.fields, e.footer])]);
 const labels = (m: MessageContent) => (m.components ?? []).flatMap((r) => r.components.map((c) => c.label));
+/** The post's slot lines (BOT-13): one per slot in the description. */
+const slotLines = (m: MessageContent) =>
+  (m.embeds[0]?.description ?? "").split("\n").filter((l) => /^(Tank|Healer|Damage) · /.test(l));
 
 describe("the run post", () => {
   it("shows the open run like the board: organiser, time, levels, note, five slots, could fill, counts", () => {
@@ -65,23 +68,25 @@ describe("the run post", () => {
     expect(e.url).toBe(`${SITE}/runs/7#r7`);
     expect(e.description).toContain(`<t:${START}:f> · <t:${START}:R>`);
     expect(e.description).toContain("Levels 32–42 · “Bring water, we clear the courtyard first.”");
-    expect(e.fields?.slice(0, 5).map((f) => `${f.name}: ${f.value}`)).toEqual([
-      "Tank: needed",
-      "Healer: Lia Thornwhisper 37 · Femke",
-      "Damage: Ves Doombringer 39 · Nico",
-      "Damage: Bob Example 41 · Bob",
-      "Damage: Tok Ironhide 33 · Bob · maybe",
+    // One line per slot (BOT-13): inline fields wrapped 3 + 2 and didn't line up.
+    expect(e.fields).toBeUndefined();
+    expect(slotLines(m)).toEqual([
+      "Tank · needed",
+      "Healer · Lia Thornwhisper 37 · Femke",
+      "Damage · Ves Doombringer 39 · Nico",
+      "Damage · Bob Example 41 · Bob",
+      "Damage · Tok Ironhide 33 · Bob · maybe",
     ]);
-    expect(e.fields?.[5]?.value).toBe(
-      "Could fill the tank slot: nobody in range yet. Close: Grom Ashfeller 24 (Nico), 8 below.",
+    expect(e.description).toContain(
+      "\n\nCould fill the tank slot: nobody in range yet. Close: Grom Ashfeller 24 (Nico), 8 below.",
     );
     expect(e.footer?.text).toBe("3 in · 1 maybe · 1 slot open · example.com/runs");
-    expect(labels(m)).toEqual(["I'm in", "Maybe", "Can't", "Pick my character", "Open run ↗"]);
+    // I'm in opens the picker (BOT-13): no separate Pick my character.
+    expect(labels(m)).toEqual(["I'm in", "Maybe", "Can't", "Open run ↗"]);
     expect(m.components?.[0]?.components.map((c) => c.custom_id).filter(Boolean)).toEqual([
       "run:7:in",
       "run:7:maybe",
       "run:7:cant",
-      "run:7:pick",
     ]);
     // Posts never show Discord ids (rule 5): only the role mention in the content.
     expect(allText(m)).not.toContain(IDS.nico);
@@ -98,9 +103,7 @@ describe("the run post", () => {
       ],
     });
     const m = runMessage(r, ctx);
-    expect(m.embeds[0]?.fields?.find((f) => f.value.startsWith("Mira"))?.value).toBe(
-      "Mira Sunstrider 60 · Mira · carry",
-    );
+    expect(slotLines(m)).toContain("Damage · Mira Sunstrider 60 · Mira · carry");
     expect(m.embeds[0]?.title).toBe("Scarlet Monastery: Armory · Full");
     expect(m.embeds[0]?.description).toContain("Ruk 33 · Jorrit is next in line if someone drops out");
     expect(allText(m)).toContain("Reserve: Ruk 33 · Jorrit");
@@ -364,7 +367,6 @@ describe("run events in the runs channel", () => {
       "ask:2:in",
       "ask:2:maybe",
       "ask:2:cant",
-      "ask:2:pick",
     ]);
     expect(ask.content.embeds[0]?.url).toBe(`${SITE}/runs#a2`);
     expect(discord.messages[0]?.content.embeds[0]?.title).toBe("Scarlet Monastery: Armory · Cancelled");
@@ -429,6 +431,7 @@ describe("the run commands and buttons", () => {
     role: "heal",
     roles: ["healer", "damage"],
     fit: "fits",
+    fitKind: "fits",
   };
   const zul = {
     guid: "ZUL",
@@ -438,6 +441,7 @@ describe("the run commands and buttons", () => {
     role: "dps",
     roles: ["damage"],
     fit: "2 below",
+    fitKind: "low",
   };
 
   function setup() {
@@ -555,7 +559,7 @@ describe("the run commands and buttons", () => {
     });
   });
 
-  it("I'm in opens the picker: characters with their fit tag, then the roles the class plays", async () => {
+  it("I'm in opens the picker: the best character preselected with its roles; another pick swaps them", async () => {
     const { site, actions } = setup();
     site.runAnswers.set("GET runs/7", { ok: true, body: { run: siteRun() } });
     site.runAnswers.set("GET runs/7/characters", { ok: true, body: { characters: [lia, zul] } });
@@ -566,20 +570,23 @@ describe("the run commands and buttons", () => {
     expect(imIn.deferred).toEqual(["reply"]);
     const picker = imIn.shown[0]!.content;
     expect(picker.embeds[0]?.title).toBe("Which character joins Scarlet Monastery: Armory?");
+    // The site's first is the best fit: preselected, with its roles right away (BOT-13).
     expect(picker.components?.[0]?.components[0]?.options).toEqual([
-      { label: "Lia Thornwhisper · 37 Priest", value: "LIA", description: "Healer / Damage · fits" },
-      { label: "Zul Kazrek · 30 Warlock", value: "ZUL", description: "Damage · 2 below" },
+      { label: "Lia Thornwhisper · 37 Priest", value: "LIA", default: true, description: "Healer / Damage · fits" },
+      { label: "Zul Kazrek · 30 Warlock", value: "ZUL", description: "Damage · 2 below · tough" },
+    ]);
+    expect(picker.embeds[0]?.description).toBe("**Lia Thornwhisper** · fits\nPick a role, or another character.");
+    expect(picker.components?.[1]?.components.map((c) => [c.label, c.custom_id])).toEqual([
+      ["Healer", "run:7:role:LIA:healer"],
+      ["Damage", "run:7:role:LIA:damage"],
     ]);
 
+    // Picking the same character again keeps it, with its roles.
     const chosen = pressed("run:7:char", ["LIA"]);
     await actions.press(chosen.press, signal);
     expect(chosen.deferred).toEqual(["update"]);
     const roles = chosen.shown[0]!.content;
-    expect(roles.embeds[0]?.title).toBe("Which role does Lia Thornwhisper play?");
-    expect(roles.components?.[0]?.components.map((c) => [c.label, c.custom_id])).toEqual([
-      ["Healer", "run:7:role:LIA:healer"],
-      ["Damage", "run:7:role:LIA:damage"],
-    ]);
+    expect(roles.components?.[0]?.components[0]?.options?.find((o) => o.default)?.value).toBe("LIA");
 
     site.runAnswers.set("POST runs/7/answers", {
       ok: true,
@@ -600,13 +607,13 @@ describe("the run commands and buttons", () => {
       "You're in as Lia Thornwhisper (healer). The game shows it after the next sync.",
     );
 
-    // A class with one role answers at once after the character is picked.
+    // A class with one role answers at once after the character is picked; 2 below may say I'm in (WEB-52).
     const warlock = pressed("run:7:char", ["ZUL"]);
     await actions.press(warlock.press, signal);
     expect(site.runCalls.at(-1)?.body).toMatchObject({ characterId: "ZUL", role: "damage" });
   });
 
-  it("I'm in with one character answers at once; a full role makes a reserve; refusals in words", async () => {
+  it("a full role makes a reserve; refusals in words; an old post's Pick my character still opens the picker", async () => {
     const { site, actions } = setup();
     const signal = new AbortController().signal;
     site.runAnswers.set("GET runs/7", { ok: true, body: { run: siteRun() } });
@@ -615,9 +622,14 @@ describe("the run commands and buttons", () => {
       ok: true,
       body: { stored: { answer: "maybe", role: "damage", reserve: true, waitlisted: true }, run: siteRun() },
     });
-    const imIn = pressed("run:7:in");
+    const imIn = pressed("run:7:role:ZUL:damage");
     await actions.press(imIn.press, signal);
-    expect(site.runCalls.at(-1)?.body).toEqual({ discordUserId: USER, answer: "in", characterId: "ZUL" });
+    expect(site.runCalls.at(-1)?.body).toEqual({
+      discordUserId: USER,
+      answer: "in",
+      characterId: "ZUL",
+      role: "damage",
+    });
     expect(imIn.shown[0]?.content.embeds[0]?.description).toBe(
       "Damage is full: you're reserve and move up first when a slot frees.",
     );
