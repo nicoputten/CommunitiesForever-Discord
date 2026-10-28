@@ -17,6 +17,19 @@ export const CLASS_ICONS: readonly { classFile: string; file: string }[] = [
   { classFile: "DRUID", file: "druid.png" },
 ];
 
+/**
+ * BOT-15: the Doomsday board's goal boxes, synced the same way (Nico, 2026-10-28): a PvE goal done (green), a PvP goal
+ * done (red) and an open one. Keyed like a class, so `icons.BOX_PVE` is its markup.
+ */
+export const BOX_ICONS: readonly { classFile: string; file: string }[] = [
+  { classFile: "BOX_PVE", file: "box-pve.png" },
+  { classFile: "BOX_PVP", file: "box-pvp.png" },
+  { classFile: "BOX_OPEN", file: "box-open.png" },
+];
+
+/** Every emoji the bot keeps as its own: the class icons and the boxes. */
+export const BOT_EMOJI: readonly { classFile: string; file: string }[] = [...CLASS_ICONS, ...BOX_ICONS];
+
 /** Class file → the emoji markup (`<:cf_mage_3fa9c1:123>`); a class without one shows no icon. */
 export type ClassIcons = Readonly<Record<string, string>>;
 
@@ -47,7 +60,7 @@ export interface SyncPlan {
 export function syncPlan(hashes: Readonly<Record<string, string>>, existing: readonly Emoji[]): SyncPlan {
   const plan: SyncPlan = { upload: [], remove: [], icons: {} };
   const wanted = new Set<string>();
-  for (const { classFile, file } of CLASS_ICONS) {
+  for (const { classFile, file } of BOT_EMOJI) {
     const hash = hashes[classFile];
     if (hash === undefined) continue;
     const name = emojiName(classFile, hash);
@@ -56,7 +69,7 @@ export function syncPlan(hashes: Readonly<Record<string, string>>, existing: rea
     if (there !== undefined) plan.icons[classFile] = markup(there);
     else plan.upload.push({ classFile, name, file });
   }
-  const ours = new RegExp(`^${PREFIX}(${CLASS_ICONS.map((c) => c.classFile.toLowerCase()).join("|")})_[0-9a-f]{6}$`);
+  const ours = new RegExp(`^${PREFIX}(${BOT_EMOJI.map((c) => c.classFile.toLowerCase()).join("|")})_[0-9a-f]{6}$`);
   plan.remove = existing.filter((e) => ours.test(e.name) && !wanted.has(e.name));
   return plan;
 }

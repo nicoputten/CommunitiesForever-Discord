@@ -4,7 +4,8 @@
 // Milestones of uploads within 5 minutes of a post are added to that post by editing it (BOT-09). The weekly recap
 // goes to the recap channel (the posts channel when none is set) with the site's card images attached (BOT-05); a
 // recap missed while the bot was away comes when it is back, since the site keeps it until it is acknowledged.
-// Planned runs go to the runs channel (the posts channel when none is set): app/runPosts.ts (BOT-04).
+// Planned runs go to the runs channel (the posts channel when none is set): app/runPosts.ts (BOT-04). The daily
+// Doomsday board goes to the Doomsday channel (the posts channel when none is set): app/doomsdayPosts.ts (BOT-15).
 import type { Attachment, Discord } from "../adapters/discord.js";
 import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
@@ -22,6 +23,7 @@ import {
 import { recapFiles, recapMessage } from "../core/recap.js";
 import { type SiteSettings, readSettings, settingsText } from "../core/settings.js";
 import type { IconBox } from "./classIcons.js";
+import { DoomsdayBoards } from "./doomsdayPosts.js";
 import { RunPosts } from "./runPosts.js";
 
 /**
@@ -58,7 +60,13 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
   let recapScanned: string | undefined;
   // The runs channel whose posts were read for markers (BOT-04), when it isn't the posts channel.
   let runsScanned: string | undefined;
+  // The Doomsday channel whose posts were read for markers (BOT-15), when it isn't the posts channel.
+  let doomsdayScanned: string | undefined;
   const runs = deps.runPosts ?? new RunPosts({ siteUrl, discord, log, now: deps.now, ...opt("icons", deps.icons) });
+  const boards = new DoomsdayBoards(
+    { siteUrl, site, discord, log, now: deps.now, ...opt("icons", deps.icons), pageUrl: () => settings?.doomsdayUrl },
+    signal,
+  );
   // The post that still takes milestones (BOT-09); at most MAX_LINES milestones, so bounded.
   // `attached`: its card images (BOT-05). An edit keeps them; milestones added by an edit go without an image.
   let open: { id: string; channel: string; at: number; groups: Group[]; attached: string[] } | undefined;
@@ -90,9 +98,9 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       settingsAt = deps.now();
     }
 
-    // Without a posts channel the runs channel still takes the runs (BOT-04); the other posts wait for theirs.
+    // Without a posts channel the runs and Doomsday channels still take theirs; the other posts wait for theirs.
     const postsSet = typeof settings.postsChannel === "string";
-    const wanted = settings.postsChannel ?? settings.runsChannel ?? undefined;
+    const wanted = settings.postsChannel ?? settings.runsChannel ?? settings.doomsdayChannel ?? undefined;
     if (wanted === undefined) {
       channel = undefined;
       await sleep(SETTINGS_EVERY_MS - (deps.now() - settingsAt), signal);
@@ -113,6 +121,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       open = undefined;
       recapScanned = undefined;
       runsScanned = undefined;
+      doomsdayScanned = undefined;
     }
     const recapChannel = settings.recapChannel ?? channel;
     if (recapChannel !== channel && recapChannel !== recapScanned) {
@@ -137,6 +146,17 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       }
       runsScanned = runsChannel;
     }
+    const doomsdayChannel = settings.doomsdayChannel ?? channel;
+    if (doomsdayChannel !== channel && doomsdayChannel !== doomsdayScanned) {
+      try {
+        for (const [id, message] of markedEvents(siteUrl, await discord.recentPosts(doomsdayChannel)))
+          posted.set(id, message);
+      } catch (error) {
+        await retry(`discord: reading the Doomsday channel failed (${codeOf(error)})`);
+        continue;
+      }
+      doomsdayScanned = doomsdayChannel;
+    }
 
     const answer = await site.events(cursor, signal);
     if (signal.aborted) return;
@@ -151,6 +171,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       if (action.do === "leave") continue;
       if (!postsSet && (action.do === "post" || action.do === "send")) continue;
       if (!postsSet && action.do === "recap" && typeof settings.recapChannel !== "string") continue;
+      if (!postsSet && action.do === "board" && typeof settings.doomsdayChannel !== "string") continue;
       let messageId: string | undefined;
       if (action.do === "ack") {
         messageId = action.messageId;
@@ -163,6 +184,17 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
           break;
         }
         // Nothing to acknowledge with (a notice to someone unreachable, no post): left, the site lets it expire.
+        if (messageId === undefined) continue;
+        posted.set(event.id, messageId);
+      } else if (action.do === "board") {
+        try {
+          messageId = await boards.handle(event.id, action.board, doomsdayChannel, action.posted);
+        } catch (error) {
+          failed = true;
+          await retry(`discord: Doomsday board event ${event.id} failed (${codeOf(error)})`);
+          break;
+        }
+        // Waiting for the edit throttle: acknowledged once shown.
         if (messageId === undefined) continue;
         posted.set(event.id, messageId);
       } else if (action.do === "send") {

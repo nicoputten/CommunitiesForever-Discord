@@ -20,6 +20,14 @@ export interface SiteSettings {
   mentionRole?: string | null;
   /** runs.reminderMinutes (BOT-04): when "starting soon" begins; 30 when the site doesn't say. */
   reminderMinutes?: number;
+  /** posts.doomsdayBoard (BOT-15): the daily board on or off; undefined when the site doesn't say. */
+  doomsdayBoard?: boolean;
+  /** posts.doomsdayLadder (BOT-16): the weekly ladder on or off; undefined when the site doesn't say. */
+  doomsdayLadder?: boolean;
+  /** channels.doomsday (BOT-15): the Doomsday channel; null or undefined means the posts channel. */
+  doomsdayChannel?: string | null;
+  /** doomsday.url (BOT-15): the site's Doomsday page, for "Open the board ↗". */
+  doomsdayUrl?: string;
 }
 
 export function readSettings(body: unknown): SiteSettings {
@@ -27,6 +35,7 @@ export function readSettings(body: unknown): SiteSettings {
   const posts = isObject(body.posts) ? body.posts : {};
   const channels = isObject(body.channels) ? body.channels : {};
   const runs = isObject(body.runs) ? body.runs : {};
+  const doomsday = isObject(body.doomsday) ? body.doomsday : {};
   const minutes = runs.reminderMinutes;
   return {
     siteName: typeof body.siteName === "string" && body.siteName.trim() ? body.siteName.trim() : undefined,
@@ -41,6 +50,11 @@ export function readSettings(body: unknown): SiteSettings {
       body.mentionRole === null ? null : isSnowflake(body.mentionRole) ? (body.mentionRole as string) : undefined,
     reminderMinutes:
       typeof minutes === "number" && Number.isInteger(minutes) && minutes > 0 && minutes <= 1440 ? minutes : undefined,
+    doomsdayBoard: typeof posts.doomsdayBoard === "boolean" ? posts.doomsdayBoard : undefined,
+    doomsdayLadder: typeof posts.doomsdayLadder === "boolean" ? posts.doomsdayLadder : undefined,
+    doomsdayChannel:
+      channels.doomsday === null ? null : isSnowflake(channels.doomsday) ? (channels.doomsday as string) : undefined,
+    doomsdayUrl: typeof doomsday.url === "string" && /^https?:\/\/\S+$/.test(doomsday.url) ? doomsday.url : undefined,
   };
 }
 
@@ -58,5 +72,6 @@ export function settingsText(siteUrl: string, settings: SiteSettings): string {
   const channel = settings.postsChannel ? "set" : "not set";
   const recap = settings.recapChannel ? "; recap channel set" : "";
   const runs = settings.runsChannel ? "; runs channel set" : "";
-  return `site: ${siteUrl} answers as ${settings.siteName ?? "(no name)"}; posts channel ${channel}${recap}${runs}`;
+  const doomsday = settings.doomsdayChannel ? "; Doomsday channel set" : "";
+  return `site: ${siteUrl} answers as ${settings.siteName ?? "(no name)"}; posts channel ${channel}${recap}${runs}${doomsday}`;
 }

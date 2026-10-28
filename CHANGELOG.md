@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Doomsday board: at each reset the bot posts the day's goals in the Doomsday channel (the posts channel when none is set), with a row of boxes per friend, and edits that one post as uploads come in: names struck through when the dailies are done, the crown for the first, points per track, and a final version with the day's summary. "My goals" shows your own goals, only to you. The green, red and open boxes are the bot's own emoji.
 - Feats: milestone posts become "Feat unlocked" posts (several from one upload: "Feats unlocked · 4"), with "First in the group" and one card image per post. New feats: honorable kills, PvP ranks with their "a.k.a." titles, duel wins, first battleground wins, 100 deaths, the first epic, mounts, the first catch, Jack of all trades and notable items (Arcanite Reaper, Mooncloth, the Fishing Extravaganza, ...). Feats from a newer site are posted with the site's text.
 
 ## v0.2.1 (2026-10-28)

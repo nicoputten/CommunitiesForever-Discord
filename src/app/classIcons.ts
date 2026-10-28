@@ -1,4 +1,4 @@
-// The class icons at start (BOT-11): the bot uploads its own application emoji from `assets/class-icons/` when one is
+// The class icons (BOT-11) and the Doomsday boxes (BOT-15) at start: the bot uploads its own application emoji from `assets/class-icons/` (the boxes too) when one is
 // missing or its picture changed (the picture's hash is in the emoji's name, core/classIcons.ts), then deletes the
 // older ones. Never fatal: an icon that can't be had leaves its class without one.
 import { createHash } from "node:crypto";
@@ -6,7 +6,7 @@ import { readFile } from "node:fs/promises";
 import type { Discord } from "../adapters/discord.js";
 import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
-import { CLASS_ICONS, type ClassIcons, NO_ICONS, markup, syncPlan } from "../core/classIcons.js";
+import { BOT_EMOJI, type ClassIcons, NO_ICONS, markup, syncPlan } from "../core/classIcons.js";
 
 /** The icons the bot uses now; empty until the sync is done or when it failed. */
 export interface IconBox {
@@ -31,13 +31,13 @@ export const readIconFile: ReadIcon = async (file) => {
 export async function syncClassIcons(discord: Discord, log: Log, read: ReadIcon = readIconFile): Promise<ClassIcons> {
   const files = new Map<string, Uint8Array>();
   const hashes: Record<string, string> = {};
-  for (const { classFile, file } of CLASS_ICONS) {
+  for (const { classFile, file } of BOT_EMOJI) {
     const data = await read(file);
     if (data === undefined) continue;
     files.set(classFile, data);
     hashes[classFile] = createHash("sha256").update(data).digest("hex");
   }
-  if (files.size < CLASS_ICONS.length) log.error(`class icons: ${CLASS_ICONS.length - files.size} icon files missing`);
+  if (files.size < BOT_EMOJI.length) log.error(`class icons: ${BOT_EMOJI.length - files.size} icon files missing`);
   let existing;
   try {
     existing = await discord.emojis();
@@ -63,7 +63,7 @@ export async function syncClassIcons(discord: Discord, log: Log, read: ReadIcon 
     }
   }
   const uploaded = plan.upload.filter((u) => icons[u.classFile] !== undefined).length;
-  log.info(`class icons: ${Object.keys(icons).length} of ${CLASS_ICONS.length} ready (${uploaded} uploaded)`);
+  log.info(`class icons: ${Object.keys(icons).length} of ${BOT_EMOJI.length} ready (${uploaded} uploaded)`);
   return icons;
 }
 

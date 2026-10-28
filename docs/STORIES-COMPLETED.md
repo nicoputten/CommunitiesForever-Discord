@@ -114,3 +114,21 @@ After web WEB-56. Every milestone becomes a feat. The event type stays `mileston
 - Decided with Nico (2026-10-28): the bot words each kind it knows from the fields, with the board's bold, and posts a kind it doesn't know with the site's `text` (skipped without one); the 5-minute grouping of BOT-09 stays, with a block per character and upload and one card per post (the first upload's `card`); the board's lines the site doesn't send ("First Doombringer to reach rank 6.", the joke under 1,000 kills) are left out; the epic item is bold and the border epic purple, since Discord can't colour text; the "recap card icons" are dropped (the recap shows the site's card texts, with no icons on the board either). See DESIGN-NOTES "Deviations".
 - Done (PR #35): `src/core/feats.ts` (the sentence of one feat and the short line of several, per kind), `groupedMessage` in `src/core/milestones.ts` ("Feat unlocked" or "Feats unlocked · N", "had a big upload." for one character, the badge, the one card and its colour) and `readMilestones` (the new kinds, `text`, `firstInGroup`, `card`, the event's `card`). The contract says `firstEpic.item.level` is the level it was looted at, so the post says "looted at level 58" where the board says "item level 66".
 - Manual (Nico, in Discord, once the site has WEB-56): an upload with one feat (e.g. a duel win milestone) gives "Feat unlocked" with its sentence; an upload with several gives "Feats unlocked · N" with one card; a second upload within 5 minutes is added to that post.
+
+### BOT-15 The daily Doomsday board post
+After web WEB-58 (events `doomsdayBoard` and `doomsdayBoardUpdate`), as on `bot-doomsday-daily`.
+- At each reset the site sends `doomsdayBoard`; the bot posts it in the Doomsday channel (a site setting) and acknowledges it with the message id. The post shows:
+  - "Doomsday · Tue 28 Oct"
+  - the PvE dailies and PvP goals with their points
+  - a row per friend with boxes per goal (green PvE, red PvP; the bot's own custom emoji)
+  - "resets in …"
+  - the "Open the board ↗" and "My goals" buttons
+- Each `doomsdayBoardUpdate` for that day **edits the same message**, never a new one. A finished friend's name is struck through, the crown goes to the first, and progress shows ("3 / 5"). Rate-limit the edits: at most one per message per 30 s, keeping only the newest state.
+- The final update (`final: true`) shows "final" and the day's summary: goals done, who won the Hunt race, the longest streak.
+- Friends without the addon get no row ("Sanne: no addon, so no row"). PvP Virgin is shown next to the name.
+- "My goals" answers like `/doomsday` (BOT-16), ephemeral.
+- Custom emoji: the bot uses its own if they're uploaded to the server, else plain characters (✅, ▢). Document in `docs/DISCORD-SETUP.md` how to add them.
+- Tests: formatting at 19:00 (fresh), midday and final; the edit throttle; a message that was deleted (post a new one and acknowledge that).
+- Decided with Nico (2026-10-28): the boxes are the bot's own application emoji, uploaded at start with the class icons (✅ and ▢ until then); the site is asked for `yesterdayCrown` (shown when sent), a friend with nothing done gets "—" instead of the board's joke, and `withoutData` is "No Doomsday data yet: Sanne."; "My goals" answers with the `/doomsday` reply, built here, and BOT-16 adds the command.
+- Done (PR #36): `src/core/doomsday.ts` (`readBoard`, `boardMessage`: the goals per track, a row per friend with a box per goal, the strike-through, the crown, "n / 5" and the points per track, the notes, "resets <t:…:R>", the buttons; the final with its summary and no buttons; `readLookup` and `doomsdayReply` for "My goals"), `src/app/doomsdayPosts.ts` (post, edit, the 30 s throttle with only the newest waiting update, posting again when the message is gone; "My goals"), the Doomsday settings and channel in the poster, and the box emoji in the icon sync. The board's marker is on its title link (`/doomsday#e<board event>`), so a restart finds it.
+- Manual (Nico, in Discord, once the site has WEB-58): pick a Doomsday channel on the site; at the reset the board appears with open boxes; after an upload it is edited (at most every 30 s), with ~~struck~~ names and the crown; My goals answers only you; delete the post and upload again: a new post comes; the next reset edits it to "final".
