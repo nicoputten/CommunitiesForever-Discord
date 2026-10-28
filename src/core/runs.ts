@@ -54,6 +54,8 @@ export type RunState = "open" | "full" | "started" | "past" | "cancelled";
 
 export interface Run {
   id: number;
+  /** BOT-12: an ask shown through the run replies (its buttons are `ask:<id>:…`). */
+  kind?: "ask";
   dungeon: { name: string; min?: number; max?: number };
   startsAt: number;
   note?: string;
@@ -375,6 +377,12 @@ function stateLine(run: Run, state: PostState, ctx: PostContext): string | undef
 /** The custom id of a run's button: `run:<id>:<what>`. */
 export const runButton = (runId: number, what: string) => `run:${runId}:${what}`;
 
+/** A run's or an ask's button (BOT-12): `run:<id>:<what>` or `ask:<id>:<what>`. */
+export const buttonOf = (run: Run, what: string) => `${run.kind ?? "run"}:${run.id}:${what}`;
+
+/** A run's page, or the Runs page for an ask (it has no page of its own). */
+export const pageOf = (siteUrl: string, run: Run) => (run.kind === "ask" ? `${siteUrl}/runs` : runUrl(siteUrl, run.id));
+
 function linkButton(label: string, url: string): Component {
   return { type: 2, style: 5, label, url };
 }
@@ -582,9 +590,14 @@ export function pingMessage(
   };
 }
 
-// --- ask now from the game -------------------------------------------------------------------------------------------
+// --- asks (BOT-12) ---------------------------------------------------------------------------------------------------
 
+/**
+ * An ask ("who's up right now", web WEB-51), from the game or `/ask`: open for 10 minutes, answered without slots.
+ * `id` is the site's ask (sites from before WEB-51 send the game's item id, and the post then has no buttons).
+ */
 export interface Ask {
+  id?: number;
   dungeon: string;
   min?: number;
   max?: number;
@@ -592,7 +605,11 @@ export interface Ask {
   character?: string;
   role?: SlotRole;
   note?: string;
+  source?: string;
+  at?: number;
   expiresAt?: number;
+  state?: "open" | "expired" | "cancelled";
+  answers: RunAnswer[];
 }
 
 export function readAsk(data: unknown): Ask | undefined {
@@ -603,10 +620,13 @@ export function readAsk(data: unknown): Ask | undefined {
   const levels = isObject((a.dungeon as Record<string, unknown>).typicalLevels)
     ? ((a.dungeon as Record<string, unknown>).typicalLevels as Record<string, unknown>)
     : {};
-  // The addon's roles (tank / heal / dps).
+  // The asker's role as the addon names it (tank / heal / dps).
   const role: SlotRole | undefined =
     a.role === "tank" ? "tank" : a.role === "heal" ? "healer" : a.role === "dps" ? "damage" : undefined;
+  const state: Ask["state"] =
+    a.state === "open" || a.state === "expired" || a.state === "cancelled" ? a.state : undefined;
   return {
+    ...optional("id", Number.isInteger(a.id) ? (a.id as number) : undefined),
     dungeon,
     ...optional("min", number(levels.min)),
     ...optional("max", number(levels.max)),
@@ -614,45 +634,134 @@ export function readAsk(data: unknown): Ask | undefined {
     ...optional("character", text(a.character)),
     ...optional("role", role),
     ...optional("note", text(a.note)),
+    ...optional("source", text(a.source)),
+    ...optional("at", number(a.at)),
     ...optional("expiresAt", number(a.expiresAt)),
+    ...optional("state", state),
+    answers: (Array.isArray(a.answers) ? a.answers : []).flatMap(readAnswer),
   };
 }
 
+/** Whether the ask takes no more answers: the site says so, or its 10 minutes are over. */
+export function askEnded(ask: Ask, now: number): boolean {
+  return ask.state === "expired" || ask.state === "cancelled" || (ask.expiresAt !== undefined && now >= ask.expiresAt);
+}
+
+/** The marker on an ask post's link: `#a<id>`, so the post is found again for its answers and its expiry. */
+export function askMarker(askId: number): string {
+  return `#a${askId}`;
+}
+
+/** Ask id → message id for the bot's ask posts among these messages. */
+export function markedAsks(siteUrl: string, messages: readonly { id: string; texts: string[] }[]): Map<number, string> {
+  const pattern = new RegExp(`${escapeRegExp(siteUrl)}/runs#a(\\d+)`, "g");
+  const found = new Map<number, string>();
+  for (const message of messages) {
+    for (const t of message.texts) {
+      for (const match of t.matchAll(pattern)) {
+        const id = Number(match[1]);
+        if (!found.has(id)) found.set(id, message.id);
+      }
+    }
+  }
+  return found;
+}
+
+/** An ask as a run, for the answer replies and the picker it shares with runs (BOT-04). */
+export function askAsRun(ask: Ask & { id: number }): Run {
+  return {
+    id: ask.id,
+    kind: "ask",
+    dungeon: { name: ask.dungeon, ...optional("min", ask.min), ...optional("max", ask.max) },
+    startsAt: ask.at ?? ask.expiresAt ?? 0,
+    organiser: { ...ask.from, ...optional("character", ask.character) },
+    answers: ask.answers,
+  };
+}
+
+export interface AskContext {
+  siteUrl: string;
+  /** Unix seconds. */
+  now: number;
+  /** The event the post was made for, its marker when the ask has no id (a site from before WEB-51). */
+  eventId: number;
+  mentionRole?: string;
+  icons?: ClassIcons;
+}
+
 /**
- * An ask from the game (board `bot-posts-runs` 4), posted without answer buttons (Nico, 2026-10-28: answering it from
- * Discord needs the site to keep asks first); Discord's relative time shows when it ends.
+ * An ask (board `bot-posts-runs` 4), from the game or `/ask`: the answers so far, I'm in / Maybe / Can't / Pick my
+ * character while it is open, then "Expired" without buttons. One message per ask, edited as answers come in.
  */
-export function askMessage(ask: Ask, eventId: number, siteUrl: string, mentionRole?: string): MessageContent {
+export function askMessage(ask: Ask, ctx: AskContext): MessageContent {
+  const icons = ctx.icons ?? NO_ICONS;
   const who = esc(ask.from.name) ?? "Someone";
   const on =
     ask.character !== undefined
       ? `${who} on ${escapeMarkdown(ask.character)}${ask.role !== undefined ? ` (${ask.role})` : ""}`
       : who;
-  const mention = mentionRole !== undefined ? `<@&${mentionRole}> ` : "";
+  const ended = askEnded(ask, ctx.now);
+  const name = (a: RunAnswer) =>
+    a.character !== undefined
+      ? `${icon(icons, a.classFile)}${escapeMarkdown(a.character)}${a.name !== undefined ? ` (${escapeMarkdown(a.name)})` : ""}`
+      : (esc(a.name) ?? "Someone");
+  const list = (label: string, kind: RunAnswer["answer"]) => {
+    const answers = ask.answers.filter((a) => a.answer === kind);
+    return answers.length === 0 ? undefined : `**${label}** · ${answers.map(name).join(" · ")}`;
+  };
+  const answered = ask.answers.length;
+  const lines = ended
+    ? [
+        `${ask.at !== undefined ? `Asked at <t:${ask.at}:t> · ` : ""}${answered} answered`,
+        list("In", "in"),
+        "After 10 minutes the buttons go away; the group forms in game.",
+      ]
+    : [
+        [
+          ask.min !== undefined && ask.max !== undefined ? `Levels ${ask.min}–${ask.max}` : undefined,
+          ask.expiresAt !== undefined ? `ends <t:${ask.expiresAt}:R>` : undefined,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+        ask.note !== undefined ? `“${escapeMarkdown(ask.note)}”` : undefined,
+        list("In", "in"),
+        list("Maybe", "maybe"),
+        list("Can't", "cant"),
+        ask.id === undefined ? `Answer in game: ${who} gets the answers there and sends the invites.` : undefined,
+      ];
+  const from = ask.source === "discord" ? "asked on Discord" : "asked from the game · via /reload";
+  const mention = ctx.mentionRole !== undefined ? `<@&${ctx.mentionRole}> ` : "";
+  const open = !ended && ask.id !== undefined;
+  const button = (what: string) => `ask:${ask.id}:${what}`;
   return {
     content: `${mention}${who} asks who's up right now`,
     embeds: [
       {
         author: { name: on.replace(/\\/g, "") },
-        title: `${ask.dungeon} · now`,
-        url: `${siteUrl}/runs${marker(eventId)}`,
-        description: [
-          [
-            ask.min !== undefined && ask.max !== undefined ? `Levels ${ask.min}–${ask.max}` : undefined,
-            ask.expiresAt !== undefined ? `ends <t:${ask.expiresAt}:R>` : undefined,
-          ]
-            .filter(Boolean)
-            .join(" · "),
-          ask.note !== undefined ? `“${escapeMarkdown(ask.note)}”` : undefined,
-          `Answer in game: ${who} gets the answers there and sends the invites.`,
-        ]
-          .filter(Boolean)
-          .join("\n"),
-        footer: { text: "asked from the game · via /reload" },
+        title: `${ask.dungeon} · ${ended ? "Expired" : "now"}`,
+        url: `${ctx.siteUrl}/runs${ask.id !== undefined ? askMarker(ask.id) : marker(ctx.eventId)}`,
+        description: lines.filter((l): l is string => l !== undefined && l !== "").join("\n"),
+        footer: { text: `${from} · ends in a party invite in game` },
         color: GOLD,
       },
     ],
-    allowed_mentions: { parse: [], ...(mentionRole !== undefined ? { roles: [mentionRole] } : {}) },
+    // Only the role, and only on the first post: an edit never notifies (Discord).
+    allowed_mentions: { parse: [], ...(ctx.mentionRole !== undefined ? { roles: [ctx.mentionRole] } : {}) },
+    ...(open
+      ? {
+          components: [
+            {
+              type: 1 as const,
+              components: [
+                { type: 2 as const, style: 3, label: "I'm in", custom_id: button("in") },
+                { type: 2 as const, style: 2, label: "Maybe", custom_id: button("maybe") },
+                { type: 2 as const, style: 4, label: "Can't", custom_id: button("cant") },
+                { type: 2 as const, style: 2, label: "Pick my character", custom_id: button("pick") },
+              ],
+            },
+          ],
+        }
+      : { components: [] }),
   };
 }
 

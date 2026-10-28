@@ -86,6 +86,7 @@ describe("COMMANDS", () => {
       "alts",
       "me",
       "plan",
+      "ask",
       "runs",
       "run",
       "recap",

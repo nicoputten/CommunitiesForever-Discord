@@ -3,7 +3,7 @@
 // refusals. Only for the asker. Pure: the site's answers and the time come in as arguments.
 import { type ClassIcons, NO_ICONS, icon, optionEmoji } from "./classIcons.js";
 import { type Component, type MessageContent, GOLD, escapeMarkdown } from "./milestones.js";
-import { type Run, type SlotRole, runButton, runUrl } from "./runs.js";
+import { type Ask, type Run, type SlotRole, buttonOf, pageOf, runButton, runUrl } from "./runs.js";
 
 const ROLES: readonly SlotRole[] = ["tank", "healer", "damage"];
 const CLASS_NAMES: Readonly<Record<string, string>> = {
@@ -34,11 +34,11 @@ function reply(
   };
 }
 
-const openRun = (siteUrl: string, runId: number): Component => ({
+const openRun = (siteUrl: string, run: Run): Component => ({
   type: 2,
   style: 5,
-  label: "Open run ↗",
-  url: runUrl(siteUrl, runId),
+  label: run.kind === "ask" ? "Open runs ↗" : "Open run ↗",
+  url: pageOf(siteUrl, run),
 });
 
 // --- the site's answers ----------------------------------------------------------------------------------------------
@@ -268,8 +268,8 @@ export function plannedMessage(
   return reply(
     `Planned · ${run.dungeon.name}`,
     `<t:${run.startsAt}:f> · <t:${run.startsAt}:R>\n${leads} ${where}${zone}`,
-    [openRun(siteUrl, run.id)],
-    others.length > 0 ? [characterSelect(run.id, "lead", "Lead with another character", others, icons)] : [],
+    [openRun(siteUrl, run)],
+    others.length > 0 ? [characterSelect(run, "lead", "Lead with another character", others, icons)] : [],
   );
 }
 
@@ -280,6 +280,29 @@ export function timePassedMessage(dayLabel: string, time: string, timeZone: stri
     "That time has already passed",
     `${escapeMarkdown(dayLabel)} ${time} has passed${zone}. Pick a later time or another day.`,
     againId !== undefined ? [{ type: 2, style: 1, label: `Tomorrow ${time}`, custom_id: againId }] : [],
+  );
+}
+
+// --- /ask (BOT-12) ---------------------------------------------------------------------------------------------------
+
+/** `/ask`'s confirmation (board `bot-commands-runs`): where it went, when it ends, and that Discord can't whisper. */
+export function askedMessage(
+  ask: Ask,
+  runsChannel: string | undefined,
+  siteUrl: string,
+  icons: ClassIcons = NO_ICONS,
+): MessageContent {
+  const where = runsChannel !== undefined ? `Posted in <#${runsChannel}>.` : "Posted in the runs channel.";
+  const ends = ask.expiresAt !== undefined ? ` It expires <t:${ask.expiresAt}:R>.` : " It expires in 10 minutes.";
+  const mine = ask.answers.find((a) => a.answer === "in" && a.discordId === ask.from.discordId);
+  const as =
+    mine?.character !== undefined
+      ? `\nYou're in as ${icon(icons, mine.classFile)}${escapeMarkdown(mine.character)} (${mine.role}).`
+      : "";
+  return reply(
+    `Asked · ${ask.dungeon}, now`,
+    `${where}${ends}${as}\n-# Discord can't whisper anyone in game. For the in-game whisper to online friends, ask from the Dungeons tab.`,
+    [{ type: 2, style: 5, label: "Open runs ↗", url: `${siteUrl}/runs` }],
   );
 }
 
@@ -306,7 +329,7 @@ export function editedMessage(run: Run, moved: boolean, siteUrl: string): Messag
   return reply(
     `${moved ? "Moved" : "Changed"} · ${run.dungeon.name}`,
     `${moved ? `Now <t:${run.startsAt}:f> (<t:${run.startsAt}:R>). ` : ""}The post is updated.${kept}`,
-    [{ type: 2, style: 4, label: "Cancel run", custom_id: runButton(run.id, "cancel") }, openRun(siteUrl, run.id)],
+    [{ type: 2, style: 4, label: "Cancel run", custom_id: runButton(run.id, "cancel") }, openRun(siteUrl, run)],
   );
 }
 
@@ -314,14 +337,14 @@ export function cancelledMessage(run: Run, siteUrl: string): MessageContent {
   return reply(
     `Cancelled · ${run.dungeon.name}`,
     "The post shows it cancelled; everyone who answered I'm in or Maybe gets a quiet notice.",
-    [openRun(siteUrl, run.id)],
+    [openRun(siteUrl, run)],
   );
 }
 
 // --- answering from the post ----------------------------------------------------------------------------------------
 
 function characterSelect(
-  runId: number,
+  run: Run,
   what: string,
   placeholder: string,
   chars: readonly PickCharacter[],
@@ -329,7 +352,7 @@ function characterSelect(
 ): Component {
   return {
     type: 3,
-    custom_id: runButton(runId, what),
+    custom_id: buttonOf(run, what),
     placeholder,
     options: chars.slice(0, 25).map((c) => ({
       label:
@@ -358,14 +381,14 @@ export function pickerMessage(
     return reply(
       `None of your characters can join ${run.dungeon.name}${range}`,
       "A character 6 or more levels below the range can only answer Maybe. Maybe and Can't always go.",
-      [{ type: 2, style: 2, label: "Maybe", custom_id: runButton(run.id, "maybe") }, openRun(siteUrl, run.id)],
+      [{ type: 2, style: 2, label: "Maybe", custom_id: buttonOf(run, "maybe") }, openRun(siteUrl, run)],
     );
   }
   return reply(
     `Which character joins ${run.dungeon.name}?`,
     "Characters 6 or more levels below the range aren't listed: they can answer Maybe.",
     [],
-    [characterSelect(run.id, "char", "Pick my character", chars, icons)],
+    [characterSelect(run, "char", "Pick my character", chars, icons)],
   );
 }
 
@@ -378,7 +401,7 @@ export function rolePickerMessage(run: Run, c: PickCharacter): MessageContent {
       type: 2 as const,
       style: role === c.role ? 1 : 2,
       label: capital(role),
-      custom_id: runButton(run.id, `role:${c.guid}:${role}`),
+      custom_id: buttonOf(run, `role:${c.guid}:${role}`),
     })),
   );
 }
@@ -428,6 +451,7 @@ export function refusalMessage(error: string | undefined, status: number | undef
     note_too_long: "The note is longer than 200 characters.",
     unknown_dungeon: "No such dungeon: pick one from the list.",
     already_cancelled: "This run was already cancelled.",
+    expired: "This ask has expired: its 10 minutes are over.",
   };
   const known = error !== undefined ? texts[error] : undefined;
   if (known !== undefined) return reply("Not possible", known);

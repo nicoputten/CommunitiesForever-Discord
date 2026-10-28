@@ -11,6 +11,7 @@ import {
   type PickCharacter,
   type PlanChoices,
   answeredMessage,
+  askedMessage,
   cancelledMessage,
   dayChoices,
   dayOffset,
@@ -29,12 +30,12 @@ import {
   runsListMessage,
   timePassedMessage,
 } from "../core/runReplies.js";
-import { type Run, type SlotRole, readRun } from "../core/runs.js";
+import { type Run, type SlotRole, askAsRun, readAsk, readRun } from "../core/runs.js";
 import type { SiteSettings } from "../core/settings.js";
 import type { IconBox } from "./classIcons.js";
 import { NO_ICONS } from "../core/classIcons.js";
 
-export const RUN_COMMANDS = ["plan", "runs", "run"] as const;
+export const RUN_COMMANDS = ["plan", "ask", "runs", "run"] as const;
 
 /** How long the time-passed reply's "Tomorrow" button works, and how many are kept: bounded. */
 export const AGAIN_FOR_MS = 15 * 60_000;
@@ -78,13 +79,14 @@ export class RunActions {
     return this.call("GET", `plan?discordUserId=${encodeURIComponent(userId)}`, undefined, signal);
   }
 
-  private async characters(runId: number, userId: string, signal: AbortSignal): Promise<SiteAnswer> {
-    return this.call("GET", `runs/${runId}/characters?discordUserId=${encodeURIComponent(userId)}`, undefined, signal);
+  private async characters(runId: number, userId: string, signal: AbortSignal, kind: Kind = "run") {
+    const path = `${kind}s/${runId}/characters?discordUserId=${encodeURIComponent(userId)}`;
+    return this.call("GET", path, undefined, signal);
   }
 
-  private async run(runId: number, signal: AbortSignal): Promise<Run | undefined> {
-    const answer = await this.call("GET", `runs/${runId}`, undefined, signal);
-    return answer.ok && isObject(answer.body) ? readRun(answer.body.run) : undefined;
+  private async run(runId: number, signal: AbortSignal, kind: Kind = "run"): Promise<Run | undefined> {
+    const answer = await this.call("GET", `${kind}s/${runId}`, undefined, signal);
+    return answer.ok && isObject(answer.body) ? readAnswered(kind, answer.body) : undefined;
   }
 
   /** A refusal for people; 403 `not_linked` is the "Link your Discord first" card. */
@@ -118,6 +120,8 @@ export class RunActions {
         ),
       );
     }
+    if (command.name === "ask")
+      return command.reply(await this.ask(command.userId, param("dungeon"), param("note"), signal));
     if (command.name === "plan") {
       const choices = await this.choices(command.userId, signal);
       if (!choices.ok) return command.reply(this.refused(choices));
@@ -174,6 +178,42 @@ export class RunActions {
     const run = isObject(answer.body) ? readRun(answer.body.run) : undefined;
     if (run === undefined) return command.reply(refusalMessage(undefined, 500));
     return command.reply(editedMessage(run, day !== undefined || time !== undefined, this.deps.siteUrl));
+  }
+
+  /** `/ask` (BOT-12): an ask that starts now, the asker on the character the site suggests for the dungeon. */
+  private async ask(
+    userId: string,
+    dungeonParam: string | undefined,
+    note: string | undefined,
+    signal: AbortSignal,
+  ): Promise<MessageContent> {
+    const choices = await this.choices(userId, signal);
+    if (!choices.ok) return this.refused(choices);
+    const read = readPlanChoices(choices.body);
+    const wanted = (dungeonParam ?? "").toLowerCase();
+    const dungeon = read.dungeons.find((d) => d.id === dungeonParam || d.name.toLowerCase() === wanted);
+    if (dungeon === undefined) return refusalMessage("unknown_dungeon", 400);
+    const answer = await this.call(
+      "POST",
+      "asks",
+      {
+        discordUserId: userId,
+        dungeonId: dungeon.id,
+        ...opt("note", note),
+        ...opt("leadGuid", dungeon.lead?.guid),
+      },
+      signal,
+    );
+    if (!answer.ok) return this.refused(answer);
+    const ask = readAsk(isObject(answer.body) ? answer.body : undefined);
+    if (ask === undefined) return refusalMessage(undefined, 500);
+    const settings = this.deps.settings();
+    return askedMessage(
+      ask,
+      settings?.runsChannel ?? settings?.postsChannel ?? undefined,
+      this.deps.siteUrl,
+      this.icons(),
+    );
   }
 
   /** Plans a run, leading as the character the site suggests for the dungeon. */
@@ -264,9 +304,9 @@ export class RunActions {
 
   // --- buttons and the picker ----------------------------------------------------------------------------------------
 
-  /** Whether a custom id is one of the run's (`run:` and `plan:`). */
+  /** Whether a custom id is one of the run's (`run:` and `plan:`) or an ask's (`ask:`, BOT-12). */
   static handles(customId: string): boolean {
-    return customId.startsWith("run:") || customId.startsWith("plan:");
+    return customId.startsWith("run:") || customId.startsWith("plan:") || customId.startsWith("ask:");
   }
 
   async press(press: ButtonPress, signal: AbortSignal): Promise<void> {
@@ -282,21 +322,26 @@ export class RunActions {
       if (!choices.ok) return press.update(this.refused(choices));
       return press.update(await this.plan(plan, readPlanChoices(choices.body), signal));
     }
-    const match = /^run:(\d+):(in|maybe|cant|pick|cancel|char|lead|role:(.+):(tank|healer|damage))$/.exec(
+    const match = /^(run|ask):(\d+):(in|maybe|cant|pick|cancel|char|lead|role:(.+):(tank|healer|damage))$/.exec(
       press.customId,
     );
     if (match === null) return;
-    const runId = Number(match[1]);
-    const what = match[2] as string;
+    const kind = match[1] as Kind;
+    const runId = Number(match[2]);
+    const what = match[3] as string;
+    // An ask can't be cancelled or led from here.
+    if (kind === "ask" && (what === "cancel" || what === "lead")) return;
     // The post's buttons answer in a new message only for the presser; the picker's changes its own message.
     const inPicker = what === "char" || what === "lead" || what.startsWith("role:");
     press.defer(inPicker ? "update" : "reply");
     const show = (content: MessageContent) => (inPicker ? press.update(content) : press.reply(content));
 
     if (what === "cancel") return show(await this.cancel(runId, press.userId, signal));
-    if (what === "maybe" || what === "cant") return show(await this.answer(runId, press.userId, what, signal));
+    if (what === "maybe" || what === "cant") {
+      return show(await this.answer(runId, press.userId, what, signal, undefined, undefined, false, kind));
+    }
     if (what.startsWith("role:")) {
-      return show(await this.answer(runId, press.userId, "in", signal, match[3], match[4] as SlotRole));
+      return show(await this.answer(runId, press.userId, "in", signal, match[4], match[5] as SlotRole, false, kind));
     }
     const picked = press.values[0];
     if (what === "lead") {
@@ -305,7 +350,10 @@ export class RunActions {
     }
 
     // I'm in, Pick my character, and a character picked: the asker's characters that may say I'm in.
-    const [run, chars] = await Promise.all([this.run(runId, signal), this.characters(runId, press.userId, signal)]);
+    const [run, chars] = await Promise.all([
+      this.run(runId, signal, kind),
+      this.characters(runId, press.userId, signal, kind),
+    ]);
     if (!chars.ok) return show(this.refused(chars));
     if (run === undefined) return show(refusalMessage("unknown_run", 404));
     const list = readPickCharacters(chars.body);
@@ -316,14 +364,17 @@ export class RunActions {
     }
     // One character with its own role: I'm in answers at once (Nico, 2026-10-28).
     const only = list.length === 1 ? list[0] : undefined;
-    if (what === "in" && only !== undefined)
-      return show(await this.answer(runId, press.userId, "in", signal, only.guid));
+    if (what === "in" && only !== undefined) {
+      return show(await this.answer(runId, press.userId, "in", signal, only.guid, undefined, false, kind));
+    }
     return show(pickerMessage(run, list, this.deps.siteUrl, this.icons()));
   }
 
   /** After a character is picked: its role when its class plays only one, else the role buttons. */
   private async pickRole(run: Run, c: PickCharacter, userId: string, signal: AbortSignal): Promise<MessageContent> {
-    if (c.roles.length === 1) return this.answer(run.id, userId, "in", signal, c.guid, c.roles[0]);
+    if (c.roles.length === 1) {
+      return this.answer(run.id, userId, "in", signal, c.guid, c.roles[0], false, run.kind ?? "run");
+    }
     return rolePickerMessage(run, c);
   }
 
@@ -335,21 +386,32 @@ export class RunActions {
     characterId?: string,
     role?: SlotRole,
     lead = false,
+    kind: Kind = "run",
   ): Promise<MessageContent> {
     const result = await this.call(
       "POST",
-      `runs/${runId}/answers`,
+      `${kind}s/${runId}/answers`,
       { discordUserId: userId, answer, ...opt("characterId", characterId), ...opt("role", role) },
       signal,
     );
     if (!result.ok) return this.refused(result);
     const body = isObject(result.body) ? result.body : {};
-    const run = readRun(body.run);
+    const run = readAnswered(kind, body);
     const stored = readStored(body);
     if (run === undefined || stored === undefined) return refusalMessage(undefined, 500);
     const mine = characterId === undefined ? undefined : run.answers.find((a) => a.guid === characterId);
     return answeredMessage(run, stored, mine?.character, lead, mine?.classFile, this.icons());
   }
+}
+
+/** What the buttons answer: a run, or an ask (BOT-12) through the same replies. */
+type Kind = "run" | "ask";
+
+/** The site's `{ run }` or `{ ask }` as a run. */
+function readAnswered(kind: Kind, body: Record<string, unknown>): Run | undefined {
+  if (kind === "run") return readRun(body.run);
+  const ask = readAsk({ ask: body.ask });
+  return ask?.id === undefined ? undefined : askAsRun({ ...ask, id: ask.id });
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

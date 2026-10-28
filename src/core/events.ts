@@ -87,7 +87,7 @@ export type RunEvent =
   | { type: "runMovedUp"; run: Run; who?: string }
   | { type: "runMoved"; run: Run; who?: string; to: string; by?: string }
   | { type: "ping"; run: Run; ping: Ping }
-  | { type: "askNow"; ask: Ask };
+  | { type: "askNow" | "askChanged" | "askExpired"; ask: Ask };
 
 const RUN_TYPES = new Set([
   "runCreated",
@@ -100,15 +100,17 @@ const RUN_TYPES = new Set([
   "runMoved",
   "ping",
   "askNow",
+  "askChanged",
+  "askExpired",
 ]);
 
 /** A run event as read; undefined for another type or one without what it needs. */
 export function readRunEvent(event: SiteEvent): RunEvent | undefined {
   if (!RUN_TYPES.has(event.type) || !isObject(event.data)) return undefined;
   const data = event.data;
-  if (event.type === "askNow") {
+  if (event.type === "askNow" || event.type === "askChanged" || event.type === "askExpired") {
     const ask = readAsk(data);
-    return ask === undefined ? undefined : { type: "askNow", ask };
+    return ask === undefined ? undefined : { type: event.type, ask };
   }
   const run = readRun(data.run);
   if (run === undefined) return undefined;

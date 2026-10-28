@@ -359,7 +359,14 @@ describe("run events in the runs channel", () => {
     expect(ask.content.content).toBe(`<@&${ROLE}> Nico asks who's up right now`);
     expect(ask.content.embeds[0]?.title).toBe("The Deadmines · now");
     expect(ask.content.embeds[0]?.description).toContain(`ends <t:${NOW + 600}:R>`);
-    expect(ask.content.components).toBeUndefined();
+    // A stored ask (WEB-51, it has an id): the answer buttons, found again by its marker.
+    expect(ask.content.components?.[0]?.components.map((c) => c.custom_id)).toEqual([
+      "ask:2:in",
+      "ask:2:maybe",
+      "ask:2:cant",
+      "ask:2:pick",
+    ]);
+    expect(ask.content.embeds[0]?.url).toBe(`${SITE}/runs#a2`);
     expect(discord.messages[0]?.content.embeds[0]?.title).toBe("Scarlet Monastery: Armory · Cancelled");
     stop.abort();
     await running;
