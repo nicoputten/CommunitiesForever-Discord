@@ -201,7 +201,11 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         posted.set(event.id, messageId);
         log.info(`posted event ${event.id} (recap of week ${action.recap.week})`);
       } else {
-        const group: Group = { eventId: event.id, milestones: action.milestones };
+        const group: Group = {
+          eventId: event.id,
+          milestones: action.milestones,
+          ...(action.card !== undefined ? { card: action.card } : {}),
+        };
         const shownInOpen = open?.groups.reduce((n, g) => n + g.milestones.length, 0) ?? 0;
         if (open?.channel === channel && joinsPost(open.at, shownInOpen, group.milestones.length, deps.now())) {
           const groups = [...open.groups, group];

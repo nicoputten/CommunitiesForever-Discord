@@ -95,3 +95,22 @@ Needs the web's WEB-51 (asks on the site). Split from BOT-04 (Nico, 2026-10-28).
 ### BOT-13 Run post layout and I'm in as the picker
 - Nico (2026-10-28, after testing v0.2.0): the slots as lines in the embed, one per slot, instead of inline fields (3 + 2 didn't line up), keeping Could fill and the footer; I'm in opens the Pick my character flow (character with its fit tag, then the role) with the best fitting character preselected, the separate Pick my character button goes; Maybe and Can't stay one click; any level may say I'm in (web WEB-52, "recommend, never restrict").
 - Done (PR #28, web PR #90): `runMessage` (slot lines), the run and ask posts without Pick my character, `pickerMessage` (the select with the site's first character preselected and its role buttons; another pick swaps them; a one-role class answers at once; "tough" for low and 6+ below). Posts from before keep their Pick my character button, which opens the same picker.
+
+### BOT-14 "Feat unlocked" posts
+After web WEB-56. Every milestone becomes a feat. The event type stays `milestones`; the post becomes "Feat unlocked" as on `bot-doomsday-feats`.
+- One feat: "Feat unlocked", the character, the feat text, a "First in the group" line when the site marks it, and the site's card image when there is one.
+- Several feats from one upload: "Feats unlocked · 4", the character, one line per feat. The one card image is the most special feat's (the site says which).
+- The existing kinds (`level`, `maxLevel`, `professionCap`, `newCharacter`) move to the feat look too.
+- **The new kinds** (texts from web WEB-56):
+  - `honorKills`: first ("First blood"), 100, 1,000, 5,000, 10,000
+  - `pvpRank`: the official rank, then "a.k.a." our title; the site sends both. Below rank 6: "Cards start at rank 6, keep going."
+  - `duelWins`, `bgFirstWin`, `deaths100`
+  - `firstEpic`: the item name in epic purple, its slot, the level
+  - `mount`, `epicMount`: with "the 3rd mount in the group"
+  - `firstCatch`, `jackOfAllTrades`, `notableItem`
+  - the flavour title on profession cap 300
+- The recap card icons for WEB-57's new cards (PvP, death, fall, fire, epic, mount, night owl, early bird).
+- Kinds the bot doesn't know are still skipped and acknowledged. Tests for each kind's formatting, one and several feats.
+- Decided with Nico (2026-10-28): the bot words each kind it knows from the fields, with the board's bold, and posts a kind it doesn't know with the site's `text` (skipped without one); the 5-minute grouping of BOT-09 stays, with a block per character and upload and one card per post (the first upload's `card`); the board's lines the site doesn't send ("First Doombringer to reach rank 6.", the joke under 1,000 kills) are left out; the epic item is bold and the border epic purple, since Discord can't colour text; the "recap card icons" are dropped (the recap shows the site's card texts, with no icons on the board either). See DESIGN-NOTES "Deviations".
+- Done (PR #35): `src/core/feats.ts` (the sentence of one feat and the short line of several, per kind), `groupedMessage` in `src/core/milestones.ts` ("Feat unlocked" or "Feats unlocked · N", "had a big upload." for one character, the badge, the one card and its colour) and `readMilestones` (the new kinds, `text`, `firstInGroup`, `card`, the event's `card`). The contract says `firstEpic.item.level` is the level it was looted at, so the post says "looted at level 58" where the board says "item level 66".
+- Manual (Nico, in Discord, once the site has WEB-56): an upload with one feat (e.g. a duel win milestone) gives "Feat unlocked" with its sentence; an upload with several gives "Feats unlocked · N" with one card; a second upload within 5 minutes is added to that post.

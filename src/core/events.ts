@@ -1,6 +1,6 @@
 // The site's event feed (web repo docs/BOT-API.md "Events") read defensively, and what the bot does with each event
 // (BOT-03). Pure: settings and what is already posted come in as arguments.
-import { type MessageContent, type Milestone, showable, testMessage } from "./milestones.js";
+import { type FeatItem, type MessageContent, type Milestone, showable, testMessage } from "./milestones.js";
 import { type Recap, readRecap } from "./recap.js";
 import { type Ask, type Ping, type Run, readAsk, readMention, readPing, readRun } from "./runs.js";
 import type { SiteSettings } from "./settings.js";
@@ -41,32 +41,109 @@ export function readMilestones(data: unknown): Milestone[] {
       level: number(c.level),
       ownerName: text(c.ownerName),
     };
+    // WEB-56, on every kind: the site's line, the badge and the card image.
+    const feat = {
+      index,
+      ...optional("text", text(m.text)),
+      ...(m.firstInGroup === true ? { firstInGroup: true } : {}),
+      ...optional("card", text(m.card)),
+    };
     switch (m.kind) {
       case "level":
       case "maxLevel":
-        return [{ index, kind: m.kind, character, level: number(m.level), from: number(m.from) }];
+        return [{ ...feat, kind: m.kind, character, level: number(m.level), from: number(m.from) }];
       case "professionCap":
         return [
           {
-            index,
+            ...feat,
             kind: m.kind,
             character,
             skillLine: number(m.skillLine),
             profession: text(m.profession),
             rank: number(m.rank),
+            ...optional("title", text(m.title)),
           },
         ];
       case "newCharacter":
-        return [{ index, kind: m.kind, character }];
+      case "firstCatch":
+        return [{ ...feat, kind: m.kind, character }];
+      case "honorKills":
+        return [{ ...feat, kind: m.kind, character, ...optional("kills", number(m.kills)) }];
+      case "pvpRank":
+        return [
+          {
+            ...feat,
+            kind: m.kind,
+            character,
+            ...optional("rank", number(m.rank)),
+            ...optional("rankName", text(m.rankName)),
+            ...optional("title", text(m.title)),
+          },
+        ];
+      case "duelWins":
+        return [{ ...feat, kind: m.kind, character, ...optional("wins", number(m.wins)) }];
+      case "bgFirstWin":
+        return [{ ...feat, kind: m.kind, character, ...optional("battleground", text(m.battleground)) }];
+      case "deaths100":
+        return [{ ...feat, kind: m.kind, character, ...optional("deaths", number(m.deaths)) }];
+      case "firstEpic":
+        return [{ ...feat, kind: m.kind, character, ...optional("item", item(m.item)) }];
+      case "mount":
+      case "epicMount":
+        return [
+          {
+            ...feat,
+            kind: m.kind,
+            character,
+            ...optional("riding", number(m.riding)),
+            ...optional("level", number(m.level)),
+            ...optional("place", number(m.place)),
+          },
+        ];
+      case "jackOfAllTrades":
+        return [
+          {
+            ...feat,
+            kind: m.kind,
+            character,
+            professions: (Array.isArray(m.professions) ? m.professions : []).flatMap((p) => text(p) ?? []),
+          },
+        ];
+      case "notableItem":
+        return [
+          {
+            ...feat,
+            kind: m.kind,
+            character,
+            ...optional("notable", text(m.notable)),
+            ...optional("item", item(m.item)),
+          },
+        ];
       default:
-        return [];
+        // A kind from a newer site: posted with its text, skipped without one (Nico, 2026-10-28).
+        return feat.text !== undefined ? [{ ...feat, kind: "other", character, text: feat.text }] : [];
     }
   });
 }
 
+function item(value: unknown): FeatItem | undefined {
+  if (!isObject(value)) return undefined;
+  return {
+    ...optional("id", number(value.id)),
+    ...optional("name", text(value.name)),
+    ...optional("slot", text(value.slot)),
+    ...optional("level", number(value.level)),
+  };
+}
+
+/** The event's one card image for a post of several feats (WEB-56), when the site sent one. */
+export function readFeatCard(data: unknown): string | undefined {
+  return isObject(data) ? text(data.card) : undefined;
+}
+
 export type Action =
-  /** Post (or add to the open post, BOT-09): the milestones that can be shown. */
-  | { do: "post"; milestones: Milestone[] }
+  /** Post (or add to the open post, BOT-09): the feats that can be shown and the event's card image (BOT-14). */
+  | { do: "post"; milestones: Milestone[]; card?: string }
   /** Post this message on its own (the test post). */
   | { do: "send"; content: MessageContent }
   /** Post the weekly recap with its card images, in the recap channel (BOT-05). */
@@ -119,8 +196,6 @@ export function readRunEvent(event: SiteEvent): RunEvent | undefined {
     const id = isObject(value) ? value.discordId : undefined;
     return typeof id === "string" && /^\d{1,20}$/.test(id) ? id : undefined;
   };
-  const optional = <K extends string, V>(key: K, value: V | undefined) =>
-    (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
   switch (event.type) {
     case "runCreated":
     case "runChanged":
@@ -186,7 +261,9 @@ export function decide(
   if (event.type !== "milestones" || settings.milestones === false) return { do: "leave" };
   if (messageId !== undefined) return { do: "ack", messageId };
   const milestones = showable(readMilestones(event.data));
-  return milestones.length > 0 ? { do: "post", milestones } : { do: "leave" };
+  if (milestones.length === 0) return { do: "leave" };
+  const card = readFeatCard(event.data);
+  return { do: "post", milestones, ...(card !== undefined ? { card } : {}) };
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -199,4 +276,8 @@ function text(value: unknown): string | undefined {
 
 function number(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function optional<K extends string, V>(key: K, value: V | undefined): { [P in K]?: V } {
+  return (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
 }
