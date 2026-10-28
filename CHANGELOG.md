@@ -1,5 +1,7 @@
 # Changelog
 
+## Unreleased
+
 ## v0.2.0 (2026-10-28)
 - Asks: `/ask` asks who's up for a dungeon right now, and asks (from the game or `/ask`) can be answered on Discord with I'm in, Maybe, Can't or Pick my character. The post shows who answered, updates itself, and says "Expired" without buttons after 10 minutes.
 - Class icons: every character name in the bot's answers and posts (look-ups, milestones, runs, the character picker) has its class icon before it. The bot uploads the icons as its own emoji at start, and again only when one changes.
