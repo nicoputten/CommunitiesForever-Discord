@@ -87,7 +87,7 @@ export function readPickCharacter(c: unknown): PickCharacter | undefined {
     roles: roles.length > 0 ? roles : [...ROLES],
     ...opt("role", role),
     ...opt("fit", typeof c.fit === "string" ? text(c.fit) : text(fit?.label)),
-    ...opt("fitKind", text(fit?.kind)),
+    ...opt("fitKind", text(c.fitKind) ?? text(fit?.kind)),
   };
 }
 
@@ -349,6 +349,7 @@ function characterSelect(
   placeholder: string,
   chars: readonly PickCharacter[],
   icons: ClassIcons,
+  selected?: string,
 ): Component {
   return {
     type: 3,
@@ -361,48 +362,51 @@ function characterSelect(
           100,
         ),
       value: c.guid,
+      ...(c.guid === selected ? { default: true } : {}),
       ...(optionEmoji(icons, c.classFile) !== undefined ? { emoji: optionEmoji(icons, c.classFile) } : {}),
-      description: [c.roles.map(capital).join(" / "), c.fit].filter(Boolean).join(" · ").slice(0, 100),
+      description: [c.roles.map(capital).join(" / "), fitText(c)].filter(Boolean).join(" · ").slice(0, 100),
     })),
   };
 }
 
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-/** Pick my character (board `bot-posts-runs`, Runs v2): the asker's characters with their fit tag. */
+/** What a pick's fit says: "fits", "+3 over", "8 below · tough" (WEB-52: every character may say I'm in). */
+function fitText(c: PickCharacter): string | undefined {
+  if (c.fit === undefined) return undefined;
+  return c.fitKind === "low" || c.fitKind === "tooLow" ? `${c.fit} · tough` : c.fit;
+}
+
+/**
+ * I'm in (BOT-13, board `bot-posts-runs`, Runs v2): the asker's characters with their fit tag, the best one (the
+ * site's first) preselected with the roles its class can play; another pick swaps the role buttons.
+ */
 export function pickerMessage(
   run: Run,
   chars: readonly PickCharacter[],
   siteUrl: string,
   icons: ClassIcons = NO_ICONS,
+  selected: string | undefined = chars[0]?.guid,
 ): MessageContent {
-  if (chars.length === 0) {
-    const range = run.dungeon.min !== undefined ? ` (${run.dungeon.min}–${run.dungeon.max})` : "";
+  const c = chars.find((x) => x.guid === selected) ?? chars[0];
+  if (c === undefined) {
     return reply(
-      `None of your characters can join ${run.dungeon.name}${range}`,
-      "A character 6 or more levels below the range can only answer Maybe. Maybe and Can't always go.",
+      `None of your characters are known for ${run.dungeon.name}`,
+      "The site knows your characters after your next upload. Maybe and Can't always go.",
       [{ type: 2, style: 2, label: "Maybe", custom_id: buttonOf(run, "maybe") }, openRun(siteUrl, run)],
     );
   }
+  const fit = fitText(c);
   return reply(
     `Which character joins ${run.dungeon.name}?`,
-    "Characters 6 or more levels below the range aren't listed: they can answer Maybe.",
-    [],
-    [characterSelect(run, "char", "Pick my character", chars, icons)],
-  );
-}
-
-/** The roles the picked character's class can play. */
-export function rolePickerMessage(run: Run, c: PickCharacter): MessageContent {
-  return reply(
-    `Which role does ${escapeMarkdown(c.name)} play?`,
-    `${run.dungeon.name}${c.fit ? ` · ${c.fit}` : ""}`,
+    `${icon(icons, c.classFile)}**${escapeMarkdown(c.name)}**${fit ? ` · ${fit}` : ""}\nPick a role, or another character.`,
     c.roles.map((role) => ({
       type: 2 as const,
       style: role === c.role ? 1 : 2,
       label: capital(role),
       custom_id: buttonOf(run, `role:${c.guid}:${role}`),
     })),
+    [characterSelect(run, "char", "Pick my character", chars, icons, c.guid)],
   );
 }
 

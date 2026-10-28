@@ -111,11 +111,9 @@ describe("names with their icon", () => {
 
   it("in the run post's slots, not in its author line (Discord shows no emoji there)", () => {
     const m = runMessage(run, { ...ctx, icons: { MAGE } });
-    expect(m.embeds[0]?.fields?.find((f) => f.name === "Damage")?.value).toBe(`${MAGE} Mira Sunstrider 38 · Mira`);
+    expect(m.embeds[0]?.description).toContain(`Damage · ${MAGE} Mira Sunstrider 38 · Mira`);
     expect(m.embeds[0]?.author?.name).toBe("Mira on Mira Sunstrider (38 Mage)");
-    expect(runMessage(run, ctx).embeds[0]?.fields?.find((f) => f.name === "Damage")?.value).toBe(
-      "Mira Sunstrider 38 · Mira",
-    );
+    expect(runMessage(run, ctx).embeds[0]?.description).toContain("Damage · Mira Sunstrider 38 · Mira");
   });
 
   it("in the look-ups, the milestones and the picker", () => {

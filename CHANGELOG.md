@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Run posts list the slots one per line ("Tank · Vesgar Bloodhoof 27 · Vestras", "Healer · needed"), so they line up. I'm in opens the character picker with your best fitting character already chosen; pick a role, or another character. Any character may say I'm in, also one far below the dungeon ("tough"). The separate Pick my character button is gone.
 
 ## v0.2.0 (2026-10-28)
 - Asks: `/ask` asks who's up for a dungeon right now, and asks (from the game or `/ask`) can be answered on Discord with I'm in, Maybe, Can't or Pick my character. The post shows who answered, updates itself, and says "Expired" without buttons after 10 minutes.
