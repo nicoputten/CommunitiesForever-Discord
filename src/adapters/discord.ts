@@ -2,6 +2,7 @@
 // reported as ConnectionEvents, the global slash command registration, and posting (BOT-03). Thin: what to do with
 // them is src/app's. It also tells what the server's channels and roles are, for the site's dropdowns (BOT-08).
 import {
+  ApplicationCommandOptionType,
   ChannelType,
   Client,
   DiscordAPIError,
@@ -26,6 +27,8 @@ export interface Discord {
   post(channelId: string, content: MessageContent, files?: readonly Attachment[]): Promise<string>;
   /** Replaces a posted message's content (BOT-09). Throws a PostError. */
   edit(channelId: string, messageId: string, content: MessageContent): Promise<void>;
+  /** A direct message to a user (BOT-04's quiet notices); resolves its id. Throws a PostError (50007: DMs closed). */
+  dm(userId: string, content: MessageContent): Promise<string>;
   /** The bot's own messages among the channel's last 50. Throws a PostError. */
   recentPosts(channelId: string): Promise<PostedMessage[]>;
   /** The (first) server's channels and roles as Discord's cache knows them; undefined when not in a server. */
@@ -37,7 +40,7 @@ export interface Discord {
   onCommand(listener: (command: SlashCommand) => void): () => void;
   /** Calls `listener` for autocomplete requests (BOT-06). Returns the unsubscribe. */
   onAutocomplete(listener: (request: Autocomplete) => void): () => void;
-  /** Calls `listener` for button presses (BOT-06). Returns the unsubscribe. */
+  /** Calls `listener` for button presses (BOT-06) and select menu choices (BOT-04). Returns the unsubscribe. */
   onButton(listener: (press: ButtonPress) => void): () => void;
   /** Calls `listener` when the server's channels or roles change; returns the unsubscribe. */
   onGuildChange(listener: () => void): () => void;
@@ -49,7 +52,7 @@ export interface SlashCommand {
   name: string;
   /** The asker's Discord user id: passed to the site only, never shown (CLAUDE.md rule 5). */
   userId: string;
-  /** The options as given: text, or true/false. */
+  /** The options as given: text, or true/false; a sub-command's name as `subcommand` (BOT-04 `/run edit`). */
   options: Readonly<Record<string, string | boolean>>;
   reply(content: MessageContent, files?: readonly Attachment[]): Promise<void>;
 }
@@ -57,15 +60,33 @@ export interface SlashCommand {
 /** A user typing in an autocomplete option (BOT-06): answer with up to 25 choices. */
 export interface Autocomplete {
   command: string;
+  /** BOT-04: who is typing (for their own runs and days), passed to the site only. */
+  userId: string;
   option: string;
   value: string;
   respond(choices: readonly { name: string; value: string }[]): Promise<void>;
 }
 
-/** A button press (BOT-06: Share). `share` posts the given message in the channel the button is in. */
+/**
+ * A button press (BOT-06: Share) or a select menu choice (BOT-04). `share` posts the given message in the channel the
+ * button is in.
+ */
 export interface ButtonPress {
   customId: string;
+  /** The presser's Discord user id (BOT-04): passed to the site only, never shown (CLAUDE.md rule 5). */
+  userId: string;
+  /** A select menu's chosen values; empty for a button. */
+  values: readonly string[];
   share(content: MessageContent, files?: readonly Attachment[]): Promise<void>;
+  /**
+   * Acknowledges at once (Discord wants it within 3 seconds), before asking the site: `reply` thinks in a new answer
+   * only for the presser, `update` keeps the message the component is on, to change it (BOT-04's picker).
+   */
+  defer(as: "reply" | "update"): void;
+  /** Answers only the presser (ephemeral). Throws a PostError. */
+  reply(content: MessageContent): Promise<void>;
+  /** Replaces the message the component is on (an ephemeral answer of the bot's). Throws a PostError. */
+  update(content: MessageContent): Promise<void>;
 }
 
 /** A file to attach to a post (a card image from the site, BOT-05). */
@@ -124,6 +145,7 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
       const focused = interaction.options.getFocused(true);
       const request: Autocomplete = {
         command: interaction.commandName,
+        userId: interaction.user.id,
         option: focused.name,
         value: String(focused.value),
         async respond(choices) {
@@ -135,9 +157,53 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
       autocompleteListeners.forEach((listener) => listener(request));
       return;
     }
-    if (interaction.isButton()) {
+    if (interaction.isButton() || interaction.isStringSelectMenu()) {
+      let deferred: Promise<unknown> | undefined;
+      let deferredAs: "reply" | "update" | undefined;
+      const answer = (content: MessageContent) => ({
+        ...(content.content !== undefined ? { content: content.content } : {}),
+        embeds: content.embeds,
+        allowedMentions: { parse: [] },
+        components: (content.components ?? []) as never[],
+      });
       const press: ButtonPress = {
         customId: interaction.customId,
+        userId: interaction.user.id,
+        values: interaction.isStringSelectMenu() ? [...interaction.values] : [],
+        defer(as) {
+          if (deferred !== undefined) return;
+          deferredAs = as;
+          deferred = (
+            as === "reply" ? interaction.deferReply({ flags: MessageFlags.Ephemeral }) : interaction.deferUpdate()
+          ).catch(() => undefined);
+        },
+        async reply(content) {
+          try {
+            if (deferredAs === "reply") {
+              await deferred;
+              await interaction.editReply(answer(content));
+            } else if (deferred !== undefined) {
+              await deferred;
+              await interaction.followUp({ ...answer(content), flags: MessageFlags.Ephemeral });
+            } else {
+              await interaction.reply({ ...answer(content), flags: MessageFlags.Ephemeral });
+            }
+          } catch (error) {
+            throw refused(error);
+          }
+        },
+        async update(content) {
+          try {
+            if (deferred !== undefined) {
+              await deferred;
+              await interaction.editReply(answer(content));
+            } else {
+              await interaction.update(answer(content));
+            }
+          } catch (error) {
+            throw refused(error);
+          }
+        },
         async share(content, attachments = []) {
           try {
             // The ephemeral answer stays; the shared copy is a new message in the channel.
@@ -160,6 +226,12 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     const options: Record<string, string | boolean> = {};
     for (const option of interaction.options.data) {
       if (typeof option.value === "string" || typeof option.value === "boolean") options[option.name] = option.value;
+      if (option.type === ApplicationCommandOptionType.Subcommand) {
+        options.subcommand = option.name;
+        for (const sub of option.options ?? []) {
+          if (typeof sub.value === "string" || typeof sub.value === "boolean") options[sub.name] = sub.value;
+        }
+      }
     }
     const command: SlashCommand = {
       name: interaction.commandName,
@@ -214,6 +286,15 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     async edit(channelId, messageId, content) {
       try {
         await rest.patch(Routes.channelMessage(channelId, messageId), { body: content });
+      } catch (error) {
+        throw refused(error);
+      }
+    },
+    async dm(userId, content) {
+      try {
+        const channel = (await rest.post(Routes.userChannels(), { body: { recipient_id: userId } })) as { id: string };
+        const message = (await rest.post(Routes.channelMessages(channel.id), { body: content })) as ApiMessage;
+        return message.id;
       } catch (error) {
         throw refused(error);
       }

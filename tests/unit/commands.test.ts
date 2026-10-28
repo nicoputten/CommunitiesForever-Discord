@@ -177,9 +177,14 @@ describe("Share", () => {
     const shared: MessageContent[] = [];
     const press = (id: string): ButtonPress => ({
       customId: id,
+      userId: USER,
+      values: [],
       async share(content) {
         shared.push(content);
       },
+      defer: () => undefined,
+      reply: async () => undefined,
+      update: async () => undefined,
     });
     handlers.button(press(customId));
     await new Promise((r) => setTimeout(r, 0));
@@ -212,6 +217,7 @@ describe("autocomplete", () => {
       new Promise<void>((resolve) =>
         handlers.autocomplete({
           command: "whereis",
+          userId: USER,
           option,
           value,
           async respond(choices) {
