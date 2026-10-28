@@ -44,6 +44,7 @@ The contract lives in the web repo (`docs/BOT-API.md`, made by WEB-38). Shape as
 - `GET /api/bot/v1/events?after=<cursor>`: new milestones, asks, ask updates and recaps, oldest first, each with an id. `POST /api/bot/v1/events/<id>/posted` with the Discord message id acknowledges one (rule 9).
 - `GET /api/bot/v1/lookup/...`: answers for the commands, for a Discord user id (the site checks the link).
 - Run actions (BOT-04, BOT-API.md "Run actions"): `GET plan` (the asker's time zone, `/plan`'s days in their calendar and who they would lead as), `GET`/`POST runs`, `GET`/`PATCH runs/<id>`, `POST runs/<id>/cancel`, `POST runs/<id>/answers`, `GET runs/<id>/characters`. The bot passes the Discord user on; the site checks every right and answers refusals with an `error` code the bot turns into words. Run posts are found again by the `#r<id>` marker on their link; the time-passed reply's "Tomorrow" button keeps its plan in memory for 15 minutes (at most 100).
+- Doomsday (BOT-15, BOT-16, BOT-API.md "Doomsday"): events `doomsdayBoard` (posted in the Doomsday channel) and `doomsdayBoardUpdate` (an edit of that post, at most one per 30 s; only the newest waits), `doomsdayLadder`, and the look-up `doomsday` for "My goals" and `/doomsday`. The board's post is found again by the `#e<board event>` marker on its title link.
 - Asks (BOT-12, web WEB-51, BOT-API.md "Asks"): `POST asks` (`/ask`), `GET asks/<id>`, `POST asks/<id>/answers`, `GET asks/<id>/characters`; events `askNow`, `askChanged` and `askExpired`. An ask's post is found again by the `#a<id>` marker on its link.
 - `GET /api/bot/v1/cards/<id>.png`: generated card images (level 60, recap header, map crops), rendered by the site. The bot fetches each with its token and attaches it to the post (Discord can't fetch a URL that needs the token); a post goes out without an image the site can't give (BOT-05).
 - `GET /api/bot/v1/recap/latest`: the last weekly recap, for `/recap` (BOT-05).
@@ -51,9 +52,9 @@ The contract lives in the web repo (`docs/BOT-API.md`, made by WEB-38). Shape as
 
 Polling every 30 s with backoff is enough for a friend group and needs no public endpoint on the bot.
 
-## Class icons (BOT-11)
+## Class icons (BOT-11) and Doomsday boxes (BOT-15)
 
-The class icons in `assets/class-icons/` (copied into the image) are the bot's own application emoji: at start it reads them (`GET /applications/<id>/emojis`), uploads each icon whose `cf_<class>_<hash>` name is missing and deletes its older `cf_` emoji after. Discord can't replace an emoji's picture, so the hash in the name is how a changed icon is noticed. Until that is done, or when it fails, names show without icon.
+The class icons in `assets/class-icons/` (copied into the image) are the bot's own application emoji: at start it reads them (`GET /applications/<id>/emojis`), uploads each icon whose `cf_<class>_<hash>` name is missing and deletes its older `cf_` emoji after. Discord can't replace an emoji's picture, so the hash in the name is how a changed icon is noticed. Since BOT-15 the Doomsday board's three boxes (`box-pve`, `box-pvp`, `box-open`) are synced the same way. Until that is done, or when it fails, names show without icon and the board uses ✅ and ▢.
 
 ## Configuration (env, documented in `.env.example` without values)
 

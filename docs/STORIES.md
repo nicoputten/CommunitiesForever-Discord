@@ -26,21 +26,6 @@ Order:
 1. BOT-14 after web WEB-56.
 2. BOT-15 and BOT-16 after web WEB-58. The formatting can be built earlier from the API contract in the web repo's `docs/BOT-API.md` and fixtures.
 
-### BOT-15 The daily Doomsday board post
-After web WEB-58 (events `doomsdayBoard` and `doomsdayBoardUpdate`), as on `bot-doomsday-daily`.
-- At each reset the site sends `doomsdayBoard`; the bot posts it in the Doomsday channel (a site setting) and acknowledges it with the message id. The post shows:
-  - "Doomsday · Tue 28 Oct"
-  - the PvE dailies and PvP goals with their points
-  - a row per friend with boxes per goal (green PvE, red PvP; the bot's own custom emoji)
-  - "resets in …"
-  - the "Open the board ↗" and "My goals" buttons
-- Each `doomsdayBoardUpdate` for that day **edits the same message**, never a new one. A finished friend's name is struck through, the crown goes to the first, and progress shows ("3 / 5"). Rate-limit the edits: at most one per message per 30 s, keeping only the newest state.
-- The final update (`final: true`) shows "final" and the day's summary: goals done, who won the Hunt race, the longest streak.
-- Friends without the addon get no row ("Sanne: no addon, so no row"). PvP Virgin is shown next to the name.
-- "My goals" answers like `/doomsday` (BOT-16), ephemeral.
-- Custom emoji: the bot uses its own if they're uploaded to the server, else plain characters (✅, ▢). Document in `docs/DISCORD-SETUP.md` how to add them.
-- Tests: formatting at 19:00 (fresh), midday and final; the edit throttle; a message that was deleted (post a new one and acknowledge that).
-
 ### BOT-16 Weekly ladder post, `/doomsday` and the recap section
 After web WEB-58, as on `bot-doomsday-weekly` and `bot-recap-doomsday`.
 - **Weekly ladder post:** on the site's `doomsdayLadder` event (Sunday at the reset). It shows:

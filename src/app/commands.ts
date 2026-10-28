@@ -4,9 +4,11 @@
 import type { Attachment, Autocomplete, ButtonPress, SlashCommand } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site } from "../adapters/site.js";
+import { MY_GOALS } from "../core/doomsday.js";
 import { noRecapMessage, readRecap, recapFiles, recapMessage } from "../core/recap.js";
 import type { SiteSettings } from "../core/settings.js";
 import type { IconBox } from "./classIcons.js";
+import { answerMyGoals } from "./doomsdayPosts.js";
 import { LOOKUPS, SharedAnswers, answerAutocomplete, answerLookup, answerShare } from "./lookups.js";
 import { RUN_COMMANDS, RunActions } from "./runActions.js";
 
@@ -78,6 +80,12 @@ export function commandHandlers(deps: CommandDeps, signal: AbortSignal): Handler
     button(press) {
       if (RunActions.handles(press.customId)) {
         runs.press(press, signal).catch(failed("a run button"));
+        return;
+      }
+      if (press.customId === MY_GOALS) {
+        answerMyGoals({ ...deps, pageUrl: () => deps.settings?.()?.doomsdayUrl }, press, signal).catch(
+          failed("My goals"),
+        );
         return;
       }
       answerShare(lookups, press).catch(failed("Share"));

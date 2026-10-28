@@ -1,6 +1,7 @@
 // The site's event feed (web repo docs/BOT-API.md "Events") read defensively, and what the bot does with each event
 // (BOT-03). Pure: settings and what is already posted come in as arguments.
 import { type FeatItem, type MessageContent, type Milestone, showable, testMessage } from "./milestones.js";
+import { type Board, readBoard } from "./doomsday.js";
 import { type Recap, readRecap } from "./recap.js";
 import { type Ask, type Ping, type Run, readAsk, readMention, readPing, readRun } from "./runs.js";
 import type { SiteSettings } from "./settings.js";
@@ -150,6 +151,11 @@ export type Action =
   | { do: "recap"; recap: Recap }
   /** A run event (BOT-04), for the runs channel; `posted`: its own message, when one was found by its marker. */
   | { do: "run"; event: RunEvent; posted?: string }
+  /**
+   * BOT-15: the daily Doomsday board, or an update of it (`board.update`), for the Doomsday channel. `posted`: the
+   * board's message found by its marker, when known.
+   */
+  | { do: "board"; board: Board; posted?: string }
   /** Already in the channel (found by its marker): only acknowledge it. */
   | { do: "ack"; messageId: string }
   /** Nothing to post: leave it; the site lets it expire. */
@@ -250,6 +256,15 @@ export function decide(
     if (messageId !== undefined) return { do: "ack", messageId };
     const recap = readRecap(event.data);
     return recap !== undefined ? { do: "recap", recap } : { do: "leave" };
+  }
+  if (event.type === "doomsdayBoard" || event.type === "doomsdayBoardUpdate") {
+    // Off on the site's Discord page: left (BOT-API.md "Doomsday").
+    if (settings.doomsdayBoard === false) return { do: "leave" };
+    const board = readBoard(event.data, event.type === "doomsdayBoardUpdate");
+    if (board === undefined) return { do: "leave" };
+    if (board.update === undefined && messageId !== undefined) return { do: "ack", messageId };
+    const known = board.update !== undefined ? posted.get(board.update.boardEvent) : undefined;
+    return { do: "board", board, ...(known !== undefined ? { posted: known } : {}) };
   }
   if (RUN_TYPES.has(event.type)) {
     // Off on the site's Discord page: left (BOT-API.md "Run events").
