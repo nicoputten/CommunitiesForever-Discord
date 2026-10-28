@@ -11,8 +11,10 @@ import type { MessageContent, PostedMessage } from "../core/milestones.js";
 import {
   type PostContext,
   type Run,
+  type Ask,
   askMessage,
   cancelledNotice,
+  markedAsks,
   markedRuns,
   movedNotice,
   movedTimeNotice,
@@ -42,16 +44,20 @@ export interface RunPostDeps {
 
 export class RunPosts {
   private readonly posts = new Map<number, string>();
+  /** BOT-12: ask id → its post. */
+  private readonly asks = new Map<number, string>();
 
   constructor(private readonly deps: RunPostDeps) {}
 
   /** Learns the run posts among a channel's messages (after a restart or a new runs channel). */
   learn(messages: readonly PostedMessage[]): void {
     for (const [run, message] of markedRuns(this.deps.siteUrl, messages)) this.remember(run, message);
+    for (const [ask, message] of markedAsks(this.deps.siteUrl, messages)) this.rememberAsk(ask, message);
   }
 
   forget(): void {
     this.posts.clear();
+    this.asks.clear();
   }
 
   /** The run's post, when the bot knows it (`/plan`'s "Posted in" and the notices' acknowledgement). */
@@ -116,7 +122,9 @@ export class RunPosts {
       case "ping":
         return posted ?? discord.post(channel, pingMessage(event.run, event.ping, eventId, siteUrl, ctx.icons));
       case "askNow":
-        return posted ?? discord.post(channel, askMessage(event.ask, eventId, siteUrl, ctx.mentionRole));
+      case "askChanged":
+      case "askExpired":
+        return this.ask(event.type, event.ask, eventId, channel, ctx, posted);
       case "runMovedUp":
       case "runMoved": {
         if (event.who === undefined) return this.posts.get(event.run.id);
@@ -167,6 +175,55 @@ export class RunPosts {
       const code = error instanceof PostError ? (error.code ?? "none") : "none";
       this.deps.log.error(`discord: a run notice could not be sent (code ${code})`);
       return undefined;
+    }
+  }
+
+  /**
+   * An ask's post (BOT-12): posted once, edited as answers come in, ended ("Expired", no buttons) when it expires;
+   * found again after a restart by its `#a<id>` marker. An ask without an id (a site from before WEB-51) is posted
+   * once, marked with its event.
+   */
+  private async ask(
+    type: "askNow" | "askChanged" | "askExpired",
+    ask: Ask,
+    eventId: number,
+    channel: string,
+    ctx: PostContext,
+    posted: string | undefined,
+  ): Promise<string | undefined> {
+    const content = askMessage(ask, {
+      siteUrl: this.deps.siteUrl,
+      now: ctx.now,
+      eventId,
+      ...opt("mentionRole", ctx.mentionRole),
+      ...opt("icons", ctx.icons),
+    });
+    if (ask.id === undefined) return posted ?? this.deps.discord.post(channel, content);
+    const known = this.asks.get(ask.id) ?? posted;
+    if (known !== undefined) {
+      try {
+        await this.deps.discord.edit(channel, known, content);
+        this.rememberAsk(ask.id, known);
+        return known;
+      } catch (error) {
+        if (!(error instanceof PostError) || error.code !== UNKNOWN_MESSAGE) throw error;
+        this.asks.delete(ask.id);
+      }
+    }
+    // Nothing to end: an expired ask whose post is gone is left (the site lets the event expire).
+    if (type === "askExpired") return undefined;
+    const id = await this.deps.discord.post(channel, content);
+    this.rememberAsk(ask.id, id);
+    this.deps.log.info(`posted ask ${ask.id}`);
+    return id;
+  }
+
+  private rememberAsk(ask: number, message: string): void {
+    this.asks.delete(ask);
+    this.asks.set(ask, message);
+    for (const old of this.asks.keys()) {
+      if (this.asks.size <= KEEP_RUNS) break;
+      this.asks.delete(old);
     }
   }
 

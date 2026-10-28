@@ -95,6 +95,14 @@ export const COMMANDS: readonly CommandDefinition[] = [
       { type: STRING, name: "note", description: "A note for the group", max_length: 200 },
     ],
   },
+  {
+    name: "ask",
+    description: "Ask who's up for a dungeon right now; open for 10 minutes",
+    options: [
+      { type: STRING, name: "dungeon", description: "The dungeon", required: true, autocomplete: true },
+      { type: STRING, name: "note", description: "A note for the group", max_length: 200 },
+    ],
+  },
   { name: "runs", description: "Upcoming runs this week with your answers, only for you" },
   {
     name: "run",
