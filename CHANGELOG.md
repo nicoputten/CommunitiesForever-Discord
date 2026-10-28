@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## v0.2.1 (2026-10-28)
 - Run posts list the slots one per line ("Tank · Vesgar Bloodhoof 27 · Vestras", "Healer · needed"), so they line up. I'm in opens the character picker with your best fitting character already chosen; pick a role, or another character. Any character may say I'm in, also one far below the dungeon ("tough"). The separate Pick my character button is gone.
 
 ## v0.2.0 (2026-10-28)
