@@ -3,7 +3,7 @@
 // display names for friends; names from players never become Discord markdown (escapeMarkdown). Discord can't colour
 // text in an embed, so every character name is bold with its class written next to it (Nico, 2026-10-28).
 import { type ClassIcons, NO_ICONS, icon } from "./classIcons.js";
-import { CLASS_COLOURS, type Embed, GOLD, type MessageContent, characterUrl, escapeMarkdown } from "./milestones.js";
+import { CLASS_COLOURS, type Embed, GOLD, type MessageContent, characterUrl, escapeMarkdown } from "./message.js";
 import { isObject, number, text } from "./read.js";
 
 export interface LookupCharacter {

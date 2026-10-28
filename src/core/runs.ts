@@ -3,7 +3,16 @@
 // the game and the quiet notices. Pure: the time comes in as an argument; the site decides every game fact (who fits,
 // who could fill a slot), the bot only formats it (CLAUDE.md rule 2).
 import { type ClassIcons, NO_ICONS, icon } from "./classIcons.js";
-import { type Component, type Embed, type MessageContent, GOLD, escapeMarkdown, marker } from "./milestones.js";
+import {
+  type Component,
+  type Embed,
+  type MessageContent,
+  GOLD,
+  escapeMarkdown,
+  marker,
+  className,
+  escapeRegExp,
+} from "./message.js";
 import { isSnowflake } from "./settings.js";
 import { isObject, number, text } from "./read.js";
 
@@ -249,18 +258,6 @@ export function markedRuns(siteUrl: string, messages: readonly { id: string; tex
 
 const roleName = (role: SlotRole) => ({ tank: "Tank", healer: "Healer", damage: "Damage" })[role];
 
-const CLASS_NAMES: Readonly<Record<string, string>> = {
-  WARRIOR: "Warrior",
-  PALADIN: "Paladin",
-  HUNTER: "Hunter",
-  ROGUE: "Rogue",
-  PRIEST: "Priest",
-  SHAMAN: "Shaman",
-  MAGE: "Mage",
-  WARLOCK: "Warlock",
-  DRUID: "Druid",
-};
-
 const esc = (value: string | undefined) => (value === undefined ? undefined : escapeMarkdown(value));
 
 /** "[icon] Lia Thornwhisper 37" (BOT-11), or the friend's name without a character. */
@@ -282,7 +279,7 @@ function slotText(a: RunAnswer, icons: ClassIcons): string {
 export function organiserText(run: Run): string {
   const who = esc(run.organiser.name) ?? "Someone";
   if (run.organiser.character === undefined) return `${who} organises`;
-  const facts = [run.organiser.level, run.organiser.classFile && CLASS_NAMES[run.organiser.classFile]]
+  const facts = [run.organiser.level, className(run.organiser.classFile)]
     .filter((x) => x !== undefined && x !== "")
     .join(" ");
   return `${who} on ${escapeMarkdown(run.organiser.character)}${facts ? ` (${facts})` : ""}`;
@@ -827,8 +824,4 @@ export function cancelledNotice(run: Run, by: string | undefined, siteUrl: strin
 
 function optional<K extends string, V>(key: K, value: V | undefined): { [P in K]?: V } {
   return (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

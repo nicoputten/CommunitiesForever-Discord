@@ -1,7 +1,7 @@
 // The weekly Doomsday ladder post (BOT-16, board `bot-doomsday-weekly`) and the recap's Doomsday section (board
 // `bot-recap-doomsday`). Pure: the site's `doomsdayLadder` event and the recap's `doomsday` field come in as read from
 // the site. PvE and PvP are two rankings side by side, never one; a PvP Virgin is never on the PvP ladder.
-import { type Embed, GOLD, type MessageContent, escapeMarkdown, marker } from "./milestones.js";
+import { type Embed, GOLD, type MessageContent, escapeMarkdown, marker } from "./message.js";
 import { thousands } from "./feats.js";
 import { clip, count, isObject, list, names, opt, text } from "./read.js";
 

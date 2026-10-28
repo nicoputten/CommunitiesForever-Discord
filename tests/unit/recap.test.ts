@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { markedEvents } from "../../src/core/milestones.js";
+import { markedEvents } from "../../src/core/message.js";
 import { numbersLine, readRecap, recapFiles, recapMessage } from "../../src/core/recap.js";
 
 // BOT-05: the weekly recap post from the site's `recap` event (web BOT-API.md). Made-up names (CLAUDE.md rule 1).

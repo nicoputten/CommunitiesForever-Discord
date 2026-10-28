@@ -1,6 +1,7 @@
 // The site's event feed (web repo docs/BOT-API.md "Events") read defensively, and what the bot does with each event
 // (BOT-03). Pure: settings and what is already posted come in as arguments.
-import { type FeatItem, type MessageContent, type Milestone, showable, testMessage } from "./milestones.js";
+import { type FeatItem, type Milestone, showable } from "./milestones.js";
+import { type MessageContent, testMessage } from "./message.js";
 import { type Board, readBoard } from "./doomsday.js";
 import { type Ladder, readLadder } from "./ladder.js";
 import { type Recap, readRecap } from "./recap.js";

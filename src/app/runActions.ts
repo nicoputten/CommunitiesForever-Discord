@@ -6,7 +6,7 @@ import type { Autocomplete, ButtonPress, SlashCommand } from "../adapters/discor
 import type { Log } from "../adapters/log.js";
 import type { Site, SiteAnswer } from "../adapters/site.js";
 import { notLinkedMessage, nothingMessage } from "../core/lookups.js";
-import type { MessageContent } from "../core/milestones.js";
+import type { MessageContent } from "../core/message.js";
 import {
   type PlanChoices,
   answeredMessage,

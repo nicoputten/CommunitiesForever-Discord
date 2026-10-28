@@ -2,23 +2,11 @@
 // time-passed reply, "This run isn't yours", the character and role picker, what an answer did, `/runs` and the site's
 // refusals. Only for the asker. Pure: the site's answers and the time come in as arguments.
 import { type ClassIcons, NO_ICONS, icon, optionEmoji } from "./classIcons.js";
-import { type Component, type MessageContent, GOLD, escapeMarkdown } from "./milestones.js";
+import { type Component, type MessageContent, GOLD, escapeMarkdown, className } from "./message.js";
 import { type Ask, type Run, type SlotRole, buttonOf, pageOf, runButton, runUrl } from "./runs.js";
 import { isObject, opt, text } from "./read.js";
 
 const ROLES: readonly SlotRole[] = ["tank", "healer", "damage"];
-const CLASS_NAMES: Readonly<Record<string, string>> = {
-  WARRIOR: "Warrior",
-  PALADIN: "Paladin",
-  HUNTER: "Hunter",
-  ROGUE: "Rogue",
-  PRIEST: "Priest",
-  SHAMAN: "Shaman",
-  MAGE: "Mage",
-  WARLOCK: "Warlock",
-  DRUID: "Druid",
-};
-
 function reply(
   title: string,
   description: string,
@@ -358,7 +346,7 @@ function characterSelect(
     placeholder,
     options: chars.slice(0, 25).map((c) => ({
       label:
-        `${c.name}${c.level !== undefined ? ` · ${c.level}` : ""}${c.classFile && CLASS_NAMES[c.classFile] ? ` ${CLASS_NAMES[c.classFile]}` : ""}`.slice(
+        `${c.name}${c.level !== undefined ? ` · ${c.level}` : ""}${className(c.classFile) ? ` ${className(c.classFile)}` : ""}`.slice(
           0,
           100,
         ),

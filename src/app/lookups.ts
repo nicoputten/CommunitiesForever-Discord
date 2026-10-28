@@ -19,7 +19,7 @@ import {
 } from "../core/lookups.js";
 import { NO_ICONS } from "../core/classIcons.js";
 import { boardUrl, boxes, doomsdayReply, notAvailableMessage, readLookup } from "../core/doomsday.js";
-import type { MessageContent } from "../core/milestones.js";
+import type { MessageContent } from "../core/message.js";
 import type { IconBox } from "./classIcons.js";
 import { isObject, text } from "../core/read.js";
 

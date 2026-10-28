@@ -17,7 +17,7 @@ import type { Emoji } from "../core/classIcons.js";
 import type { CommandDefinition } from "../core/commands.js";
 import type { ConnectionEvent, FailReason } from "../core/connection.js";
 import type { GuildSnapshot } from "../core/guild.js";
-import type { MessageContent, PostedMessage } from "../core/milestones.js";
+import type { MessageContent, PostedMessage } from "../core/message.js";
 
 export interface Discord {
   /** Logs in; resolves undefined once the gateway accepted the bot, or the reason it never will. */

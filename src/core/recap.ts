@@ -3,7 +3,7 @@
 // message goes out as Discord's JSON, the card images (web WEB-41d) as files for the poster to fetch and attach.
 import { type ClassIcons, NO_ICONS, cardIcon } from "./classIcons.js";
 import { type RecapDoomsday, readRecapDoomsday, recapDoomsdayField } from "./ladder.js";
-import { type Embed, GOLD, type MessageContent, marker } from "./milestones.js";
+import { type Embed, GOLD, type MessageContent, marker } from "./message.js";
 import { clip, count, isObject, text } from "./read.js";
 
 export interface RecapCard {

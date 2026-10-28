@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runPoster } from "../../src/app/poster.js";
-import { markedEvents } from "../../src/core/milestones.js";
+import { markedEvents } from "../../src/core/message.js";
 import { TEST_FOOTER, testSample } from "../../src/core/samples.js";
 import { readSettings } from "../../src/core/settings.js";
 import { CHANNEL, FakeDiscord, FakeSite, logger, milestonesEvent } from "./fakes.js";

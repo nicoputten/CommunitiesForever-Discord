@@ -2,15 +2,13 @@ import { describe, expect, it } from "vitest";
 import { decide, readEvents, readMilestones } from "../../src/core/events.js";
 import {
   EPIC_PURPLE,
-  GOLD,
   type Milestone,
-  escapeMarkdown,
   groupedMessage,
   joinsPost,
-  markedEvents,
   milestoneFiles,
   milestoneMessage,
 } from "../../src/core/milestones.js";
+import { GOLD, escapeMarkdown, markedEvents } from "../../src/core/message.js";
 
 // Made-up names (CLAUDE.md rule 1).
 const SITE = "https://example.com";

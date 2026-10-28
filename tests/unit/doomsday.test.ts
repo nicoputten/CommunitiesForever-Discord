@@ -12,7 +12,7 @@ import {
   readLookup,
 } from "../../src/core/doomsday.js";
 import { decide } from "../../src/core/events.js";
-import { markedEvents } from "../../src/core/milestones.js";
+import { markedEvents } from "../../src/core/message.js";
 import { readSettings } from "../../src/core/settings.js";
 import { CHANNEL, FakeDiscord, FakeSite, logger } from "./fakes.js";
 

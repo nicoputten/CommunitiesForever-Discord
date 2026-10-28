@@ -12,14 +12,8 @@ import type { Log } from "../adapters/log.js";
 import type { Site, SiteAnswer } from "../adapters/site.js";
 import { MAX_BACKOFF_SECONDS, backoffSeconds } from "../core/connection.js";
 import { decide, readEvents } from "../core/events.js";
-import {
-  type Group,
-  type MessageContent,
-  groupedMessage,
-  joinsPost,
-  markedEvents,
-  milestoneFiles,
-} from "../core/milestones.js";
+import { type Group, groupedMessage, joinsPost, milestoneFiles } from "../core/milestones.js";
+import { type MessageContent, markedEvents } from "../core/message.js";
 import { boardUrl } from "../core/doomsday.js";
 import { ladderMessage } from "../core/ladder.js";
 import { recapFiles, recapMessage } from "../core/recap.js";

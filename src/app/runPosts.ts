@@ -7,7 +7,7 @@ import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { RunEvent } from "../core/events.js";
 import type { IconBox } from "./classIcons.js";
-import type { MessageContent, PostedMessage } from "../core/milestones.js";
+import type { MessageContent, PostedMessage } from "../core/message.js";
 import {
   type PostContext,
   type Run,

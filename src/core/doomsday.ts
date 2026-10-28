@@ -5,7 +5,7 @@
 // never added together; a PvP Virgin has no PvP points (`null`), shown, never ranked.
 import type { ClassIcons } from "./classIcons.js";
 import { ordinal, thousands } from "./feats.js";
-import { type Embed, GOLD, type MessageContent, escapeMarkdown, marker } from "./milestones.js";
+import { type Embed, GOLD, type MessageContent, escapeMarkdown, marker } from "./message.js";
 import { clip, count, isObject, names, opt, text, time } from "./read.js";
 
 export type Track = "pve" | "pvp";

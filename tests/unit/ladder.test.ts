@@ -4,7 +4,7 @@ import { commandHandlers } from "../../src/app/commands.js";
 import { runPoster } from "../../src/app/poster.js";
 import { decide } from "../../src/core/events.js";
 import { ladderMessage, readLadder, readRecapDoomsday, recapDoomsdayField } from "../../src/core/ladder.js";
-import { type MessageContent, markedEvents } from "../../src/core/milestones.js";
+import { type MessageContent, markedEvents } from "../../src/core/message.js";
 import { readRecap, recapMessage } from "../../src/core/recap.js";
 import { CHANNEL, FakeDiscord, FakeSite, logger } from "./fakes.js";
 
