@@ -6,6 +6,7 @@ import type { Discord } from "../adapters/discord.js";
 import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { RunEvent } from "../core/events.js";
+import type { IconBox } from "./classIcons.js";
 import type { MessageContent, PostedMessage } from "../core/milestones.js";
 import {
   type PostContext,
@@ -35,6 +36,8 @@ export interface RunPostDeps {
   discord: Discord;
   log: Log;
   now(): number;
+  /** BOT-11: the class icons, once the start-up sync has them. */
+  icons?: IconBox;
 }
 
 export class RunPosts {
@@ -99,12 +102,19 @@ export class RunPosts {
         if (posted !== undefined) return posted;
         const content =
           event.type === "runReminder"
-            ? reminderMessage(event.run, event.minutes ?? ctx.reminderMinutes, event.mention, eventId, siteUrl)
-            : startingMessage(event.run, event.mention, eventId, siteUrl);
+            ? reminderMessage(
+                event.run,
+                event.minutes ?? ctx.reminderMinutes,
+                event.mention,
+                eventId,
+                siteUrl,
+                ctx.icons,
+              )
+            : startingMessage(event.run, event.mention, eventId, siteUrl, ctx.icons);
         return discord.post(channel, content);
       }
       case "ping":
-        return posted ?? discord.post(channel, pingMessage(event.run, event.ping, eventId, siteUrl));
+        return posted ?? discord.post(channel, pingMessage(event.run, event.ping, eventId, siteUrl, ctx.icons));
       case "askNow":
         return posted ?? discord.post(channel, askMessage(event.ask, eventId, siteUrl, ctx.mentionRole));
       case "runMovedUp":
@@ -125,6 +135,7 @@ export class RunPosts {
       siteHost: new URL(this.deps.siteUrl).host,
       now: Math.floor(this.deps.now() / 1000),
       reminderMinutes: settings.reminderMinutes ?? DEFAULT_REMINDER_MINUTES,
+      ...opt("icons", this.deps.icons?.current),
       ...opt("mentionRole", settings.mentionRole ?? undefined),
     };
   }

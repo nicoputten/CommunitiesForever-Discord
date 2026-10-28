@@ -35,6 +35,7 @@ The bot follows the web's "Night over Azeroth" design system: tokens, class colo
 - Planned runs replace the group ask of `bot-posts` (Nico, 2026-10-27): boards `bot-posts-runs`, `bot-commands-runs`, `runs-flow` (from `docs/DESIGN-PROMPT-PLANNED-RUNS.md`). A separate runs channel; one message per run, edited per state; reminders mention only I'm in and Maybe; `/plan` times in the asker's time zone from the site; `/ask` can't whisper in game. One admin: the boards' "Admins: Nico, Mira" (web) is not built.
 
 - Planned runs (Nico, 2026-10-28, BOT-04): asks from the game are posted without answer buttons until the site keeps asks (`/ask` follows with them); I'm in and Pick my character open a picker only for the presser (the character select with fit tags, then the roles of the class); one character answers at once; the run post is found again by its marker. A new start time sends sign-ups a quiet notice, as `/run edit`'s reply on the board says.
+- Class icons (Nico, 2026-10-28, BOT-11): the bot's own application emoji, named `cf_<class>_<hash of the picture>`, uploaded by the bot at start when missing or changed; without them the name shows without icon.
 
 ## Deviations
 
@@ -52,3 +53,4 @@ Approved departures from the boards (CLAUDE.md rule 8). Only Nico approves one; 
 | 2026-10-28 | Asks from the game (`bot-posts-runs` 4) have no answer buttons and no "Expired" edit: the post says when it ends with Discord's relative time; `/ask` and the time-passed reply's "Ask now instead" are not built yet | Answering an ask from Discord needs the site to keep asks first (a web story) | Nico |
 | 2026-10-28 | The run post's five slots are inline embed fields, which Discord shows three to a row, not the board's one row of five | Discord embeds have no grid | Nico |
 | 2026-10-28 | A full run names its reserves as next in line, not the board's "Grom Ashfeller can still answer Maybe"; I'm in on a full run stays clickable and makes a reserve | Runs v2 (web WEB-47): I'm in on a full role is a reserve | Nico |
+| 2026-10-28 | No class icon where a name is only in an embed title or author line (the run post's "Nico on Ves Doombringer (39 Warlock)", a milestone card's title, `/character`'s title): the icon goes before the next line instead where there is one | Discord shows custom emoji as text there | Nico |

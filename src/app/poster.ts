@@ -21,6 +21,7 @@ import {
 } from "../core/milestones.js";
 import { recapFiles, recapMessage } from "../core/recap.js";
 import { type SiteSettings, readSettings, settingsText } from "../core/settings.js";
+import type { IconBox } from "./classIcons.js";
 import { RunPosts } from "./runPosts.js";
 
 /**
@@ -37,6 +38,8 @@ export interface PosterDeps {
   now(): number;
   /** BOT-04: the run posts, shared with the run commands; made here when not given. */
   runPosts?: RunPosts;
+  /** BOT-11: the class icons, once the start-up sync has them. */
+  icons?: IconBox;
   /** BOT-04: the latest settings, for the run commands. */
   shared?: { settings?: SiteSettings };
 }
@@ -55,7 +58,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
   let recapScanned: string | undefined;
   // The runs channel whose posts were read for markers (BOT-04), when it isn't the posts channel.
   let runsScanned: string | undefined;
-  const runs = deps.runPosts ?? new RunPosts({ siteUrl, discord, log, now: deps.now });
+  const runs = deps.runPosts ?? new RunPosts({ siteUrl, discord, log, now: deps.now, ...opt("icons", deps.icons) });
   // The post that still takes milestones (BOT-09); at most MAX_LINES milestones, so bounded.
   // `attached`: its card images (BOT-05). An edit keeps them; milestones added by an edit go without an image.
   let open: { id: string; channel: string; at: number; groups: Group[]; attached: string[] } | undefined;
@@ -206,7 +209,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
             await discord.edit(
               channel,
               open.id,
-              groupedMessage(groups, siteUrl, host, open.attached) as MessageContent,
+              groupedMessage(groups, siteUrl, host, open.attached, deps.icons?.current) as MessageContent,
             );
             open.groups = groups;
             messageId = open.id;
@@ -228,7 +231,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
           try {
             messageId = await discord.post(
               channel,
-              groupedMessage([group], siteUrl, host, attached) as MessageContent,
+              groupedMessage([group], siteUrl, host, attached, deps.icons?.current) as MessageContent,
               files,
             );
           } catch (error) {
@@ -277,4 +280,8 @@ export function sleep(ms: number, signal: AbortSignal): Promise<void> {
     const timer = setTimeout(done, Math.max(0, ms));
     signal.addEventListener("abort", done, { once: true });
   });
+}
+
+function opt<K extends string, V>(key: K, value: V | undefined): { [P in K]?: V } {
+  return (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
 }

@@ -8,7 +8,9 @@ import type { Site, SiteConfig } from "../adapters/site.js";
 import { COMMANDS } from "../core/commands.js";
 import { type Env, problemText, readConfig } from "../core/config.js";
 import { type ConnectionEvent, HEARTBEAT_MS, isConnected, stateText } from "../core/connection.js";
+import { NO_ICONS } from "../core/classIcons.js";
 import type { SiteSettings } from "../core/settings.js";
+import { type IconBox, type ReadIcon, syncClassIcons } from "./classIcons.js";
 import { commandHandlers } from "./commands.js";
 import { type GuildReporter, guildReporter } from "./guildReporter.js";
 import { runPoster } from "./poster.js";
@@ -18,6 +20,8 @@ export interface Deps {
   site(config: SiteConfig): Site;
   heartbeat: Heartbeat;
   now(): number;
+  /** BOT-11: reads a class icon file (tests give their own). */
+  readIcon?: ReadIcon;
 }
 
 /** Runs the bot. Resolves the exit code: 0 without a token or when stopped, 1 for a broken configuration or login. */
@@ -51,10 +55,16 @@ export async function start(env: Env, log: Log, deps: Deps, stop: AbortSignal): 
       const site = deps.site(config);
       // The poster's latest settings, for the run commands (BOT-04).
       const shared: { settings?: SiteSettings } = {};
-      poster = runPoster({ siteUrl: config.siteUrl, site, discord, log, now: deps.now, shared }, posterStop.signal);
+      // The class icons (BOT-11): names show without them until the sync is done, or when it fails.
+      const icons: IconBox = { current: NO_ICONS };
+      void syncClassIcons(discord, log, deps.readIcon).then((found) => (icons.current = found));
+      poster = runPoster(
+        { siteUrl: config.siteUrl, site, discord, log, now: deps.now, shared, icons },
+        posterStop.signal,
+      );
       reporter = guildReporter(site, discord, log);
       const handlers = commandHandlers(
-        { siteUrl: config.siteUrl, site, log, now: deps.now, settings: () => shared.settings },
+        { siteUrl: config.siteUrl, site, log, now: deps.now, settings: () => shared.settings, icons },
         posterStop.signal,
       );
       discord.onCommand(handlers.command);

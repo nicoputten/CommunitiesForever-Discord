@@ -1,6 +1,8 @@
 // Milestone posts (BOT-03, board `bot-posts` part 1): one message per upload. Pure: the event comes in as read from
 // the site, the message goes out as Discord's JSON. Only what the event carries is shown (DESIGN-NOTES "Deviations").
 
+import { type ClassIcons, NO_ICONS, icon } from "./classIcons.js";
+
 export interface Character {
   guid: string;
   name?: string;
@@ -55,7 +57,8 @@ export interface Component {
   custom_id?: string;
   url?: string;
   placeholder?: string;
-  options?: { label: string; value: string; description?: string }[];
+  /** BOT-11: a select option's class icon. */
+  options?: { label: string; value: string; description?: string; emoji?: { id: string; name: string } }[];
 }
 
 export interface MessageContent {
@@ -183,6 +186,7 @@ export function groupedMessage(
   siteUrl: string,
   siteHost: string,
   attached: readonly string[] = [],
+  icons: ClassIcons = NO_ICONS,
 ): MessageContent | undefined {
   const all = groups.flatMap((g) => showable(g.milestones).map((milestone) => ({ eventId: g.eventId, milestone })));
   const shown = all.slice(0, MAX_LINES);
@@ -205,7 +209,7 @@ export function groupedMessage(
       title: headline(milestone),
       url: link(milestone.character),
       description: [
-        owner(milestone.character),
+        `${icon(icons, milestone.character.classFile)}${owner(milestone.character) ?? ""}`.trim() || undefined,
         detail(milestone),
         `[Open character ↗](${characterUrl(siteUrl, milestone.character.guid)})`,
       ]
@@ -223,7 +227,7 @@ export function groupedMessage(
       const title = headline(milestone).replace(name, `[${escapeMarkdown(name)}](${link(milestone.character)})`);
       const by = owner(milestone.character);
       const sub = detail(milestone);
-      return `**${title}**${by ? ` · ${by}` : ""}${sub ? `\n${sub}` : ""}`;
+      return `${icon(icons, milestone.character.classFile)}**${title}**${by ? ` · ${by}` : ""}${sub ? `\n${sub}` : ""}`;
     });
   if (hidden > 0) lines.push(`and ${hidden} more on ${siteHost}`);
   if (lines.length > 0) embeds.push({ description: lines.join("\n\n"), color: GOLD });

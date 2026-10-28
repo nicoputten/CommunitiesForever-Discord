@@ -2,6 +2,7 @@
 // "Look-ups") as embeds. Pure: the site's answer and "now" come in, Discord's JSON goes out. Full character names,
 // display names for friends; names from players never become Discord markdown (escapeMarkdown). Discord can't colour
 // text in an embed, so every character name is bold with its class written next to it (Nico, 2026-10-28).
+import { type ClassIcons, NO_ICONS, icon } from "./classIcons.js";
 import { CLASS_COLOURS, type Embed, GOLD, type MessageContent, characterUrl, escapeMarkdown } from "./milestones.js";
 
 export interface LookupCharacter {
@@ -108,10 +109,11 @@ export function whereisMessage(
   siteUrl: string,
   siteHost: string,
   card?: string,
+  icons: ClassIcons = NO_ICONS,
 ): MessageContent {
   const rows = chars.map((c) =>
     line(
-      `${bold(c.name)} ${[c.level, c.className].filter((x) => x !== undefined).join(" ")}`.trim(),
+      `${icon(icons, c.classFile)}${bold(c.name)} ${[c.level, c.className].filter((x) => x !== undefined).join(" ")}`.trim(),
       c.seen?.zone ?? "not seen yet",
       c.seen ? age(c.seen.at, now) : undefined,
     ),
@@ -130,6 +132,7 @@ export function whoMessage(
   chars: readonly LookupCharacter[],
   filter: { level?: string; role?: string; className?: string; recent?: boolean },
   now: number,
+  icons: ClassIcons = NO_ICONS,
 ): MessageContent {
   const noun =
     { tank: ["tank", "tanks"], healer: ["healer", "healers"], damage: ["damage dealer", "damage dealers"] }[
@@ -145,7 +148,7 @@ export function whoMessage(
     .join(" ");
   const rows = chars.map((c) =>
     line(
-      `${bold(c.name)} ${[c.level, c.className].filter((x) => x !== undefined).join(" ")}`,
+      `${icon(icons, c.classFile)}${bold(c.name)} ${[c.level, c.className].filter((x) => x !== undefined).join(" ")}`,
       c.owner ? escapeMarkdown(c.owner) : undefined,
       c.seen ? age(c.seen.at, now) : undefined,
     ),
@@ -164,10 +167,11 @@ export function coverage(best: number | undefined): string {
 export function craftMessage(
   profession: string,
   crafters: readonly (LookupCharacter & { rank: number; max?: number; best?: boolean })[],
+  icons: ClassIcons = NO_ICONS,
 ): MessageContent {
   const rows = crafters.map((c) =>
     line(
-      `${c.best ? "★ " : ""}${bold(c.name)} ${c.rank}${c.max !== undefined ? ` / ${c.max}` : ""}`,
+      `${c.best ? "★ " : ""}${icon(icons, c.classFile)}${bold(c.name)} ${c.rank}${c.max !== undefined ? ` / ${c.max}` : ""}`,
       c.className,
       c.owner ? escapeMarkdown(c.owner) : undefined,
     ),
@@ -180,7 +184,12 @@ export function craftMessage(
 }
 
 /** `/character`: the character card. */
-export function characterMessage(c: LookupCharacter, now: number, siteUrl: string): MessageContent {
+export function characterMessage(
+  c: LookupCharacter,
+  now: number,
+  siteUrl: string,
+  icons: ClassIcons = NO_ICONS,
+): MessageContent {
   const fields = [
     { name: "Item level", value: c.ilvl !== undefined ? String(c.ilvl) : "—", inline: true },
     { name: "Talents", value: c.talents ? c.talents.join("/") : "—", inline: true },
@@ -192,7 +201,7 @@ export function characterMessage(c: LookupCharacter, now: number, siteUrl: strin
     url: characterUrl(siteUrl, c.guid),
     description: [
       line(
-        [c.level, c.race, c.className].filter((x) => x !== undefined).join(" "),
+        `${icon(icons, c.classFile)}${[c.level, c.race, c.className].filter((x) => x !== undefined).join(" ")}`,
         c.spec ? escapeMarkdown(c.spec) : undefined,
         c.owner ? escapeMarkdown(c.owner) : undefined,
       ),
@@ -211,10 +220,11 @@ export function altsMessage(
   chars: readonly LookupCharacter[],
   now: number,
   week?: { levels: number; quests: number; runs: number },
+  icons: ClassIcons = NO_ICONS,
 ): MessageContent {
   const rows = chars.map((c) =>
     line(
-      `${bold(c.name)} ${[c.level, c.className].filter((x) => x !== undefined).join(" ")}`,
+      `${icon(icons, c.classFile)}${bold(c.name)} ${[c.level, c.className].filter((x) => x !== undefined).join(" ")}`,
       c.role ? ROLE_NAMES[c.role] : undefined,
       c.seen ? age(c.seen.at, now) : undefined,
     ),

@@ -17,7 +17,9 @@ import {
   whereisMessage,
   whoMessage,
 } from "../core/lookups.js";
+import { NO_ICONS } from "../core/classIcons.js";
 import type { MessageContent } from "../core/milestones.js";
+import type { IconBox } from "./classIcons.js";
 
 export const LOOKUPS = ["whereis", "who", "whocancraft", "character", "alts", "me"] as const;
 
@@ -62,6 +64,8 @@ export interface LookupDeps {
   log: Log;
   now(): number;
   shares: SharedAnswers;
+  /** BOT-11: the class icons, once the start-up sync has them. */
+  icons?: IconBox;
 }
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
@@ -76,6 +80,7 @@ function failure(answer: Extract<SiteAnswer, { ok: false }>, what: string): Mess
 export async function answerLookup(deps: LookupDeps, command: SlashCommand, signal: AbortSignal): Promise<void> {
   const host = new URL(deps.siteUrl).host;
   const nowSeconds = Math.floor(deps.now() / 1000);
+  const icons = deps.icons?.current ?? NO_ICONS;
   const o = command.options;
   const param = (name: string) => (typeof o[name] === "string" ? (o[name] as string) : undefined);
   const ask = (what: string, params: Record<string, string | undefined>) => {
@@ -110,7 +115,7 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         if (data !== undefined) files.push({ name, data });
       }
       const title = text(body.friend) !== undefined ? `${text(body.friend)}'s characters` : (chars[0]?.name ?? "Where");
-      content = whereisMessage(title, chars, nowSeconds, deps.siteUrl, host, files[0]?.name);
+      content = whereisMessage(title, chars, nowSeconds, deps.siteUrl, host, files[0]?.name, icons);
       break;
     }
     case "who": {
@@ -133,6 +138,7 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         chars,
         { level: param("level"), role: param("role"), className, recent: o.recent === true },
         nowSeconds,
+        icons,
       );
       break;
     }
@@ -148,7 +154,7 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         if (read === undefined || !isObject(c) || typeof c.rank !== "number") return [];
         return [{ ...read, rank: c.rank, ...(typeof c.max === "number" ? { max: c.max } : {}), best: c.best === true }];
       });
-      content = craftMessage(text(body.profession) ?? param("profession") ?? "", crafters);
+      content = craftMessage(text(body.profession) ?? param("profession") ?? "", crafters, icons);
       siteLink = `${deps.siteUrl}/professions`;
       break;
     }
@@ -163,7 +169,7 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         await command.reply(nothingMessage("Not found", "No such character."));
         return;
       }
-      content = characterMessage(c, nowSeconds, deps.siteUrl);
+      content = characterMessage(c, nowSeconds, deps.siteUrl, icons);
       siteLink = `${deps.siteUrl}/character/${encodeURIComponent(c.guid)}`;
       break;
     }
@@ -187,6 +193,7 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         week && [week.levels, week.quests, week.runs].every((n) => typeof n === "number")
           ? { levels: week.levels as number, quests: week.quests as number, runs: week.runs as number }
           : undefined,
+        icons,
       );
       siteLink = `${deps.siteUrl}/roster`;
       break;
