@@ -14,11 +14,17 @@ Exports from the Claude Design canvas "Doombringers — wow.vestras.nl design", 
 | `boards/bot-doomsday-weekly/` | DD10DiscordWeekly | The weekly Doomsday ladder post (PvP and PvE top 5, duel champion, battlegrounds apart, PvP Virgin of the week) and the ephemeral `/doomsday` reply (BOT-16) |
 | `boards/bot-doomsday-feats/` | DD11DiscordFeats | "Feat unlocked" posts: one feat with a card, four feats from one upload with First in the group, a feat without a card; and the recap's Doomsday section (BOT-14, BOT-16) |
 | `boards/bot-recap-doomsday/` | BotRecap · Doomsday | A copy of `bot-recap` with the Doomsday section added (BOT-16) |
+| `boards/bot-recap-v2/` | BotRecap · recap v2 | The weekly recap with the recap v2 cards: the full PvP-week sample ("Blood in Stranglethorn", Warmonger, Bloodbath zone with map crop, Rank race, Duel rivals, Fell to their death, the Tarren Mill challenge) and the 65-card list (17 new, 4 changed); the Doomsday section unchanged (a copy of `bot-recap-doomsday`) (web WEB-57) |
+| `boards/bot-recap-v2-danger/` | Recap v2 · danger & loot week | The second sample week ("A week of spirit healers": Loot goblin, Deadliest zone, Revenge, Purple rain, Died by fire) with why each card was picked and a rules check (WEB-57) |
+| `boards/bot-recap-v2-cards/` | Recap v2 · every new card | Every new award, card, headline and challenge as it sits in the embed, with a "Shows when" rule under each (WEB-57) |
+| `boards/bot-recap-v2-icons/` | Recap v2 · card icons | The 12 recap card icons as bot emoji (crossed swords, skull, falling figure, flame, purple gem, horse, moon, sun, banner, hourglass, shield, two figures), in the class-icon style (BOT-14's recap icons) |
 
 The site's Discord page (`BotAdmin`, with and without runs) is in the web repo's `design/boards/discord-settings*`. Where a `-runs` board and its original overlap, the `-runs` board is the newer design.
 
 The map crop in `boards/bot-commands/assets/` is the site's map. Zone outlines: Syrio, Wikimedia Commons, CC BY-SA 4.0, adapted (see the web repo's `tools/map/README.md`).
 
 The Doomsday boards (2026-10-28, from the web repo's `docs/DESIGN-PROMPT-DOOMSDAY.md`) belong to one feature across the addon, the site and the bot; its rules are the addon repo's `docs/DOOMSDAY.md`, which wins over the boards: the reset is **19:00** realm time (a site setting), not the boards' 09:00, and the weekly post comes on Sunday at that time; the crown gives no points. The feat card images are the site's (web `design/boards/doomsday-feat-cards`).
+
+The recap v2 boards (2026-10-29, from the web repo's `docs/DESIGN-PROMPT-RECAP-V2.md` section 2) design web WEB-57's cards and the bot's card icons. The thresholds under "Shows when" are the designer's proposals; WEB-57 in the web repo's `docs/STORIES.md` says which ones apply. Social butterfly (A7) is redefined as "grouped with the most different friends" and replaces the old meaning. The icons also exist as transparent PNG exports (128 px emoji, 20 px previews) for uploading as bot emoji.
 
 All names on the boards are made up.
