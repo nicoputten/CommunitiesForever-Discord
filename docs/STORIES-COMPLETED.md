@@ -153,3 +153,22 @@ After web WEB-58, as on `bot-doomsday-weekly` and `bot-recap-doomsday`.
 - Decided with Nico (2026-10-28): the title takes the site's `label` ("week 44", asked of the site), else "Doomsday ladder" with "The week of <date>" in the text; the intro and the PvP Virgin line are fixed texts without facts ("Week 44 is done. Proud of the grind.", "Still pure. The Night Elves of Ashenvale send their thanks."); the recap section's crowns come once the site sends `crowns`, and "Full ladder" links to the site's Doomsday page, not `/doomsday`.
 - Done (PR #37): `src/core/ladder.ts` (`readLadder`, `ladderMessage`, `readRecapDoomsday`, `recapDoomsdayField`), the `doomsdayLadder` event in the poster (the Doomsday channel, marked like any post), `/doomsday` and `/doom` (one command under two names, Discord has no aliases) in `src/app/lookups.ts` with BOT-15's `doomsdayReply`, Share and the friend autocomplete, and the section in `recapMessage` before the challenge.
 - Manual (Nico, in Discord, once the site has WEB-58): `/doomsday` and `/doom` answer only you, `/doomsday friend:` fills in names and shows that friend's day, Share posts it; on Sunday at the reset the ladder post comes in the Doomsday channel; the next recap has the Doomsday section.
+
+### BOT-17 Feats channel and test posts per kind
+With web WEB-58 part 2 (the reorganised Discord page; contract in web `docs/BOT-API.md`, "Settings" and "`test`"). Decided with Nico, 2026-10-28.
+- **Feats channel:**
+  - Settings `channels.feats` is the channel for feats (the `milestones` event). `null` or missing means the posts channel, as now.
+  - The BOT-09 grouping and the markers work in that channel. After a restart the bot reads it for markers like the other channels.
+- **Test posts per kind:** the `test` event's `kind` may be `posts`, `feats`, `recap` or `doomsday`.
+  - `feats`, `recap` and `doomsday` get a made-up sample of that kind, posted in that kind's channel (each falls back to the posts channel when unset):
+    - `feats`: a "Feat unlocked" post
+    - `recap`: a short recap
+    - `doomsday`: a daily board
+  - The samples use names no friend has: the character "Testy McTestface", the friends "Test Friend" and "Another Test".
+  - The samples have no card images. The title starts with "Test ·" and the footer says "Test post from the site's Discord page · not real".
+  - The board sample has only "Open the board ↗" and is never edited.
+  - `posts` stays the plain test message. A kind the bot doesn't know gets the plain test message in the posts channel (today the bot leaves it).
+  - Each test is acknowledged like any event and posted once (marker).
+- Tests: the feats channel (posting, grouping, marker scan, fallback); each test kind, its channel, its marks, and the unknown kind.
+- Done (PR #?): `featsChannel` in `src/core/settings.ts`; the poster posts and groups feats in it and reads every other channel (recap, runs, Doomsday, feats) for markers in one loop; `src/core/samples.ts` (`testSample` per kind, from the real formatting with made-up data); `decide` answers `sample` for `feats`, `recap` and `doomsday`, and the plain test for any other kind.
+- Manual (Nico, in Discord, once the site has WEB-58 part 2): pick a feats channel and press each test button on the Discord page; each sample appears once in its channel, titled "Test ·"; an upload's feats go to the feats channel.
