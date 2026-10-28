@@ -11,8 +11,14 @@ import {
   craftMessage,
   notLinkedMessage,
   nothingMessage,
+  readAlts,
+  readAsker,
   readCharacter,
-  readCharacters,
+  readCrafters,
+  readNames,
+  readProfessions,
+  readWhereis,
+  readWho,
   sharedMessage,
   whereisMessage,
   whoMessage,
@@ -20,8 +26,8 @@ import {
 import { NO_EMOJI } from "../core/emoji.js";
 import { boardUrl, boxes, doomsdayReply, notAvailableMessage, readLookup } from "../core/doomsday.js";
 import type { MessageContent } from "../core/message.js";
+import { isObject } from "../core/read.js";
 import type { EmojiBox } from "./emoji.js";
-import { isObject, text } from "../core/read.js";
 
 export const LOOKUPS = ["whereis", "who", "whocancraft", "character", "alts", "me", "doomsday", "doom"] as const;
 
@@ -107,15 +113,13 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         await command.reply(failure(answer, friend ?? character ?? "that"));
         return;
       }
-      const body = isObject(answer.body) ? answer.body : {};
-      const chars = readCharacters(body.characters);
-      const card = text(body.card);
+      const { friend: whose, characters: chars, card } = readWhereis(answer.body);
       if (card !== undefined) {
         const name = `whereis-${card.replace(/[^\w-]/g, "")}.png`;
         const data = await deps.site.image(`cards/whereis-${encodeURIComponent(card)}.png`, signal);
         if (data !== undefined) files.push({ name, data });
       }
-      const title = text(body.friend) !== undefined ? `${text(body.friend)}'s characters` : (chars[0]?.name ?? "Where");
+      const title = whose !== undefined ? `${whose}'s characters` : (chars[0]?.name ?? "Where");
       content = whereisMessage(title, chars, nowSeconds, deps.siteUrl, host, files[0]?.name, icons);
       break;
     }
@@ -130,9 +134,7 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         await command.reply(failure(answer, "that"));
         return;
       }
-      const body = isObject(answer.body) ? answer.body : {};
-      const chars = readCharacters(body.characters);
-      const total = typeof body.total === "number" ? body.total : chars.length;
+      const { total, characters: chars } = readWho(answer.body);
       const className = param("class") ? param("class")!.charAt(0) + param("class")!.slice(1).toLowerCase() : undefined;
       content = whoMessage(
         total,
@@ -149,13 +151,8 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         await command.reply(failure(answer, param("profession") ?? "that"));
         return;
       }
-      const body = isObject(answer.body) ? answer.body : {};
-      const crafters = (Array.isArray(body.crafters) ? body.crafters : []).flatMap((c) => {
-        const read = readCharacter(c);
-        if (read === undefined || !isObject(c) || typeof c.rank !== "number") return [];
-        return [{ ...read, rank: c.rank, ...(typeof c.max === "number" ? { max: c.max } : {}), best: c.best === true }];
-      });
-      content = craftMessage(text(body.profession) ?? param("profession") ?? "", crafters, icons);
+      const { profession, crafters } = readCrafters(answer.body);
+      content = craftMessage(profession ?? param("profession") ?? "", crafters, icons);
       siteLink = `${deps.siteUrl}/professions`;
       break;
     }
@@ -185,17 +182,8 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         );
         return;
       }
-      const body = isObject(answer.body) ? answer.body : {};
-      const week = isObject(body.week) ? body.week : undefined;
-      content = altsMessage(
-        text(body.friend) ?? "You",
-        readCharacters(body.characters),
-        nowSeconds,
-        week && [week.levels, week.quests, week.runs].every((n) => typeof n === "number")
-          ? { levels: week.levels as number, quests: week.quests as number, runs: week.runs as number }
-          : undefined,
-        icons,
-      );
+      const alts = readAlts(answer.body);
+      content = altsMessage(alts.friend ?? "You", alts.characters, nowSeconds, alts.week, icons);
       siteLink = `${deps.siteUrl}/roster`;
       break;
     }
@@ -226,7 +214,7 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
       return;
   }
 
-  const asker = isObject(answer.body) ? text(answer.body.asker) : undefined;
+  const asker = readAsker(answer.body);
   const customId = deps.shares.keep({ content, files, ...(asker !== undefined ? { asker } : {}), at: deps.now() });
   await command.reply(
     {
@@ -257,12 +245,10 @@ export async function answerShare(deps: LookupDeps, press: ButtonPress): Promise
 export async function answerAutocomplete(deps: LookupDeps, request: Autocomplete, signal: AbortSignal): Promise<void> {
   if (request.option === "profession") {
     const answer = await deps.site.lookup("professions", {}, signal);
-    const all =
-      answer.ok && isObject(answer.body) && Array.isArray(answer.body.professions) ? answer.body.professions : [];
     const wanted = request.value.toLowerCase();
     await request.respond(
-      all
-        .filter((p): p is string => typeof p === "string" && p.toLowerCase().includes(wanted))
+      (answer.ok ? readProfessions(answer.body) : [])
+        .filter((p) => p.toLowerCase().includes(wanted))
         .map((p) => ({ name: p, value: p })),
     );
     return;
@@ -275,12 +261,5 @@ export async function answerAutocomplete(deps: LookupDeps, request: Autocomplete
         : undefined;
   if (kind === undefined) return;
   const answer = await deps.site.lookup("names", { q: request.value, kind }, signal);
-  const names = answer.ok && isObject(answer.body) && Array.isArray(answer.body.names) ? answer.body.names : [];
-  await request.respond(
-    names.flatMap((n) =>
-      isObject(n) && typeof n.name === "string" && typeof n.value === "string"
-        ? [{ name: n.name, value: n.value }]
-        : [],
-    ),
-  );
+  await request.respond(answer.ok ? readNames(answer.body) : []);
 }
