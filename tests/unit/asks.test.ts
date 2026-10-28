@@ -53,7 +53,7 @@ describe("the ask post", () => {
     expect(e.description).toContain("**In** · Grom Ashfeller (Nico) · Kel Dawnhammer (Mira)");
     expect(e.description).toContain("**Can't** · Femke");
     expect(e.footer?.text).toBe("asked on Discord · ends in a party invite in game");
-    expect(labels(m)).toEqual(["I'm in", "Maybe", "Can't", "Pick my character"]);
+    expect(labels(m)).toEqual(["I'm in", "Maybe", "Can't"]);
   });
 
   it("is Expired without buttons after its 10 minutes, by the site's state or by the time", () => {
@@ -215,13 +215,18 @@ describe("/ask and answering an ask", () => {
         }),
       },
     });
-    // I'm in with one character answers at once.
+    // I'm in opens the picker with the best character; its role button answers (BOT-13).
     const imIn = pressed("ask:12:in");
     await actions.press(imIn.press, signal);
+    expect(imIn.shown[0]?.components?.[1]?.components[0]?.custom_id).toBe("ask:12:role:LIA:healer");
+    imIn.shown.length = 0;
+    const role = pressed("ask:12:role:LIA:healer");
+    await actions.press(role.press, signal);
+    imIn.shown.push(...role.shown);
     expect(site.runCalls.at(-1)).toMatchObject({
       method: "POST",
       path: "asks/12/answers",
-      body: { discordUserId: IDS.femke, answer: "in", characterId: "LIA" },
+      body: { discordUserId: IDS.femke, answer: "in", characterId: "LIA", role: "healer" },
     });
     expect(imIn.shown[0]?.embeds[0]?.description).toBe(
       "You're in as Lia Thornwhisper (healer). The game shows it after the next sync.",

@@ -8,7 +8,6 @@ import type { Site, SiteAnswer } from "../adapters/site.js";
 import { notLinkedMessage, nothingMessage } from "../core/lookups.js";
 import type { MessageContent } from "../core/milestones.js";
 import {
-  type PickCharacter,
   type PlanChoices,
   answeredMessage,
   askedMessage,
@@ -25,7 +24,6 @@ import {
   readPlanChoices,
   readStored,
   refusalMessage,
-  rolePickerMessage,
   runChoices,
   runsListMessage,
   timePassedMessage,
@@ -360,22 +358,14 @@ export class RunActions {
     if (what === "char") {
       const c = list.find((x) => x.guid === picked);
       if (c === undefined) return show(refusalMessage("not_your_character", 400));
-      return show(await this.pickRole(run, c, press.userId, signal));
+      // A class with one role answers at once; else the picker with this character's roles.
+      if (c.roles.length === 1) {
+        return show(await this.answer(runId, press.userId, "in", signal, c.guid, c.roles[0], false, kind));
+      }
+      return show(pickerMessage(run, list, this.deps.siteUrl, this.icons(), c.guid));
     }
-    // One character with its own role: I'm in answers at once (Nico, 2026-10-28).
-    const only = list.length === 1 ? list[0] : undefined;
-    if (what === "in" && only !== undefined) {
-      return show(await this.answer(runId, press.userId, "in", signal, only.guid, undefined, false, kind));
-    }
+    // I'm in (and Pick my character on posts from before BOT-13): the picker, the best character preselected.
     return show(pickerMessage(run, list, this.deps.siteUrl, this.icons()));
-  }
-
-  /** After a character is picked: its role when its class plays only one, else the role buttons. */
-  private async pickRole(run: Run, c: PickCharacter, userId: string, signal: AbortSignal): Promise<MessageContent> {
-    if (c.roles.length === 1) {
-      return this.answer(run.id, userId, "in", signal, c.guid, c.roles[0], false, run.kind ?? "run");
-    }
-    return rolePickerMessage(run, c);
   }
 
   private async answer(

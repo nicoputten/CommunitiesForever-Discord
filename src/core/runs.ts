@@ -405,16 +405,17 @@ export function runMessage(run: Run, ctx: PostContext): MessageContent {
   };
   const icons = ctx.icons ?? NO_ICONS;
   if (state !== "cancelled" && state !== "didntHappen") {
-    embed.fields = slots(run).map((s) => ({
-      name: roleName(s.role),
-      value:
-        s.who === undefined
-          ? s.role === "damage"
-            ? "open"
-            : "needed"
-          : `${slotText(s.who, icons)}${s.maybe ? " · maybe" : ""}`,
-      inline: true,
-    }));
+    // One line per slot (BOT-13, Nico 2026-10-28): inline fields wrap 3 + 2 and the columns don't line up.
+    const slotLines = slots(run).map(
+      (s) =>
+        `${roleName(s.role)} · ${
+          s.who === undefined
+            ? s.role === "damage"
+              ? "open"
+              : "needed"
+            : `${slotText(s.who, icons)}${s.maybe ? " · maybe" : ""}`
+        }`,
+    );
     const extra = [
       ...(answering(state) ? couldFillLines(run, icons) : []),
       ...listLine(
@@ -428,7 +429,9 @@ export function runMessage(run: Run, ctx: PostContext): MessageContent {
         icons,
       ),
     ];
-    if (extra.length > 0) embed.fields.push({ name: "\u200b", value: extra.join("\n") });
+    embed.description = [embed.description, slotLines.join("\n"), ...(extra.length > 0 ? [extra.join("\n")] : [])].join(
+      "\n\n",
+    );
   }
   embed.footer = { text: `${ctx.test !== undefined ? "Test post · " : ""}${countsText(run)} · ${ctx.siteHost}/runs` };
 
@@ -443,7 +446,6 @@ export function runMessage(run: Run, ctx: PostContext): MessageContent {
           },
           { type: 2, style: 2, label: "Maybe", custom_id: runButton(run.id, "maybe") },
           { type: 2, style: 4, label: "Can't", custom_id: runButton(run.id, "cant") },
-          { type: 2, style: 2, label: "Pick my character", custom_id: runButton(run.id, "pick") },
         ]
       : [];
   buttons.push(linkButton("Open run ↗", ctx.test !== undefined ? `${ctx.siteUrl}/runs` : runUrl(ctx.siteUrl, run.id)));
@@ -756,7 +758,6 @@ export function askMessage(ask: Ask, ctx: AskContext): MessageContent {
                 { type: 2 as const, style: 3, label: "I'm in", custom_id: button("in") },
                 { type: 2 as const, style: 2, label: "Maybe", custom_id: button("maybe") },
                 { type: 2 as const, style: 4, label: "Can't", custom_id: button("cant") },
-                { type: 2 as const, style: 2, label: "Pick my character", custom_id: button("pick") },
               ],
             },
           ],

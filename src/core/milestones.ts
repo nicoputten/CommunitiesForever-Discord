@@ -58,7 +58,14 @@ export interface Component {
   url?: string;
   placeholder?: string;
   /** BOT-11: a select option's class icon. */
-  options?: { label: string; value: string; description?: string; emoji?: { id: string; name: string } }[];
+  options?: {
+    label: string;
+    value: string;
+    description?: string;
+    emoji?: { id: string; name: string };
+    /** BOT-13: preselected. */
+    default?: boolean;
+  }[];
 }
 
 export interface MessageContent {
