@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doomsday Discord feats</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#070C15}
+a{color:#D4AF6A}a:hover{color:#F0D08E}
+.box{padding:18px 20px;border-radius:14px;background:rgba(12,18,30,.8);border:1px solid rgba(212,175,106,.22);display:flex;flex-direction:column;gap:12px}
+.bt{margin:0;font:17px 'Marcellus SC',serif;letter-spacing:.08em;color:#F0D08E}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:10px;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;border:0;box-sizing:border-box}
+.pri{background:#D4AF6A;color:#0B0F14}
+.sec{background:transparent;border:1px solid rgba(212,175,106,.4);color:#F0D08E}
+.ghost{background:transparent;color:#AEB6C3;border:1px solid rgba(174,182,195,.25)}
+.danger{background:transparent;color:#F59A9C;border:1px solid rgba(218,55,60,.45)}
+.on{background:rgba(127,217,154,.16);color:#9BE3B0;border:1px solid rgba(127,217,154,.5)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(174,182,195,.25);background:rgba(12,18,30,.8);color:#AEB6C3;font:500 13px Inter,sans-serif;cursor:pointer}
+.chip.act{border-color:#D4AF6A;background:rgba(212,175,106,.16);color:#F3EBDA}
+.pill{display:inline-block;font:700 11px/1 Inter,sans-serif;padding:4px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
+.p-open{background:rgba(212,175,106,.18);color:#F3DFAE}
+.p-soon{background:rgba(240,167,116,.18);color:#F6C29C}
+.p-full{background:rgba(127,217,154,.16);color:#9BE3B0}
+.p-done{background:rgba(174,182,195,.12);color:#C4C9D0}
+.p-cx{background:rgba(218,55,60,.18);color:#F59A9C}
+.lab{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#7E8898}
+.sel{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:0 14px;border-radius:10px;background:#0B1220;border:1px solid rgba(174,182,195,.25);font-size:14px;color:#E6E1D6;box-sizing:border-box}
+.muted{color:#8E98A8}
+.slots{display:flex;gap:4px}
+.slots i{width:22px;height:8px;border-radius:2px;display:block}
+.run{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:18px;align-items:center;padding:16px 18px;border-radius:12px;background:rgba(12,18,30,.8);border:1px solid rgba(174,182,195,.14);text-decoration:none;color:#E6E1D6}
+.run:hover{border-color:rgba(212,175,106,.45)}
+.when{display:flex;flex-direction:column;gap:2px}
+.when b{font:22px/1 'Marcellus',serif;color:#F3EBDA;font-weight:400}
+.when span{font-size:12px;color:#8E98A8}
+.rn{font:18px 'Marcellus',serif;color:#F3EBDA}
+.rm{font-size:13px;color:#AEB6C3;margin-top:3px}
+.yours{font-size:12px;margin-top:6px}
+.sk{background:linear-gradient(90deg,#121B2A,#1A2537,#121B2A);background-size:200% 100%;animation:sh 1.4s linear infinite;border-radius:8px}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.wa{color:#C69B6D}.pa{color:#F48CBA}.hu{color:#AAD372}.ro{color:#FFF468}.pr{color:#FFFFFF}.sh{color:#4DA3FF}.ma{color:#3FC7EB}.wl{color:#A9AAF5}.dr{color:#FF9A45}
+a:focus-visible,button:focus-visible{outline:2px solid #F0D08E;outline-offset:2px}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+
+.chatd{background:#313338;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:16px;font-family:Inter,sans-serif;color:#DBDEE1}
+.ch{font-size:13px;font-weight:600;color:#949BA4;padding-bottom:10px;border-bottom:1px solid #3F4147}
+.msg{display:grid;grid-template-columns:40px minmax(0,1fr);gap:14px}
+.nm{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;color:#F2F3F5}
+.app{font:700 10px/1 Inter,sans-serif;padding:3px 5px;border-radius:3px;background:#5865F2;color:#fff}
+.ts{font-size:12px;font-weight:400;color:#949BA4}
+.emb{margin-top:6px;background:#2B2D31;border-left:4px solid #D4AF6A;border-radius:4px;padding:12px 16px 14px;display:flex;flex-direction:column;gap:8px}
+.et{font-size:16px;font-weight:700;color:#F2F3F5}
+.ed{font-size:14px;line-height:1.5;color:#DBDEE1}
+.fn{font-size:13px;font-weight:700;color:#F2F3F5}
+.ef{font-size:12px;color:#949BA4}
+.b{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 14px;border-radius:4px;font:500 14px Inter,sans-serif;color:#fff;background:#4E5058}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.fl{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:14px;line-height:1.3}
+.st{text-decoration:line-through;color:#949BA4}
+.eph{font-size:12px;color:#949BA4;display:flex;align-items:center;gap:6px;margin-top:6px}
+.lab2{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#B5BAC1}
+.wa{color:#C69B6D}.pa{color:#F48CBA}.hu{color:#AAD372}.ro{color:#FFF468}.pr{color:#FFFFFF}.sh{color:#4DA3FF}.ma{color:#3FC7EB}.wl{color:#A9AAF5}.drc{color:#FF9A45}
+
+</style>
+</helmet>
+<div style="width: 1440px; box-sizing: border-box; padding: 44px 48px 56px; background: radial-gradient(1200px 500px at 30% -10%, #12233A, rgba(7,12,21,0) 70%), #070C15; font-family: Inter, system-ui, sans-serif; color: #E6E1D6; display: flex; flex-direction: column; gap: 22px">
+  <div><h1 style="margin: 0; font: 38px 'Marcellus SC', serif; letter-spacing: .05em; color: #F3DFAE">Discord · “Feat unlocked” posts</h1><p style="margin: 6px 0 0; font-size: 14px; color: #8E98A8; max-width: 1200px; line-height: 1.5">Each feat is posted once. Feats from the same upload are grouped into one post with one card (the most special feat wins the image). “Conscientious Objector” is shown on the site but never posted.</p></div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start">
+    <div style="display: flex; flex-direction: column; gap: 10px"><div class="lab" style="font-size: 12px">One feat · with card</div><div class="chatd"><div class="ch"># doombringers</div><div class="msg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="40" height="40" style="flex: none; border-radius: 50%"><defs><radialGradient id="bgf1" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#1E3352"></stop><stop offset=".6" stop-color="#0D1828"></stop><stop offset="1" stop-color="#060B14"></stop></radialGradient>
+<radialGradient id="glf1" cx="50%" cy="45%" r="50%"><stop offset="0" stop-color="#D4AF6A" stop-opacity=".22"></stop><stop offset="1" stop-color="#D4AF6A" stop-opacity="0"></stop></radialGradient></defs>
+<rect width="512" height="512" fill="url(#bgf1)"></rect><circle cx="256" cy="262" r="200" fill="url(#glf1)"></circle><g transform="translate(87 99) scale(13)" stroke-linejoin="round" stroke-linecap="round"><path d="M13 2V-0.6" stroke="#F0D08E" stroke-width="0.9"></path><circle cx="13" cy="-1.3" r="1.1" fill="#F0D08E"></circle><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z" fill="#121B2A" stroke="#F0D08E" stroke-width="1"></path><rect x="8.2" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><rect x="14.6" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><path d="M9.5 16h7" stroke="#D4AF6A" stroke-width="0.9"></path><path d="M11.2 15.2v1.6M13 15.2v1.6M14.8 15.2v1.6" stroke="#D4AF6A" stroke-width="0.6"></path></g></svg><div><div class="nm">DoomBot <span class="app">APP</span> <span class="ts">Today at 20:16</span></div>
+      <div class="emb" style="border-left-color: #D4AF6A"><div class="et">Feat unlocked</div><div class="ed"><b style="color: #A9AAF5">Ada Nightshade</b> is now a <b>Stone Guard</b>, a.k.a. <b style="color: #F3DFAE">Mailbox Menace</b>.</div>
+  <div class="ed" style="font-size: 13px"><span style="padding: 2px 8px; border-radius: 999px; background: rgba(212,175,106,.2); color: #F3DFAE; font-weight: 600; font-size: 12px">First in the group</span> &nbsp;First Doombringer to reach rank 6.</div><div style="width: 400px; height: 200px; overflow: hidden; border-radius: 4px; margin-top: 4px"><div style="width: 800px; height: 400px; transform: scale(0.5); transform-origin: 0 0"><div style="position: relative; width: 800px; height: 400px; overflow: hidden; border-radius: 6px; background: radial-gradient(900px 420px at 25% 20%, #16294A, rgba(7,12,21,0) 70%), #070C15; box-shadow: inset 0 0 0 2px rgba(212,175,106,.45); font-family: Inter, sans-serif">
+      <div style="position: absolute; left: 0; top: 0; width: 330px; height: 400px; background: radial-gradient(circle at 50% 46%, rgba(240,208,142,.35), rgba(0,0,0,0) 62%)"></div>
+      <div style="position: absolute; left: 70px; top: 80px; width: 200px; height: 200px; display: flex; align-items: center; justify-content: center"><svg width="190" height="190" viewBox="0 0 26 26" aria-label="rank 6" style="flex: none; vertical-align: middle"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z" fill="#D4AF6A" stroke="#7A5A22" stroke-width=".8"></path><circle cx="13.0" cy="13" r="1.4" fill="#0B0F14"></circle></svg></div>
+      <span style="position: absolute; right: 26px; top: 24px; font: 700 15px Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; padding: 8px 12px; border-radius: 999px; background: rgba(212,175,106,.2); color: #F3DFAE; border: 1.5px solid #D4AF6A">First in the group</span>
+      <div style="position: absolute; left: 320px; top: 70px; right: 30px; display: flex; flex-direction: column; gap: 6px">
+        <span style="font: 600 20px Inter, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: #D4AF6A">Feat unlocked</span>
+        <span style="font: 58px/1.05 'Marcellus SC', serif; color: #F3DFAE; text-shadow: 0 0 30px rgba(240,208,142,.35)">Stone Guard</span>
+        <span style="font: 30px/1.15 Marcellus, serif; color: #A9AAF5; margin-top: 6px">Ada Nightshade</span>
+        <span style="font: 500 24px/1.3 Inter, sans-serif; color: #E6E1D6; margin-top: 4px">a.k.a. Mailbox Menace</span>
+        <span style="font: 22px Inter, sans-serif; color: #AEB6C3">Undead Warlock · 412 honorable kills</span>
+      </div>
+      <div style="position: absolute; left: 30px; right: 30px; bottom: 16px; display: flex; gap: 10px; font: 500 20px Inter, sans-serif; color: #8E98A8"><svg width="22" height="22" viewBox="0 0 26 26" fill="none" stroke="#D4AF6A" stroke-width="1.8"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg><span>wow.vestras.nl</span><span style="flex: 1"></span><span>PvP rank 6</span></div>
+    </div></div></div><div class="ef">wow.vestras.nl · feats</div></div></div></div></div></div>
+    <div style="display: flex; flex-direction: column; gap: 10px"><div class="lab" style="font-size: 12px">Four feats from one upload · incl. First in the group</div><div class="chatd"><div class="ch"># doombringers</div><div class="msg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="40" height="40" style="flex: none; border-radius: 50%"><defs><radialGradient id="bgf4" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#1E3352"></stop><stop offset=".6" stop-color="#0D1828"></stop><stop offset="1" stop-color="#060B14"></stop></radialGradient>
+<radialGradient id="glf4" cx="50%" cy="45%" r="50%"><stop offset="0" stop-color="#D4AF6A" stop-opacity=".22"></stop><stop offset="1" stop-color="#D4AF6A" stop-opacity="0"></stop></radialGradient></defs>
+<rect width="512" height="512" fill="url(#bgf4)"></rect><circle cx="256" cy="262" r="200" fill="url(#glf4)"></circle><g transform="translate(87 99) scale(13)" stroke-linejoin="round" stroke-linecap="round"><path d="M13 2V-0.6" stroke="#F0D08E" stroke-width="0.9"></path><circle cx="13" cy="-1.3" r="1.1" fill="#F0D08E"></circle><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z" fill="#121B2A" stroke="#F0D08E" stroke-width="1"></path><rect x="8.2" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><rect x="14.6" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><path d="M9.5 16h7" stroke="#D4AF6A" stroke-width="0.9"></path><path d="M11.2 15.2v1.6M13 15.2v1.6M14.8 15.2v1.6" stroke="#D4AF6A" stroke-width="0.6"></path></g></svg><div><div class="nm">DoomBot <span class="app">APP</span> <span class="ts">Today at 19:34</span></div>
+      <div class="emb" style="border-left-color: #C27BFF"><div class="et">Feats unlocked · 4</div><div class="ed"><b style="color: #3FC7EB">Mira Sunstrider</b> had a big upload.</div>
+  <div style="display: flex; flex-direction: column; gap: 6px; font-size: 14px">
+    <div><b>First epic:</b> <span style="color: #C27BFF; font-weight: 600">Robes of the Exalted</span> · chest · item level 66 <span style="padding: 2px 8px; border-radius: 999px; background: rgba(212,175,106,.2); color: #F3DFAE; font-weight: 600; font-size: 12px; margin-left: 4px">First in the group</span></div>
+    <div><b>Epic mount</b> · riding 150 · the 3rd mount in the group</div>
+    <div><b>Field Medic</b> · First Aid 300</div>
+    <div><b>1,000 honorable kills</b> · mostly “near your level”, she insists</div>
+  </div><div style="width: 400px; height: 200px; overflow: hidden; border-radius: 4px; margin-top: 4px"><div style="width: 800px; height: 400px; transform: scale(0.5); transform-origin: 0 0"><div style="position: relative; width: 800px; height: 400px; overflow: hidden; border-radius: 6px; background: radial-gradient(900px 420px at 25% 20%, #16294A, rgba(7,12,21,0) 70%), #070C15; box-shadow: inset 0 0 0 2px rgba(212,175,106,.45); font-family: Inter, sans-serif">
+      <div style="position: absolute; left: 0; top: 0; width: 330px; height: 400px; background: radial-gradient(circle at 50% 46%, rgba(194,123,255,.35), rgba(0,0,0,0) 62%)"></div>
+      <div style="position: absolute; left: 70px; top: 80px; width: 200px; height: 200px; display: flex; align-items: center; justify-content: center"><svg width="170" height="170" viewBox="0 0 64 64"><path d="M14 10h36l-4 14 6 30H12l6-30z" fill="#2A1438" stroke="#C27BFF" stroke-width="2.4" stroke-linejoin="round"></path><path d="M22 10l10 12 10-12" fill="none" stroke="#C27BFF" stroke-width="2.4"></path><path d="M32 22v32" stroke="#C27BFF" stroke-width="1.6" opacity=".6"></path></svg></div>
+      <span style="position: absolute; right: 26px; top: 24px; font: 700 15px Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; padding: 8px 12px; border-radius: 999px; background: rgba(212,175,106,.2); color: #F3DFAE; border: 1.5px solid #D4AF6A">First in the group</span>
+      <div style="position: absolute; left: 320px; top: 70px; right: 30px; display: flex; flex-direction: column; gap: 6px">
+        <span style="font: 600 20px Inter, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: #D4AF6A">Feat unlocked</span>
+        <span style="font: 46px/1.05 'Marcellus SC', serif; color: #C27BFF; text-shadow: 0 0 30px rgba(194,123,255,.35)">Robes of the Exalted</span>
+        <span style="font: 30px/1.15 Marcellus, serif; color: #3FC7EB; margin-top: 6px">Mira Sunstrider</span>
+        <span style="font: 500 24px/1.3 Inter, sans-serif; color: #E6E1D6; margin-top: 4px">First epic of the Doombringers</span>
+        <span style="font: 22px Inter, sans-serif; color: #AEB6C3">Undead Mage · level 60</span>
+      </div>
+      <div style="position: absolute; left: 30px; right: 30px; bottom: 16px; display: flex; gap: 10px; font: 500 20px Inter, sans-serif; color: #8E98A8"><svg width="22" height="22" viewBox="0 0 26 26" fill="none" stroke="#D4AF6A" stroke-width="1.8"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg><span>wow.vestras.nl</span><span style="flex: 1"></span><span>chest · item level 66</span></div>
+    </div></div></div><div class="ef">4 feats from one upload · wow.vestras.nl · feats</div></div></div></div></div></div>
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start">
+    <div style="display: flex; flex-direction: column; gap: 10px"><div class="lab" style="font-size: 12px">Weekly recap · new Doomsday section (see the recap copy board)</div><div class="chatd"><div class="emb" style="border-left-color: #D4AF6A; margin-top: 0"><div class="et" style="font-size: 14px">Doomsday · week 44</div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+    <div style="padding: 10px 12px; border-radius: 6px; background: #232428"><div class="lab2" style="color: #D4AF6A">Most devoted</div><div class="ed"><b>Mira</b> · goals on all 7 days</div></div>
+    <div style="padding: 10px 12px; border-radius: 6px; background: #232428"><div class="lab2" style="color: #D4AF6A">Perfect week</div><div class="ed"><b>Tok</b> · every PvE goal, every day</div></div>
+    <div style="padding: 10px 12px; border-radius: 6px; background: #232428"><div class="lab2" style="color: #3BA55D">PvE points</div><div class="ed">Mira 120 · Tok 95 · Ada 85</div></div>
+    <div style="padding: 10px 12px; border-radius: 6px; background: #232428"><div class="lab2" style="color: #E06C66">PvP points</div><div class="ed">Bob 310 · Ada 240 · Mira 96</div></div>
+  </div></div></div></div>
+    <div style="display: flex; flex-direction: column; gap: 10px"><div class="lab" style="font-size: 12px">Feat without a card · rank 3</div><div class="chatd"><div class="msg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="40" height="40" style="flex: none; border-radius: 50%"><defs><radialGradient id="bgf3" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#1E3352"></stop><stop offset=".6" stop-color="#0D1828"></stop><stop offset="1" stop-color="#060B14"></stop></radialGradient>
+<radialGradient id="glf3" cx="50%" cy="45%" r="50%"><stop offset="0" stop-color="#D4AF6A" stop-opacity=".22"></stop><stop offset="1" stop-color="#D4AF6A" stop-opacity="0"></stop></radialGradient></defs>
+<rect width="512" height="512" fill="url(#bgf3)"></rect><circle cx="256" cy="262" r="200" fill="url(#glf3)"></circle><g transform="translate(87 99) scale(13)" stroke-linejoin="round" stroke-linecap="round"><path d="M13 2V-0.6" stroke="#F0D08E" stroke-width="0.9"></path><circle cx="13" cy="-1.3" r="1.1" fill="#F0D08E"></circle><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z" fill="#121B2A" stroke="#F0D08E" stroke-width="1"></path><rect x="8.2" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><rect x="14.6" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><path d="M9.5 16h7" stroke="#D4AF6A" stroke-width="0.9"></path><path d="M11.2 15.2v1.6M13 15.2v1.6M14.8 15.2v1.6" stroke="#D4AF6A" stroke-width="0.6"></path></g></svg><div><div class="nm">DoomBot <span class="app">APP</span> <span class="ts">Today at 22:02</span></div>
+      <div class="emb" style="border-left-color: #D4AF6A"><div class="et">Feat unlocked</div><div class="ed"><b style="color: #FFF468">Bob Example</b> is now a <b>Sergeant</b>, a.k.a. <b style="color: #F3DFAE">Lowbie Botherer</b>. Cards start at rank 6, keep going.</div></div></div></div></div></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
