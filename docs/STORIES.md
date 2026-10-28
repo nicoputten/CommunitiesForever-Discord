@@ -26,7 +26,7 @@ The ladder's rules are in the addon repo, `docs/LADDER.md`. The site computes ev
 After web WEB-58 and the designs.
 - `/ladder` with an optional `view`: `week` (default), `lastweek`, `lifetime`, `duels` or `battlegrounds`. It is answered from the site's look-up `ladder` (`docs/BOT-API.md` in the web repo).
 - An ephemeral embed as in the design:
-  - the top 5 friends with points (or kills for lifetime) and movement since last week
+  - the top 5 friends with DoomPoints PvP (or kills for lifetime), with the PvE number beside it where the design shows it ("DoomPoints · PvE 34 · PvP 1,210"; never summed) and movement since last week
   - the asker's own place when outside the top 5 (needs a linked Discord; without one, no own place)
   - today's Hunt and the week's bounty
   - for `duels`: the head-to-head and the duel rating
