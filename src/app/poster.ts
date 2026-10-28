@@ -28,6 +28,7 @@ import { type SiteSettings, readSettings, settingsText } from "../core/settings.
 import type { IconBox } from "./classIcons.js";
 import { DoomsdayBoards } from "./doomsdayPosts.js";
 import { RunPosts } from "./runPosts.js";
+import { opt } from "../core/read.js";
 
 /**
  * How often the settings are read again, so the admin's changes (a new posts channel, a test post) apply within about
@@ -355,8 +356,4 @@ export function sleep(ms: number, signal: AbortSignal): Promise<void> {
     const timer = setTimeout(done, Math.max(0, ms));
     signal.addEventListener("abort", done, { once: true });
   });
-}
-
-function opt<K extends string, V>(key: K, value: V | undefined): { [P in K]?: V } {
-  return (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
 }

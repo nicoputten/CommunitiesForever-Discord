@@ -4,6 +4,7 @@
 // text in an embed, so every character name is bold with its class written next to it (Nico, 2026-10-28).
 import { type ClassIcons, NO_ICONS, icon } from "./classIcons.js";
 import { CLASS_COLOURS, type Embed, GOLD, type MessageContent, characterUrl, escapeMarkdown } from "./milestones.js";
+import { isObject, number, text } from "./read.js";
 
 export interface LookupCharacter {
   guid: string;
@@ -21,40 +22,40 @@ export interface LookupCharacter {
   seen?: { zone: string; at: number };
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
-const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
-
 /** A character from the site, read defensively (CLAUDE.md rule 10); undefined without a GUID or name. */
 export function readCharacter(value: unknown): LookupCharacter | undefined {
   if (!isObject(value)) return undefined;
-  const guid = str(value.guid);
-  const name = str(value.name);
+  const guid = text(value.guid);
+  const name = text(value.name);
   if (guid === undefined || name === undefined) return undefined;
   const c: LookupCharacter = {
     guid,
     name,
     professions: Array.isArray(value.professions)
       ? value.professions.flatMap((p) =>
-          isObject(p) && str(p.name) && num(p.rank) !== undefined
-            ? [{ name: str(p.name)!, rank: num(p.rank)!, ...(num(p.max) !== undefined ? { max: num(p.max)! } : {}) }]
+          isObject(p) && text(p.name) && number(p.rank) !== undefined
+            ? [
+                {
+                  name: text(p.name)!,
+                  rank: number(p.rank)!,
+                  ...(number(p.max) !== undefined ? { max: number(p.max)! } : {}),
+                },
+              ]
             : [],
         )
       : [],
   };
   for (const key of ["owner", "classFile", "className", "race", "role", "spec"] as const) {
-    const v = str(value[key]);
+    const v = text(value[key]);
     if (v !== undefined) c[key] = v;
   }
   for (const key of ["level", "ilvl"] as const) {
-    const v = num(value[key]);
+    const v = number(value[key]);
     if (v !== undefined) c[key] = v;
   }
   if (Array.isArray(value.talents) && value.talents.every((t) => typeof t === "number")) c.talents = value.talents;
-  if (isObject(value.seen) && str(value.seen.zone) && num(value.seen.at) !== undefined) {
-    c.seen = { zone: str(value.seen.zone)!, at: num(value.seen.at)! };
+  if (isObject(value.seen) && text(value.seen.zone) && number(value.seen.at) !== undefined) {
+    c.seen = { zone: text(value.seen.zone)!, at: number(value.seen.at)! };
   }
   return c;
 }

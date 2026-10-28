@@ -21,6 +21,7 @@ import { NO_ICONS } from "../core/classIcons.js";
 import { boardUrl, boxes, doomsdayReply, notAvailableMessage, readLookup } from "../core/doomsday.js";
 import type { MessageContent } from "../core/milestones.js";
 import type { IconBox } from "./classIcons.js";
+import { isObject, text } from "../core/read.js";
 
 export const LOOKUPS = ["whereis", "who", "whocancraft", "character", "alts", "me", "doomsday", "doom"] as const;
 
@@ -70,9 +71,6 @@ export interface LookupDeps {
   /** BOT-16: the site's Doomsday page (settings `doomsday.url`), when it sent one. */
   doomsdayUrl?(): string | undefined;
 }
-
-const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
-const text = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
 
 function failure(answer: Extract<SiteAnswer, { ok: false }>, what: string): MessageContent {
   if (answer.status === 404) return nothingMessage("Not found", `Nothing found for ${what}.`);

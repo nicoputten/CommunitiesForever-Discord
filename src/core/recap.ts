@@ -4,6 +4,7 @@
 import { type ClassIcons, NO_ICONS, cardIcon } from "./classIcons.js";
 import { type RecapDoomsday, readRecapDoomsday, recapDoomsdayField } from "./ladder.js";
 import { type Embed, GOLD, type MessageContent, marker } from "./milestones.js";
+import { clip, count, isObject, text } from "./read.js";
 
 export interface RecapCard {
   id: string;
@@ -33,22 +34,6 @@ export interface CardFile {
 
 /** Discord's limits: embed description 4096, field value 1024, title 256 characters. */
 const LIMIT = { description: 4096, field: 1024, title: 256 } as const;
-
-function clip(text: string, max: number): string {
-  return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function text(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
-function count(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : undefined;
-}
 
 function card(value: unknown): RecapCard | undefined {
   if (!isObject(value)) return undefined;

@@ -5,6 +5,7 @@
 import { type ClassIcons, NO_ICONS, icon } from "./classIcons.js";
 import { type Component, type Embed, type MessageContent, GOLD, escapeMarkdown, marker } from "./milestones.js";
 import { isSnowflake } from "./settings.js";
+import { isObject, number, text } from "./read.js";
 
 export type SlotRole = "tank" | "healer" | "damage";
 export const SLOT_ROLES: readonly SlotRole[] = ["tank", "healer", "damage"];
@@ -823,18 +824,6 @@ export function cancelledNotice(run: Run, by: string | undefined, siteUrl: strin
 }
 
 // --- helpers ---------------------------------------------------------------------------------------------------------
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function text(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
-function number(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
 
 function optional<K extends string, V>(key: K, value: V | undefined): { [P in K]?: V } {
   return (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };

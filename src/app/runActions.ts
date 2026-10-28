@@ -32,6 +32,7 @@ import { type Run, type SlotRole, askAsRun, readAsk, readRun } from "../core/run
 import type { SiteSettings } from "../core/settings.js";
 import type { IconBox } from "./classIcons.js";
 import { NO_ICONS } from "../core/classIcons.js";
+import { isObject, opt } from "../core/read.js";
 
 export const RUN_COMMANDS = ["plan", "ask", "runs", "run"] as const;
 
@@ -402,12 +403,4 @@ function readAnswered(kind: Kind, body: Record<string, unknown>): Run | undefine
   if (kind === "run") return readRun(body.run);
   const ask = readAsk({ ask: body.ask });
   return ask?.id === undefined ? undefined : askAsRun({ ...ask, id: ask.id });
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function opt<K extends string, V>(key: K, value: V | undefined): { [P in K]?: V } {
-  return (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
 }

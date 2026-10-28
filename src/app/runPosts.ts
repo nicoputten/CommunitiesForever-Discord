@@ -25,6 +25,7 @@ import {
   startingMessage,
 } from "../core/runs.js";
 import type { SiteSettings } from "../core/settings.js";
+import { opt } from "../core/read.js";
 
 /** "Starting soon" from this many minutes before the start when the site doesn't say (BOT-API.md "Settings"). */
 export const DEFAULT_REMINDER_MINUTES = 30;
@@ -235,8 +236,4 @@ export class RunPosts {
       this.posts.delete(old);
     }
   }
-}
-
-function opt<K extends string, V>(key: K, value: V | undefined): { [P in K]?: V } {
-  return (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
 }
