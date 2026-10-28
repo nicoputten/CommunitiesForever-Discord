@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discord bot weekly recap · doomsday</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#070C15}
+.chat{background:#2B2D31;border-radius:12px;padding:18px 20px;font-family:Inter,sans-serif;color:#DBDEE1}
+.nm{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;color:#F0D08E}
+.tag{font:700 10px/1 Inter,sans-serif;padding:3px 5px;border-radius:3px;background:#D4AF6A;color:#0B0F14}
+.ts{font-size:12px;font-weight:400;color:#949BA4}
+.emb{background:#232428;border-left:4px solid #D4AF6A;border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.fc{padding:12px 14px;border-radius:8px;background:#2B2D31;display:flex;flex-direction:column;gap:6px}
+.fc .k{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#D4AF6A}
+.fc .t{font-size:15px;font-weight:700;color:#F2F3F5}
+.fc .d{font-size:13px;line-height:1.45;color:#B5BAC1}
+.bar{height:8px;border-radius:4px;background:#1E1F22;overflow:hidden}
+.cap{font:22px 'Marcellus SC',serif;letter-spacing:.06em;color:#F0D08E;margin:0}
+.cat{padding:16px 18px;border-radius:12px;background:rgba(12,18,30,.82);border:1px solid rgba(212,175,106,.22);display:flex;flex-direction:column;gap:2px}
+.cat h3{margin:0 0 6px;font:16px 'Marcellus SC',serif;letter-spacing:.07em;color:#F3DFAE}
+.it{display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;line-height:1.4;color:#C9CFD9}
+.it:last-child{border-bottom:0}
+.it i{font-style:normal;font:11px ui-monospace,Consolas,monospace;color:#7E8898;padding-top:2px}
+.it b{color:#F3EBDA;font-weight:600}
+.it em{font-style:normal;color:#8E98A8}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th{font-weight:500;color:#7E8898;text-align:left;padding:6px 8px;border-bottom:1px solid rgba(212,175,106,.3);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.05);color:#C9CFD9;vertical-align:top}
+td b{color:#F3DFAE;font-weight:500}
+</style>
+</helmet>
+<div style="width: 1440px; box-sizing: border-box; padding: 48px 56px 64px; background: radial-gradient(1200px 500px at 30% -10%, #12233A, rgba(7,12,21,0) 70%), #070C15; font-family: Inter, sans-serif; color: #E6E1D6; display: flex; flex-direction: column; gap: 30px">
+  <div>
+    <h1 style="margin: 0; font: 40px 'Marcellus SC', serif; letter-spacing: .05em; color: #F3DFAE">Weekly recap · Sunday 20:00 · with Doomsday</h1>
+    <p style="margin: 6px 0 0; font-size: 15px; color: #8E98A8; line-height: 1.5; max-width: 1000px">Every recap has the same short core, then four rotating cards from a catalogue of 48 fun stats. A card only appears when the week's data makes it interesting, and never twice within 4 weeks, so recaps stay different for well over 10 weeks.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 640px minmax(0, 1fr); gap: 32px; align-items: start">
+    <!-- SAMPLE RECAP -->
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <h2 class="cap">Example · week 3</h2>
+      <div class="chat">
+        <div style="display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px">
+          <span style="width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #1E2E48, #0A1322); display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div class="nm">DoomBot <span class="tag">APP</span> <span class="ts">Sunday at 20:00</span></div>
+            <div class="emb">
+              <div style="border-radius: 8px; overflow: hidden; position: relative; height: 170px; background: radial-gradient(circle at 70% 20%, rgba(240,208,142,0.25), rgba(10,19,34,0) 55%), radial-gradient(circle at 30% 100%, #13294A, #0A1322 70%); padding: 18px 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end">
+                <div aria-hidden="true" style="position: absolute; right: -40px; top: -60px; width: 280px; height: 280px; border-radius: 50%; background: repeating-conic-gradient(rgba(240,208,142,0.1) 0deg 6deg, rgba(240,208,142,0) 6deg 18deg); -webkit-mask-image: radial-gradient(circle, #000 20%, transparent 68%); mask-image: radial-gradient(circle, #000 20%, transparent 68%)"></div>
+                <div style="position: relative; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #D4AF6A">Week 3 · 20–26 Oct</div>
+                <div style="position: relative; font: 34px/1.05 'Marcellus SC', serif; color: #F3DFAE">The week Mira hit 60</div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; text-align: center">
+                <div class="fc" style="gap: 2px"><span style="font: 26px 'Marcellus', serif; color: #F3DFAE">+18</span><span class="d">levels</span></div>
+                <div class="fc" style="gap: 2px"><span style="font: 26px 'Marcellus', serif; color: #F3DFAE">5</span><span class="d">friends played</span></div>
+                <div class="fc" style="gap: 2px"><span style="font: 26px 'Marcellus', serif; color: #F3DFAE">7</span><span class="d">dungeon runs</span></div>
+                <div class="fc" style="gap: 2px"><span style="font: 26px 'Marcellus', serif; color: #F3DFAE">2</span><span class="d">new alts</span></div>
+              </div>
+              <div class="fc" style="background: linear-gradient(90deg, rgba(212,175,106,0.18), #2B2D31)"><span class="k">Doombringer of the week · The Grinder</span><span class="t"><span style="color: #3FC7EB">Mira</span> gained 9 levels and reached 60</span><span class="d">Runner-up: Ves with 5. Nobody has levelled this fast since week 1.</span></div>
+              <div class="fc"><span class="k">Race to 60</span>
+                <div style="display: grid; grid-template-columns: 70px minmax(0, 1fr) 30px; gap: 8px; align-items: center; font-size: 13px"><span style="color: #3FC7EB">Mira</span><div class="bar"><div style="width: 100%; height: 8px; background: #F0D08E"></div></div><span>60</span><span style="color: #FFF468">Bob</span><div class="bar"><div style="width: 68%; height: 8px; background: #FFF468"></div></div><span>41</span><span style="color: #A9AAF5">Ves</span><div class="bar"><div style="width: 65%; height: 8px; background: #8788EE"></div></div><span>39</span></div>
+                <span class="d">At this pace Ves reaches 60 in about 5 weeks.</span></div>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+                <div class="fc"><span class="k">First footsteps</span><span class="t">First Doombringer in Un'Goro Crater</span><span class="d">Mira, on Tuesday. The group has now seen 31 of 39 zones.</span></div>
+                <div class="fc"><span class="k">Gap alert</span><span class="t">Still nobody past Alchemy 160</span><span class="d">Tok is closest. Potions for Mira's raids will have to wait.</span></div>
+                <div class="fc"><span class="k">Duo of the week</span><span class="t"><span style="color: #A9AAF5">Ves</span> &amp; <span style="color: #F48CBA">Lekthon</span></span><span class="d">3 evenings together, 2 dungeons, 14 shared quests left.</span></div>
+                <div class="fc"><span class="k">Ghost town</span><span class="t"><span style="color: #FF9A45">Sela</span> has waited in Teldrassil for 14 days</span><span class="d">Somebody visit her.</span></div>
+              </div>
+              <div class="fc" style="border: 1px solid rgba(212,175,106,0.5); background: linear-gradient(90deg, rgba(212,175,106,0.12), #2B2D31)"><span class="k">Doomsday · this week</span>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 13px; color: #B5BAC1"><span><b style="color: #F2F3F5">Most devoted:</b> Mira, goals on all 7 days</span><span><b style="color: #F2F3F5">Perfect week:</b> Tok, every PvE goal</span><span><b style="color: #3BA55D">PvE</b> Mira 120 · Tok 95 · Ada 85</span><span><b style="color: #E06C66">PvP</b> Bob 310 · Ada 240 · Mira 96</span></div>
+                <span class="d">Crowns this week: Mira 3, Tok 2, Ada 1. Full ladder: /doomsday.</span></div>
+              <div class="fc" style="border: 1px dashed rgba(212,175,106,0.5)"><span class="k">This week's challenge</span><span class="t">Run Shadowfang Keep with three Doombringers</span><span class="d">Ves, Lia and Tok all fit. /ask to set it up.</span></div>
+              <div style="font-size: 12px; color: #949BA4">wow.vestras.nl · full recap and map of the week</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size: 13px; color: #8E98A8; line-height: 1.5">Structure: headline (10 title templates) · 4 core numbers · Doombringer of the week · 4 rotating cards · challenge. The header image is generated with the week's busiest zone or the award winner's portrait.</div>
+    </section>
+
+    <!-- 10-WEEK PLAN -->
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <h2 class="cap">How 10 weeks could look</h2>
+      <table>
+        <thead><tr><th>Wk</th><th>Headline</th><th>Award</th><th>Rotating cards</th><th>Challenge</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><b>The first week of the Doombringers</b></td><td>The Grinder</td><td>Class census · Map coverage · Zone of the week · Level sum</td><td>Everyone to 10</td></tr>
+          <tr><td>2</td><td><b>Ten levels and a lot of Barrens</b></td><td>Tourist</td><td>Faction split · Busiest evening · Fresh face · Gear jump</td><td>Pick a profession pair</td></tr>
+          <tr><td>3</td><td><b>The week Mira hit 60</b></td><td>The Grinder</td><td>First footsteps · Gap alert · Duo · Ghost town</td><td>Shadowfang with 3</td></tr>
+          <tr><td>4</td><td><b>Alts, alts everywhere</b></td><td>Altoholic</td><td>Talent fashion · Halfway club · Crafting race · Quest machine</td><td>Get someone to 150 Alchemy</td></tr>
+          <tr><td>5</td><td><b>A quiet week in Azeroth</b></td><td>The Comeback</td><td>On this week last month · Most loyal alt · Mount countdown · Who am I?</td><td>Log in on 3 evenings</td></tr>
+          <tr><td>6</td><td><b>Dungeon week</b></td><td>Dungeon Diver</td><td>Top dungeon · Shared quest jackpot · Healer census · Night owl</td><td>Clear Scarlet Monastery</td></tr>
+          <tr><td>7</td><td><b>The crafters' week</b></td><td>Crafter of the week</td><td>Profession completionist · Gap closed · Gear jump · Zone of the week</td><td>Craft for a friend</td></tr>
+          <tr><td>8</td><td><b>Ves joins the max-level club</b></td><td>The Grinder</td><td>Max-level club · Prediction check · Class census delta · Early bird</td><td>Run a 60 dungeon</td></tr>
+          <tr><td>9</td><td><b>Seven zones in seven days</b></td><td>Tourist</td><td>Road trip · Homebody · Biggest group night · Who am I?</td><td>Visit a zone nobody saw</td></tr>
+          <tr><td>10</td><td><b>Ten weeks of Doombringers</b></td><td>Hall of fame</td><td>Season stats · Most improved · Longest streak · Then vs now</td><td>Pick next season's goal</td></tr>
+        </tbody>
+      </table>
+      <div style="padding: 14px 16px; border-radius: 12px; background: rgba(12,18,30,0.8); border: 1px solid rgba(212,175,106,0.22); font-size: 13px; color: #AEB6C3; line-height: 1.6">
+        <b style="color: #F3EBDA">Rotation rules</b><br>
+        · Pick 4 cards: one <b style="color: #F3DFAE">stat</b>, one <b style="color: #F3DFAE">progress</b>, one <b style="color: #F3DFAE">social</b>, one <b style="color: #F3DFAE">fun</b>.<br>
+        · A card is only eligible if its threshold is met (e.g. Gear jump ≥ 5 ilvl) and it wasn't used in the last 4 weeks.<br>
+        · Highest "interest score" wins per slot; ties break randomly with the week number as seed, so a re-run gives the same recap.<br>
+        · Never more than one card about the same friend, and the award winner is excluded from the other cards.<br>
+        · Quiet weeks (under 3 levels in total) get a short recap: core numbers, one fun card, a challenge.
+      </div>
+    </section>
+  </div>
+
+  <!-- CATALOGUE -->
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <h2 class="cap">Catalogue · 48 cards</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: start">
+      <div class="cat"><h3>Awards · Doombringer of the week</h3>
+        <div class="it"><i>A1</i><span><b>The Grinder</b> most levels gained</span></div>
+        <div class="it"><i>A2</i><span><b>Tourist</b> most different zones seen</span></div>
+        <div class="it"><i>A3</i><span><b>Altoholic</b> most different characters played</span></div>
+        <div class="it"><i>A4</i><span><b>Crafter of the week</b> most profession points</span></div>
+        <div class="it"><i>A5</i><span><b>Quest machine</b> most quests completed</span></div>
+        <div class="it"><i>A6</i><span><b>Dungeon diver</b> most dungeon runs</span></div>
+        <div class="it"><i>A7</i><span><b>Social butterfly</b> most evenings with others</span></div>
+        <div class="it"><i>A8</i><span><b>The Comeback</b> back after 14+ days away</span></div>
+        <div class="it"><i>A9</i><span><b>Most improved</b> biggest item level jump</span></div>
+        <div class="it"><i>A10</i><span><b>Hall of fame</b> season finale, every 10 weeks</span></div>
+      </div>
+      <div class="cat"><h3>Stats</h3>
+        <div class="it"><i>S1</i><span><b>Zone of the week</b> busiest zone, with map image</span></div>
+        <div class="it"><i>S2</i><span><b>Class census</b> how many of each class <em>(“the Warlock union grows”)</em></span></div>
+        <div class="it"><i>S3</i><span><b>Faction split</b> Horde vs Alliance characters</span></div>
+        <div class="it"><i>S4</i><span><b>Level sum</b> all levels combined, + this week</span></div>
+        <div class="it"><i>S5</i><span><b>Map coverage</b> zones ever seen, e.g. 31 / 39</span></div>
+        <div class="it"><i>S6</i><span><b>Talent fashion</b> most popular spec</span></div>
+        <div class="it"><i>S7</i><span><b>Busiest evening</b> which weekday wins</span></div>
+        <div class="it"><i>S8</i><span><b>Top dungeon</b> most-run dungeon</span></div>
+        <div class="it"><i>S9</i><span><b>Healer / tank census</b> who can fill which role</span></div>
+        <div class="it"><i>S10</i><span><b>Quest log hoarder</b> fullest quest log</span></div>
+        <div class="it"><i>S11</i><span><b>Biggest group night</b> most friends online together</span></div>
+        <div class="it"><i>S12</i><span><b>Season stats</b> 10-week totals</span></div>
+      </div>
+      <div class="cat"><h3>Progress</h3>
+        <div class="it"><i>P1</i><span><b>Race to 60</b> top 3 bars</span></div>
+        <div class="it"><i>P2</i><span><b>Prediction</b> “at this pace, 60 in 5 weeks”</span></div>
+        <div class="it"><i>P3</i><span><b>Prediction check</b> was last month's guess right?</span></div>
+        <div class="it"><i>P4</i><span><b>Mount countdown</b> who is close to 40</span></div>
+        <div class="it"><i>P5</i><span><b>Halfway club</b> who crossed 30</span></div>
+        <div class="it"><i>P6</i><span><b>Max-level club</b> who is 60</span></div>
+        <div class="it"><i>P7</i><span><b>Gap alert</b> profession nobody has above 175</span></div>
+        <div class="it"><i>P8</i><span><b>Gap closed</b> a gap got filled</span></div>
+        <div class="it"><i>P9</i><span><b>Crafting race</b> two crafters close together</span></div>
+        <div class="it"><i>P10</i><span><b>Profession completionist</b> both professions at cap</span></div>
+        <div class="it"><i>P11</i><span><b>Gear jump</b> biggest item level gain</span></div>
+        <div class="it"><i>P12</i><span><b>Then vs now</b> group compared with week 1</span></div>
+        <div class="it"><i>P13</i><span><b>On this week last month</b> where everyone was</span></div>
+      </div>
+      <div class="cat"><h3>Social &amp; fun</h3>
+        <div class="it"><i>F1</i><span><b>Duo of the week</b> pair that played most together</span></div>
+        <div class="it"><i>F2</i><span><b>Shared quest jackpot</b> pair with most shared quests</span></div>
+        <div class="it"><i>F3</i><span><b>Ghost town</b> character not seen longest</span></div>
+        <div class="it"><i>F4</i><span><b>First footsteps</b> first Doombringer in a zone</span></div>
+        <div class="it"><i>F5</i><span><b>Road trip</b> longest route, e.g. Orgrimmar → Booty Bay</span></div>
+        <div class="it"><i>F6</i><span><b>Homebody</b> spent the week in one zone</span></div>
+        <div class="it"><i>F7</i><span><b>Night owl</b> latest sighting of the week</span></div>
+        <div class="it"><i>F8</i><span><b>Early bird</b> earliest sighting</span></div>
+        <div class="it"><i>F9</i><span><b>Most loyal alt</b> played the most days</span></div>
+        <div class="it"><i>F10</i><span><b>Longest streak</b> evenings in a row</span></div>
+        <div class="it"><i>F11</i><span><b>Fresh face</b> newest character</span></div>
+        <div class="it"><i>F12</i><span><b>Who am I?</b> riddle about a character, answer in a spoiler</span></div>
+        <div class="it"><i>F13</i><span><b>Group suggestion</b> a dungeon that fits 3+ friends</span></div>
+      </div>
+    </div>
+    <div style="font-size: 13px; color: #8E98A8">Everything uses data the addon already shares: levels, item level, professions, talents, zones and times seen, quests and dungeon runs. The 10 headline templates and 12 challenge templates rotate the same way.</div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
