@@ -209,4 +209,4 @@ Nico, 2026-10-29: one clean-up before the Doomsday release, across the addon, th
 - Not part of it: branches (cleaned up separately) and the NAS deployment.
 - No user-facing change, so no manual steps beyond a smoke test of the next release.
 - Decided with Nico (2026-10-29): @types/node stays on the Node the bot runs on (24) and TypeScript on 6 until typescript-eslint supports 7, so Dependabot skips both majors; eslint 10 and gitleaks-action 3 as Dependabot made them. All five refactors of the list: the shared readers, the message module, the emoji sync naming, the look-up parsing in core, the poster split.
-- Done: the story (PR #42), dependencies (PR #43, Dependabot #14 and #16 as they are, #15 closed), refactors (PR #44), dead code and CI (PR #45), docs (PR #?). No flaky tests were found; the one CI flake was gitleaks-action v2 ("stderr is not empty"), which v3 addresses.
+- Done: the story (PR #42), dependencies (PR #43, Dependabot #14 and #16 as they are, #15 closed), refactors (PR #44), dead code and CI (PR #45), docs (PR #46). No flaky tests were found; the one CI flake was gitleaks-action v2 ("stderr is not empty"), which v3 addresses.
