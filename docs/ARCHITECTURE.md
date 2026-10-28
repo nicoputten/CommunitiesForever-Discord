@@ -54,7 +54,7 @@ Polling every 30 s with backoff is enough for a friend group and needs no public
 
 ## Class icons (BOT-11), Doomsday boxes (BOT-15) and recap card icons (BOT-14)
 
-The class icons in `assets/class-icons/` (copied into the image) are the bot's own application emoji: at start it reads them (`GET /applications/<id>/emojis`), uploads each icon whose `cf_<class>_<hash>` name is missing and deletes its older `cf_` emoji after. Discord can't replace an emoji's picture, so the hash in the name is how a changed icon is noticed. Since BOT-15 the Doomsday board's three boxes (`box-pve`, `box-pvp`, `box-open`) are synced the same way, and the recap card icons in `assets/recap-icons/` (copied into the image too), mapped from the site's card ids. Until that is done, or when it fails, names show without icon and the board uses ✅ and ▢.
+The class icons in `assets/class-icons/` (copied into the image) are the bot's own application emoji: at start it reads them (`GET /applications/<id>/emojis`), uploads each icon whose `cf_<class>_<hash>` name is missing and deletes its older `cf_` emoji after. Discord can't replace an emoji's picture, so the hash in the name is how a changed icon is noticed. Since BOT-15 the Doomsday board's three boxes (`box-pve`, `box-pvp`, `box-open`) are synced the same way, and the recap card icons in `assets/recap-icons/` (copied into the image too), mapped from the site's card ids. Until that is done, or when it fails, names show without icon and the board uses ✅ and ▢. The sync lives in `src/core/emoji.ts` and `src/app/emoji.ts` and logs `emoji: N of 24 ready`.
 
 ## Configuration (env, documented in `.env.example` without values)
 

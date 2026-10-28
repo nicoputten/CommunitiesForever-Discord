@@ -19,7 +19,7 @@ import { ladderMessage } from "../core/ladder.js";
 import { recapFiles, recapMessage } from "../core/recap.js";
 import { testSample } from "../core/samples.js";
 import { type SiteSettings, readSettings, settingsText } from "../core/settings.js";
-import type { IconBox } from "./classIcons.js";
+import type { EmojiBox } from "./emoji.js";
 import { DoomsdayBoards } from "./doomsdayPosts.js";
 import { RunPosts } from "./runPosts.js";
 import { opt } from "../core/read.js";
@@ -38,8 +38,8 @@ export interface PosterDeps {
   now(): number;
   /** BOT-04: the run posts, shared with the run commands; made here when not given. */
   runPosts?: RunPosts;
-  /** BOT-11: the class icons, once the start-up sync has them. */
-  icons?: IconBox;
+  /** BOT-11: the bot's emoji, once the start-up sync has them. */
+  icons?: EmojiBox;
   /** BOT-04: the latest settings, for the run commands. */
   shared?: { settings?: SiteSettings };
 }

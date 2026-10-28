@@ -6,7 +6,7 @@ import type { Discord } from "../adapters/discord.js";
 import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { RunEvent } from "../core/events.js";
-import type { IconBox } from "./classIcons.js";
+import type { EmojiBox } from "./emoji.js";
 import type { MessageContent, PostedMessage } from "../core/message.js";
 import {
   type PostContext,
@@ -39,8 +39,8 @@ export interface RunPostDeps {
   discord: Discord;
   log: Log;
   now(): number;
-  /** BOT-11: the class icons, once the start-up sync has them. */
-  icons?: IconBox;
+  /** BOT-11: the bot's emoji, once the start-up sync has them. */
+  icons?: EmojiBox;
 }
 
 export class RunPosts {

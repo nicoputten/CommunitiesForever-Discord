@@ -3,7 +3,7 @@
 // Discord messages: the daily board (board `bot-doomsday-daily`) and the `/doomsday` reply (`bot-doomsday-weekly`).
 // Pure: times come in as the site's Unix seconds and are shown with Discord's timestamp markup. PvE and PvP points are
 // never added together; a PvP Virgin has no PvP points (`null`), shown, never ranked.
-import type { ClassIcons } from "./classIcons.js";
+import type { Emojis } from "./emoji.js";
 import { ordinal, thousands } from "./feats.js";
 import { type Embed, GOLD, type MessageContent, escapeMarkdown, marker } from "./message.js";
 import { clip, count, isObject, names, opt, text, time } from "./read.js";
@@ -80,7 +80,7 @@ export const WEEKLY_SLOTS = ["week1", "week2", "week3", "bounty"] as const;
 /** "My goals" on the board: answered like `/doomsday` (BOT-16), only for the presser. */
 export const MY_GOALS = "doomsday:mine";
 
-/** The boxes: the bot's own emoji (BOT-15, synced with the class icons), or plain characters until they are there. */
+/** The boxes: the bot's own emoji (BOT-15, synced with the class icons and recap icons), or plain characters until they are there. */
 export interface Boxes {
   pve: string;
   pvp: string;
@@ -89,7 +89,7 @@ export interface Boxes {
 
 export const PLAIN_BOXES: Boxes = { pve: "✅", pvp: "✅", open: "▢" };
 
-export function boxes(icons: ClassIcons): Boxes {
+export function boxes(icons: Emojis): Boxes {
   const { BOX_PVE: pve, BOX_PVP: pvp, BOX_OPEN: open } = icons;
   return pve !== undefined && pvp !== undefined && open !== undefined ? { pve, pvp, open } : PLAIN_BOXES;
 }

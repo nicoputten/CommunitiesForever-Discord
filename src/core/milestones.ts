@@ -3,7 +3,7 @@
 // image per post. Pure: the event comes in as read from the site, the message goes out as Discord's JSON. Only what
 // the event carries is shown (DESIGN-NOTES "Deviations"); the words per kind are in core/feats.ts.
 
-import { type ClassIcons, NO_ICONS, icon } from "./classIcons.js";
+import { type Emojis, NO_EMOJI, icon } from "./emoji.js";
 import { featLine, featSentence } from "./feats.js";
 import { GOLD, type MessageContent, characterUrl, escapeMarkdown, marker } from "./message.js";
 
@@ -133,7 +133,7 @@ export function groupedMessage(
   siteUrl: string,
   siteHost: string,
   attached: readonly string[] = [],
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent | undefined {
   const all = groups.flatMap((g) => showable(g.milestones).map((milestone) => ({ eventId: g.eventId, milestone })));
   const shown = all.slice(0, MAX_LINES);

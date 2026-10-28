@@ -1,7 +1,7 @@
 // The weekly recap post (BOT-05, board `bot-recap`): the site computes the recap (web WEB-41, BOT-API.md "`recap`")
 // and the bot posts its texts exactly as the site wrote them. Pure: the event comes in as read from the site, the
 // message goes out as Discord's JSON, the card images (web WEB-41d) as files for the poster to fetch and attach.
-import { type ClassIcons, NO_ICONS, cardIcon } from "./classIcons.js";
+import { type Emojis, NO_EMOJI, cardIcon } from "./emoji.js";
 import { type RecapDoomsday, readRecapDoomsday, recapDoomsdayField } from "./ladder.js";
 import { type Embed, GOLD, type MessageContent, marker } from "./message.js";
 import { clip, count, isObject, text } from "./read.js";
@@ -112,7 +112,7 @@ export function recapMessage(
   attached: readonly string[],
   eventId?: number,
   doomsdayUrl = `${siteUrl}/doomsday`,
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const image = (name: string) => (attached.includes(name) ? { image: { url: `attachment://${name}` } } : {});
   const [header, zone] = recapFiles(recap).map((f) => f.name);

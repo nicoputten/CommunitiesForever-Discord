@@ -8,7 +8,7 @@ import {
   type SlashCommand,
 } from "../../src/adapters/discord.js";
 import type { Site, SiteAnswer } from "../../src/adapters/site.js";
-import type { Emoji } from "../../src/core/classIcons.js";
+import type { Emoji } from "../../src/core/emoji.js";
 import type { CommandDefinition } from "../../src/core/commands.js";
 import type { ConnectionEvent, FailReason } from "../../src/core/connection.js";
 import type { GuildSnapshot } from "../../src/core/guild.js";

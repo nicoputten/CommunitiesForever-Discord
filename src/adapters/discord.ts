@@ -13,7 +13,7 @@ import {
   REST,
   Routes,
 } from "discord.js";
-import type { Emoji } from "../core/classIcons.js";
+import type { Emoji } from "../core/emoji.js";
 import type { CommandDefinition } from "../core/commands.js";
 import type { ConnectionEvent, FailReason } from "../core/connection.js";
 import type { GuildSnapshot } from "../core/guild.js";
@@ -30,7 +30,7 @@ export interface Discord {
   edit(channelId: string, messageId: string, content: MessageContent): Promise<void>;
   /** A direct message to a user (BOT-04's quiet notices); resolves its id. Throws a PostError (50007: DMs closed). */
   dm(userId: string, content: MessageContent): Promise<string>;
-  /** BOT-11: the bot's own application emoji (the class icons). Throws a PostError. */
+  /** BOT-11: the bot's own application emoji. Throws a PostError. */
   emojis(): Promise<Emoji[]>;
   /** BOT-11: uploads a PNG as an application emoji; resolves it. Throws a PostError. */
   createEmoji(name: string, png: Uint8Array): Promise<Emoji>;

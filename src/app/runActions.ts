@@ -30,8 +30,8 @@ import {
 } from "../core/runReplies.js";
 import { type Run, type SlotRole, askAsRun, readAsk, readRun } from "../core/runs.js";
 import type { SiteSettings } from "../core/settings.js";
-import type { IconBox } from "./classIcons.js";
-import { NO_ICONS } from "../core/classIcons.js";
+import type { EmojiBox } from "./emoji.js";
+import { NO_EMOJI } from "../core/emoji.js";
 import { isObject, opt } from "../core/read.js";
 
 export const RUN_COMMANDS = ["plan", "ask", "runs", "run"] as const;
@@ -56,8 +56,8 @@ export interface RunActionDeps {
   now(): number;
   /** The latest settings (for "Posted in #runs"), as the poster read them. */
   settings(): SiteSettings | undefined;
-  /** BOT-11: the class icons, once the start-up sync has them. */
-  icons?: IconBox;
+  /** BOT-11: the bot's emoji, once the start-up sync has them. */
+  icons?: EmojiBox;
 }
 
 export class RunActions {
@@ -67,7 +67,7 @@ export class RunActions {
   constructor(private readonly deps: RunActionDeps) {}
 
   private icons() {
-    return this.deps.icons?.current ?? NO_ICONS;
+    return this.deps.icons?.current ?? NO_EMOJI;
   }
 
   private call(method: "GET" | "POST" | "PATCH", path: string, body: unknown, signal: AbortSignal) {

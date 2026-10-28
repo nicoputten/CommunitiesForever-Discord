@@ -2,7 +2,7 @@
 // repo docs/BOT-API.md "Run events"), the run post in every state, the reminder, Starting now, the ping, the ask from
 // the game and the quiet notices. Pure: the time comes in as an argument; the site decides every game fact (who fits,
 // who could fill a slot), the bot only formats it (CLAUDE.md rule 2).
-import { type ClassIcons, NO_ICONS, icon } from "./classIcons.js";
+import { type Emojis, NO_EMOJI, icon } from "./emoji.js";
 import {
   type Component,
   type Embed,
@@ -226,7 +226,7 @@ export interface PostContext {
   /** From `runCancelled`: who cancelled it (a name). */
   cancelledBy?: string;
   /** BOT-11: the class icons before character names. */
-  icons?: ClassIcons;
+  icons?: Emojis;
   /** The admin's test post (BOT-API.md "Run events": `test`, run id 0); its event id is its marker. */
   test?: { eventId: number };
 }
@@ -261,14 +261,14 @@ const roleName = (role: SlotRole) => ({ tank: "Tank", healer: "Healer", damage: 
 const esc = (value: string | undefined) => (value === undefined ? undefined : escapeMarkdown(value));
 
 /** "[icon] Lia Thornwhisper 37" (BOT-11), or the friend's name without a character. */
-function characterText(p: RunPerson | Candidate, icons: ClassIcons): string {
+function characterText(p: RunPerson | Candidate, icons: Emojis): string {
   if (p.character === undefined) return esc(p.name) ?? "Someone";
   const name = `${icon(icons, p.classFile)}${escapeMarkdown(p.character)}`;
   return p.level !== undefined ? `${name} ${p.level}` : name;
 }
 
 /** "Lia Thornwhisper 37 · Femke", with "carry" for a carry (WEB-47). */
-function slotText(a: RunAnswer, icons: ClassIcons): string {
+function slotText(a: RunAnswer, icons: Emojis): string {
   const parts = [characterText(a, icons)];
   if (a.character !== undefined && a.name !== undefined) parts.push(escapeMarkdown(a.name));
   if (a.fit?.kind === "carry") parts.push("carry");
@@ -310,12 +310,12 @@ export function slots(run: Run): { role: SlotRole; who?: RunAnswer; maybe: boole
   return out;
 }
 
-function candidateText(c: Candidate, icons: ClassIcons): string {
+function candidateText(c: Candidate, icons: Emojis): string {
   return `${characterText(c, icons)}${c.name !== undefined && c.character !== undefined ? ` (${escapeMarkdown(c.name)})` : ""}`;
 }
 
 /** "Could fill the tank slot: …" per open role, from the site's `couldFill`. */
-function couldFillLines(run: Run, icons: ClassIcons): string[] {
+function couldFillLines(run: Run, icons: Emojis): string[] {
   return (run.couldFill ?? []).map((c) => {
     const slot = `Could fill the ${c.role} slot`;
     if (c.characters.length > 0) return `${slot}: ${c.characters.map((x) => candidateText(x, icons)).join(", ")}`;
@@ -340,7 +340,7 @@ function countsText(run: Run): string {
 
 /** The line under the time for a state that isn't open. */
 function stateLine(run: Run, state: PostState, ctx: PostContext): string | undefined {
-  const icons = ctx.icons ?? NO_ICONS;
+  const icons = ctx.icons ?? NO_EMOJI;
   switch (state) {
     case "full": {
       const reserves = run.answers.filter((a) => a.answer === "maybe" && a.reserve);
@@ -401,7 +401,7 @@ export function runMessage(run: Run, ctx: PostContext): MessageContent {
     description: lines.join("\n"),
     color: GOLD,
   };
-  const icons = ctx.icons ?? NO_ICONS;
+  const icons = ctx.icons ?? NO_EMOJI;
   if (state !== "cancelled" && state !== "didntHappen") {
     // One line per slot (BOT-13, Nico 2026-10-28): inline fields wrap 3 + 2 and the columns don't line up.
     const slotLines = slots(run).map(
@@ -458,14 +458,14 @@ export function runMessage(run: Run, ctx: PostContext): MessageContent {
   };
 }
 
-function listLine(label: string, answers: RunAnswer[], icons: ClassIcons): string[] {
+function listLine(label: string, answers: RunAnswer[], icons: Emojis): string[] {
   return answers.length === 0 ? [] : [`${label}: ${answers.map((a) => slotText(a, icons)).join(", ")}`];
 }
 
 // --- reminder, Starting now, ping ------------------------------------------------------------------------------------
 
 /** "Ves Doombringer, Lia Thornwhisper · maybe: Tok Ironhide, Jorrit · tank still open". */
-function whoLine(run: Run, prefix: boolean, icons: ClassIcons): string {
+function whoLine(run: Run, prefix: boolean, icons: Emojis): string {
   const names = (a: RunAnswer) =>
     a.character !== undefined
       ? `${icon(icons, a.classFile)}${escapeMarkdown(a.character)}`
@@ -497,7 +497,7 @@ export function reminderMessage(
   mention: readonly string[],
   eventId: number,
   siteUrl: string,
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   return {
     content: `${mentions(mention)} ${run.dungeon.name} starts in ${minutes} minutes`.trim(),
@@ -520,7 +520,7 @@ export function startingMessage(
   mention: readonly string[],
   eventId: number,
   siteUrl: string,
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const by = esc(run.organiser.name) ?? "The organiser";
   return {
@@ -558,7 +558,7 @@ export function pingMessage(
   ping: Ping,
   eventId: number,
   siteUrl: string,
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const to = esc(ping.to.name) ?? esc(ping.to.character) ?? "there";
   const ins = run.answers
@@ -686,7 +686,7 @@ export interface AskContext {
   /** The event the post was made for, its marker when the ask has no id (a site from before WEB-51). */
   eventId: number;
   mentionRole?: string;
-  icons?: ClassIcons;
+  icons?: Emojis;
 }
 
 /**
@@ -694,7 +694,7 @@ export interface AskContext {
  * character while it is open, then "Expired" without buttons. One message per ask, edited as answers come in.
  */
 export function askMessage(ask: Ask, ctx: AskContext): MessageContent {
-  const icons = ctx.icons ?? NO_ICONS;
+  const icons = ctx.icons ?? NO_EMOJI;
   const who = esc(ask.from.name) ?? "Someone";
   const on =
     ask.character !== undefined

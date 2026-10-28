@@ -17,10 +17,10 @@ import {
   whereisMessage,
   whoMessage,
 } from "../core/lookups.js";
-import { NO_ICONS } from "../core/classIcons.js";
+import { NO_EMOJI } from "../core/emoji.js";
 import { boardUrl, boxes, doomsdayReply, notAvailableMessage, readLookup } from "../core/doomsday.js";
 import type { MessageContent } from "../core/message.js";
-import type { IconBox } from "./classIcons.js";
+import type { EmojiBox } from "./emoji.js";
 import { isObject, text } from "../core/read.js";
 
 export const LOOKUPS = ["whereis", "who", "whocancraft", "character", "alts", "me", "doomsday", "doom"] as const;
@@ -66,8 +66,8 @@ export interface LookupDeps {
   log: Log;
   now(): number;
   shares: SharedAnswers;
-  /** BOT-11: the class icons, once the start-up sync has them. */
-  icons?: IconBox;
+  /** BOT-11: the bot's emoji, once the start-up sync has them. */
+  icons?: EmojiBox;
   /** BOT-16: the site's Doomsday page (settings `doomsday.url`), when it sent one. */
   doomsdayUrl?(): string | undefined;
 }
@@ -81,7 +81,7 @@ function failure(answer: Extract<SiteAnswer, { ok: false }>, what: string): Mess
 export async function answerLookup(deps: LookupDeps, command: SlashCommand, signal: AbortSignal): Promise<void> {
   const host = new URL(deps.siteUrl).host;
   const nowSeconds = Math.floor(deps.now() / 1000);
-  const icons = deps.icons?.current ?? NO_ICONS;
+  const icons = deps.icons?.current ?? NO_EMOJI;
   const o = command.options;
   const param = (name: string) => (typeof o[name] === "string" ? (o[name] as string) : undefined);
   const ask = (what: string, params: Record<string, string | undefined>) => {

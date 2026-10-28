@@ -2,7 +2,7 @@
 // "Look-ups") as embeds. Pure: the site's answer and "now" come in, Discord's JSON goes out. Full character names,
 // display names for friends; names from players never become Discord markdown (escapeMarkdown). Discord can't colour
 // text in an embed, so every character name is bold with its class written next to it (Nico, 2026-10-28).
-import { type ClassIcons, NO_ICONS, icon } from "./classIcons.js";
+import { type Emojis, NO_EMOJI, icon } from "./emoji.js";
 import { CLASS_COLOURS, type Embed, GOLD, type MessageContent, characterUrl, escapeMarkdown } from "./message.js";
 import { isObject, number, text } from "./read.js";
 
@@ -110,7 +110,7 @@ export function whereisMessage(
   siteUrl: string,
   siteHost: string,
   card?: string,
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const rows = chars.map((c) =>
     line(
@@ -133,7 +133,7 @@ export function whoMessage(
   chars: readonly LookupCharacter[],
   filter: { level?: string; role?: string; className?: string; recent?: boolean },
   now: number,
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const noun =
     { tank: ["tank", "tanks"], healer: ["healer", "healers"], damage: ["damage dealer", "damage dealers"] }[
@@ -168,7 +168,7 @@ export function coverage(best: number | undefined): string {
 export function craftMessage(
   profession: string,
   crafters: readonly (LookupCharacter & { rank: number; max?: number; best?: boolean })[],
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const rows = crafters.map((c) =>
     line(
@@ -189,7 +189,7 @@ export function characterMessage(
   c: LookupCharacter,
   now: number,
   siteUrl: string,
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const fields = [
     { name: "Item level", value: c.ilvl !== undefined ? String(c.ilvl) : "—", inline: true },
@@ -221,7 +221,7 @@ export function altsMessage(
   chars: readonly LookupCharacter[],
   now: number,
   week?: { levels: number; quests: number; runs: number },
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const rows = chars.map((c) =>
     line(

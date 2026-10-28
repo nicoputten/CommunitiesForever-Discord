@@ -1,7 +1,7 @@
 // The answers to the run commands and buttons (BOT-04, board `bot-commands-runs`): `/plan`'s confirmation and the
 // time-passed reply, "This run isn't yours", the character and role picker, what an answer did, `/runs` and the site's
 // refusals. Only for the asker. Pure: the site's answers and the time come in as arguments.
-import { type ClassIcons, NO_ICONS, icon, optionEmoji } from "./classIcons.js";
+import { type Emojis, NO_EMOJI, icon, optionEmoji } from "./emoji.js";
 import { type Component, type MessageContent, GOLD, escapeMarkdown, className } from "./message.js";
 import { type Ask, type Run, type SlotRole, buttonOf, pageOf, runButton, runUrl } from "./runs.js";
 import { isObject, opt, text } from "./read.js";
@@ -243,7 +243,7 @@ export function plannedMessage(
   timeZone: string | undefined,
   runsChannel: string | undefined,
   siteUrl: string,
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const leads =
     lead === undefined
@@ -279,7 +279,7 @@ export function askedMessage(
   ask: Ask,
   runsChannel: string | undefined,
   siteUrl: string,
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const where = runsChannel !== undefined ? `Posted in <#${runsChannel}>.` : "Posted in the runs channel.";
   const ends = ask.expiresAt !== undefined ? ` It expires <t:${ask.expiresAt}:R>.` : " It expires in 10 minutes.";
@@ -337,7 +337,7 @@ function characterSelect(
   what: string,
   placeholder: string,
   chars: readonly PickCharacter[],
-  icons: ClassIcons,
+  icons: Emojis,
   selected?: string,
 ): Component {
   return {
@@ -374,7 +374,7 @@ export function pickerMessage(
   run: Run,
   chars: readonly PickCharacter[],
   siteUrl: string,
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
   selected: string | undefined = chars[0]?.guid,
 ): MessageContent {
   const c = chars.find((x) => x.guid === selected) ?? chars[0];
@@ -406,7 +406,7 @@ export function answeredMessage(
   character: string | undefined,
   lead = false,
   classFile?: string,
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const name = character !== undefined ? `${icon(icons, classFile)}${escapeMarkdown(character)}` : undefined;
   if (stored.answer === "maybe" && stored.reserve) {
@@ -462,7 +462,7 @@ export function runsListMessage(
   now: number,
   siteUrl: string,
   siteHost: string,
-  icons: ClassIcons = NO_ICONS,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const week = runs.filter((r) => r.startsAt < now + 7 * 86400).sort((a, b) => a.startsAt - b.startsAt);
   if (week.length === 0) {
