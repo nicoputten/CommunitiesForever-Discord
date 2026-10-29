@@ -16,7 +16,7 @@ import { MAX_BACKOFF_SECONDS, backoffSeconds } from "../core/connection.js";
 import { boardUrl } from "../core/doomsday.js";
 import { type Action, decide, readEvents } from "../core/events.js";
 import { ladderMessage } from "../core/ladder.js";
-import { markedEvents } from "../core/message.js";
+import { attachmentNames, markedEvents } from "../core/message.js";
 import { opt } from "../core/read.js";
 import { recapFiles, recapMessage } from "../core/recap.js";
 import { testFiles, testSample } from "../core/samples.js";
@@ -112,10 +112,18 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         return id;
       }
       case "sample": {
-        const files = await loadFiles(testFiles(action.kind), site, log, signal);
+        // BOT-21: the site's sample images too, fetched and attached like a real post's.
+        const files = await loadFiles(testFiles(action.kind, action.images), site, log, signal, "the test post");
         const names = files.map((f) => f.name);
-        const content = testSample(action.kind, eventId, siteUrl, host, Math.floor(deps.now() / 1000), page, names);
-        const id = await discord.post(ch[action.kind], content, files);
+        const now = Math.floor(deps.now() / 1000);
+        const content = testSample(action.kind, eventId, siteUrl, host, now, page, names, action.images);
+        // Only what the sample shows, else Discord adds the rest as loose files.
+        const shown = attachmentNames(content);
+        const id = await discord.post(
+          ch[action.kind],
+          content,
+          files.filter((f) => shown.includes(f.name)),
+        );
         log.info(`posted event ${eventId} (test of ${action.kind})`);
         return id;
       }
