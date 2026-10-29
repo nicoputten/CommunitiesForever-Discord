@@ -1,5 +1,7 @@
 # Changelog
 
+## Unreleased
+
 ## v0.3.1 (2026-10-29)
 - A test post from the site's Discord page now goes to the channel you just picked, also when you press the button right after changing it.
 
