@@ -23,38 +23,34 @@ https://discord.com/oauth2/authorize?client_id=<APPLICATION_ID>&scope=bot+applic
 
 - Scopes: `bot` and `applications.commands` (slash commands).
 - Permissions `117760`: View Channels, Send Messages, Embed Links, Attach Files, Read Message History. Read Message History lets the bot find its own posts after a restart, so nothing is posted twice.
-- The bot needs no "Mention Everyone": for the run mention role (later), make that role mentionable in the server settings.
+- The bot needs no "Mention Everyone": for the role mentioned on new runs, make that role mentionable in the server settings.
 - One server only. In a second server it still works but logs a warning.
 
 ## 4. The environment
-The four variables of `.env.example`. **Until BOT-07** there is no bot container in the web repo's `deploy/compose.yaml` and no published image yet, so try the bot on your own PC first (Node 24):
-
-```
-npm ci
-npm run build
-copy .env.example .env      (fill in .env; it is git-ignored)
-node --env-file=.env dist/app/main.js
-```
-
-Ctrl+C stops it gracefully. From BOT-07 on, the same variables go into the TrueNAS app's environment for the bot's container.
+The four variables of `.env.example`. They go into the TrueNAS app's environment for the `bot` service (web repo `deploy/compose.yaml` and `deploy/README.md`, "The Discord bot").
 
 | Variable | Value |
 |---|---|
 | `DISCORD_TOKEN` | the bot token from step 2 |
 | `DISCORD_APP_ID` | the Application ID from step 1 |
-| `SITE_URL` | `https://wow.vestras.nl` |
+| `SITE_URL` | `https://wow.vestras.nl` (the public URL: post links are built from it) |
 | `BOT_API_TOKEN` | the site's bot token (web repo `docs/BOT-API.md` "Token") |
 
-## 5. The posts channel
-On the site's Discord page (admin) pick the channel for posts and keep Milestones on. The dropdowns list what the running bot reports (BOT-08; the site needs WEB-46, in web releases after `v0.2.0`):
-- channels: text and announcement channels where the bot may view, send messages and embed links. A channel missing from the list: give the bot's role those permissions there.
-- roles (mention on new runs): roles set as **mentionable** in the server settings, without @everyone and bot roles.
+To try a change on your own PC first (Node 24): `npm ci`, `npm run build`, copy `.env.example` to `.env` (it is git-ignored) and fill it in, then `node --env-file=.env dist/app/main.js`. Ctrl+C stops it gracefully.
+
+## 5. The channels
+On the site's Discord page (admin) switch on the posts you want and pick their channels. The dropdowns list what the running bot reports (BOT-08):
+- **Default channel** (`channels.posts`): the plain test post, and every kind below whose own channel isn't picked.
+- **Feats** (BOT-14, BOT-17), **Weekly recap** (BOT-05), **Runs** (planned runs and asks, BOT-04, BOT-12) and **Doomsday** (the daily board and the weekly ladder, BOT-15, BOT-16): each its own channel, or the default one.
+- **Mention role** for new runs: roles set as **mentionable** in the server settings, without @everyone and bot roles.
+- Each box has a test button: the bot posts a made-up sample of that kind in its channel, titled "Test ·" (BOT-17).
+- The channel list holds text and announcement channels where the bot may view, send messages and embed links. A channel missing from the list: give the bot's role those permissions there.
 - Changes in the server show up within about 5 seconds. One exception: giving the bot itself another role isn't seen until the next change or restart (that event needs a privileged intent the bot doesn't use).
 
-Without a channel the bot posts nothing and logs `posts channel not set`; it reads the settings again every 30 seconds, so a new channel (and a test post) works without a restart.
+Without any channel the bot posts nothing and logs `posts channel not set`. It reads the settings again every 30 seconds, so a new channel (and a test post) works without a restart. After a restart it reads the last 50 messages of each channel to find its own posts, so nothing is posted twice.
 
-## 6. Emoji (class icons and Doomsday boxes)
-Nothing to upload by hand. At start the bot uploads its own **application emoji** from `assets/class-icons/`: the nine class icons (BOT-11) the three Doomsday boxes (BOT-15: `box-pve.png` green, `box-pvp.png` red, `box-open.png` open), and from `assets/recap-icons/` the 12 recap card icons (BOT-14). They belong to the application, not to the server, so they take none of the server's emoji slots; the developer portal lists them under **Emojis**. A changed picture is uploaded again under a new name (`cf_<name>_<hash>`) and the old one deleted. Until they are there, or when the upload fails (the log says `emoji: N of 24 ready`), names show without icon and the Doomsday board uses ✅ and ▢.
+## 6. Emoji (class icons, Doomsday boxes, recap icons)
+Nothing to upload by hand. At start the bot uploads its own **application emoji** from `assets/class-icons/`: the nine class icons (BOT-11) and the three Doomsday boxes (BOT-15: `box-pve.png` green, `box-pvp.png` red, `box-open.png` open), and from `assets/recap-icons/` the 12 recap card icons (BOT-14). They belong to the application, not to the server, so they take none of the server's emoji slots; the developer portal lists them under **Emojis**. A changed picture is uploaded again under a new name (`cf_<name>_<hash>`) and the old one deleted. Until they are there, or when the upload fails (the log says `emoji: N of 24 ready`), names show without icon and the Doomsday board uses ✅ and ▢.
 
 ## 7. Check
 - The bot shows as online in the server's member list.
@@ -64,7 +60,8 @@ Nothing to upload by hand. At start the bot uploads its own **application emoji*
   discord: connecting
   site: https://wow.vestras.nl answers as Doombringers
   discord: ready in 1 server
-  discord: registered 0 slash commands
+  discord: registered 13 slash commands
+  emoji: 24 of 24 ready (0 uploaded)
   ```
-- `discord: the token was refused` → `DISCORD_TOKEN` is wrong or was reset. `asked for an intent the portal doesn't allow` → a privileged intent is needed but off (step 2). `refuses BOT_API_TOKEN` → make a new bot token on the site, put it in `BOT_API_TOKEN` and restart the container. The bot stays connected to Discord meanwhile and asks the site again every 5 minutes.
+- `discord: the token was refused` → `DISCORD_TOKEN` is wrong or was reset. `asked for an intent the portal doesn't allow` → a privileged intent is needed but off (step 2). `refuses BOT_API_TOKEN` → make a new bot token on the site, put it in `BOT_API_TOKEN` and restart the container. The bot stays connected to Discord meanwhile and asks the site again every 5 minutes; other site or Discord trouble is retried sooner (5 s, doubling up to 5 minutes).
 - `docker stop` stops it within a few seconds with `stopping` and `stopped` in the log.
