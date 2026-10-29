@@ -271,6 +271,6 @@ With web WEB-67 (web PR #139; addon CF-63), 2026-10-29. An answer given in game 
 - The run post shows it next to that answer in quotes, like the run's own note: in its slot, among the reserves and in "Also maybe". The ask post shows it next to the name in its list.
 - Escaped like every name, and clipped to 80 characters. Without `note`, nothing changes.
 - A Can't answer has no place on the run post, so its note isn't shown there. The ask post lists Can't, so there it is shown.
-- Done (PR #?): `RunAnswer.note` in `src/core/runs.ts`, shown by `slotText` and the ask post's names; tests in `runs.test.ts` and `asks.test.ts`.
+- Done (PR #57): `RunAnswer.note` in `src/core/runs.ts`, shown by `slotText` and the ask post's names; tests in `runs.test.ts` and `asks.test.ts`.
 - Manual (Nico): answer a run in game with a note, upload, and see the note next to the answer in Discord.
 
