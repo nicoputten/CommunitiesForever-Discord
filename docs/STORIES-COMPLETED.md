@@ -210,3 +210,19 @@ Nico, 2026-10-29: one clean-up before the Doomsday release, across the addon, th
 - No user-facing change, so no manual steps beyond a smoke test of the next release.
 - Decided with Nico (2026-10-29): @types/node stays on the Node the bot runs on (24) and TypeScript on 6 until typescript-eslint supports 7, so Dependabot skips both majors; eslint 10 and gitleaks-action 3 as Dependabot made them. All five refactors of the list: the shared readers, the message module, the emoji sync naming, the look-up parsing in core, the poster split.
 - Done: the story (PR #42), dependencies (PR #43, Dependabot #14 and #16 as they are, #15 closed), refactors (PR #44), dead code and CI (PR #45), docs (PR #46). No flaky tests were found; the one CI flake was gitleaks-action v2 ("stderr is not empty"), which v3 addresses.
+
+### BOT-19 Test posts use the channel just picked
+Agreed with Nico, 2026-10-29: a bug fix for v0.3.1.
+- **What Nico saw:** on the site's Discord page he changed the Feats channel, then clicked "Send a test feat". The test landed in the old channel.
+- **Cause:** the poster reads the settings again only every 30 s (`SETTINGS_EVERY_MS` in `src/app/poster.ts`), while the test event arrives at once.
+- **Fix:**
+  - Before handling a `test` event (every kind: posts, feats, recap, doomsday, and any other kind), the poster reads the settings from the site again, then posts.
+  - When a channel changed, the round starts again, so the new channel is read for the bot's markers before anything is posted there (rule 9). The test comes again, since it isn't acknowledged yet.
+  - If the read fails, the poster uses the settings it has and logs it.
+  - Other events keep the 30 s refresh.
+- **Tests:**
+  - a test right after a channel change posts in the new channel
+  - a failed read falls back to the settings it had, with a log line
+  - other events cause no extra read
+- **Manual (Nico, in Discord):** change the Feats channel on the site, press "Send a test feat" at once, and the sample lands in the new channel.
+- Done (PR #49), released in v0.3.1.
