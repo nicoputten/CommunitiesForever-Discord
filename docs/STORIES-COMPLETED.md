@@ -265,3 +265,17 @@ Nico's brief, 2026-10-29: the web repo's `docs/DESIGN-BRIEF-LIVE-TEST.md` part 5
   - `Discord.edit` can replace attachments
 - The test samples look like the new posts, with the bot's own pictures attached.
 - Manual (Nico, in the test channel, once the site has WEB-66): the test recap, board and feat from the Discord page's buttons match `BV1Recap`, `BV2Daily` and `BV3Feats`, on Discord desktop and on a phone; a real board swaps its picture at most every 5 minutes.
+
+### BOT-21 Test posts with the site's sample images
+Nico, 2026-10-29 ("Yes, fix now"), with web WEB-68 (web PR #140). After v0.4.0 the Discord page's Doomsday test post still showed the old text board, because the test samples carried no site image.
+- The `test` event's `data.images` names the site's sample images per kind (fixed ids served from `cards/<id>.png`):
+  - `doomsday`: `board`
+  - `feats`: `feat`, and `strip` (optional)
+  - `recap`: `award` and `zone`
+- They go into the sample's data where a real event has its image ids: the board's `image`, the feat's `card`, the award's `image`, and the Bloodbath zone card's `image`. The real builders and the real fetch-and-attach path show them.
+- The test marks stay: "Test ·" in the title and the "not real" footer.
+- Without `images`, or when an image can't be had, the samples look as before (the text board).
+- `strip` is read but not shown: the feat sample has one feat, and a post shows one card.
+- Done (PR #?): `readTestImages`, and `testFiles`/`testSample` with `images`, in `src/core/samples.ts`; the poster attaches only what the sample shows. Tests cover each kind with and without images, the fallback, and the poster.
+- Manual (Nico, in the test channel): the test board, feat and recap from the Discord page's buttons show the site's sample pictures.
+

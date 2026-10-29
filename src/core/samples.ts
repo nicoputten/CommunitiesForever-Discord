@@ -1,15 +1,43 @@
 // Test posts per kind (BOT-17, web WEB-58 part 2): the Discord page's test buttons for feats, the recap and
-// Doomsday. Each sample is made up with names no friend has (Nico, 2026-10-28), carries no image of the site's, says
-// "Test ·" in its title and "not real" in its footer (only test posts do, BOT-20), and is marked like any post so it
-// is posted once. BOT-20: the samples look like the visual posts, with the bot's own pictures (the class icon, the
-// recap icons) attached. Pure.
-import { boardMessage, readBoard } from "./doomsday.js";
+// Doomsday. Each sample is made up with names no friend has (Nico, 2026-10-28), says "Test ·" in its title and "not
+// real" in its footer (only test posts do, BOT-20), and is marked like any post so it is posted once. BOT-20: the
+// samples look like the visual posts, with the bot's own pictures (the class icon, the recap icons) attached. BOT-21
+// (web WEB-68): the test event names the site's sample images (`images`), drawn with the same made-up names; they go
+// into the sample's data where the real event has its image ids, so the real builders and the real fetch-and-attach
+// path show them. Without `images` (an older site) the samples look as before: the board as text. Pure.
+import { type Board, boardMessage, readBoard } from "./doomsday.js";
 import { type Group, groupedMessage, milestoneFiles } from "./milestones.js";
 import { type FileSource, type MessageContent } from "./message.js";
 import { type Recap, readRecap, recapFiles, recapMessage } from "./recap.js";
+import { isObject, opt, text } from "./read.js";
 
 /** The test kinds with a sample of their own; any other kind gets the plain test message. */
 export type TestKind = "feats" | "recap" | "doomsday";
+
+/** BOT-21 (web WEB-68): the site's sample images for a test, by role; each a card id (`cards/<id>.png`). */
+export interface TestImages {
+  board?: string;
+  feat?: string;
+  strip?: string;
+  award?: string;
+  zone?: string;
+}
+
+/** The test event's `images`, read defensively: only card ids (`[a-z0-9-]`) are kept. */
+export function readTestImages(data: unknown): TestImages {
+  const images = isObject(data) && isObject(data.images) ? data.images : {};
+  const id = (value: unknown) => {
+    const t = text(value);
+    return t !== undefined && /^[a-z0-9][a-z0-9-]{0,80}$/i.test(t) ? t : undefined;
+  };
+  return {
+    ...opt("board", id(images.board)),
+    ...opt("feat", id(images.feat)),
+    ...opt("strip", id(images.strip)),
+    ...opt("award", id(images.award)),
+    ...opt("zone", id(images.zone)),
+  };
+}
 
 export const TEST_FOOTER = "Test post from the site's Discord page · not real";
 
@@ -27,9 +55,11 @@ function asTest(content: MessageContent): MessageContent {
   return { ...content, embeds };
 }
 
-function featGroup(eventId: number): Group {
+function featGroup(eventId: number, images: TestImages = {}): Group {
   return {
     eventId,
+    // The sample's one card: the site's big feat card (the rank 6 sample), as the event's `card` is on a real post.
+    ...opt("card", images.feat),
     milestones: [
       {
         kind: "pvpRank",
@@ -40,16 +70,23 @@ function featGroup(eventId: number): Group {
         firstInGroup: true,
         headline: "Stone Guard",
         line: "Rank 6, a.k.a. Mailbox Menace. First in the group.",
+        ...opt("card", images.feat),
       },
     ],
   };
 }
 
-function feats(eventId: number, siteUrl: string, siteHost: string, attached: readonly string[]): MessageContent {
-  return groupedMessage([featGroup(eventId)], siteUrl, siteHost, attached) as MessageContent;
+function feats(
+  eventId: number,
+  siteUrl: string,
+  siteHost: string,
+  attached: readonly string[],
+  images: TestImages,
+): MessageContent {
+  return groupedMessage([featGroup(eventId, images)], siteUrl, siteHost, attached) as MessageContent;
 }
 
-function recapSample(): Recap {
+function recapSample(images: TestImages = {}): Recap {
   return readRecap({
     week: 1,
     headline: { text: "A week of tests" },
@@ -60,15 +97,26 @@ function recapSample(): Recap {
       title: `${CHARACTER.name} took 12 honorable kills`,
       text: "All of them test dummies.",
       classFile: CHARACTER.classFile,
+      ...opt("image", images.award),
     },
     cards: [
-      {
-        id: "S2",
-        slot: "stat",
-        name: "Class census",
-        title: "One Warlock",
-        text: `${CHARACTER.name} holds the line alone.`,
-      },
+      // With the site's zone map: the Bloodbath zone card it is drawn for; else a card without a map.
+      images.zone !== undefined
+        ? {
+            id: "S13",
+            slot: "stat",
+            name: "Bloodbath zone",
+            title: "The test grounds",
+            text: "12 honorable kills, all of them test dummies.",
+            image: images.zone,
+          }
+        : {
+            id: "S2",
+            slot: "stat",
+            name: "Class census",
+            title: "One Warlock",
+            text: `${CHARACTER.name} holds the line alone.`,
+          },
       { id: "F16", slot: "fun", name: "Most deaths", title: `${FRIEND}: 3 deaths`, text: "The spirit healer waves." },
     ],
     challenge: { text: "Send one more test post" },
@@ -80,13 +128,21 @@ function recapSample(): Recap {
   }) as Recap;
 }
 
-function recap(eventId: number, siteUrl: string, doomsdayUrl: string, attached: readonly string[]): MessageContent {
-  return recapMessage(recapSample(), siteUrl, attached, eventId, doomsdayUrl);
+function recap(
+  eventId: number,
+  siteUrl: string,
+  doomsdayUrl: string,
+  attached: readonly string[],
+  images: TestImages,
+): MessageContent {
+  return recapMessage(recapSample(images), siteUrl, attached, eventId, doomsdayUrl);
 }
 
-function board(eventId: number, siteUrl: string, now: number, pageUrl: string): MessageContent {
-  const sample = readBoard({
+/** The sample board's data, with the site's sample picture when there is one. */
+function boardSample(now: number, images: TestImages = {}): Board {
+  return readBoard({
     label: "Test day",
+    ...opt("image", images.board),
     end: now + 3600,
     goals: [
       { slot: "pve1", id: "d.test", title: "Send a test post", track: "pve", points: 5 },
@@ -104,8 +160,22 @@ function board(eventId: number, siteUrl: string, now: number, pageUrl: string): 
       { name: OTHER, goals: [], doneCount: 0, crossedOut: false, today: { pve: 0, pvp: null }, pvpVirgin: true },
     ],
     withoutData: [],
-  });
-  const message = boardMessage(sample!, eventId, siteUrl, pageUrl);
+  }) as Board;
+}
+
+function board(
+  eventId: number,
+  siteUrl: string,
+  now: number,
+  pageUrl: string,
+  attached: readonly string[],
+  images: TestImages,
+): MessageContent {
+  const sample = boardSample(now, images);
+  // The picture as on the real board when it could be had, else the text board (as before).
+  const picture =
+    sample.image !== undefined && attached.includes(`${sample.image}.png`) ? `${sample.image}.png` : undefined;
+  const message = boardMessage(sample, eventId, siteUrl, pageUrl, undefined, picture);
   // Only "Open the board ↗": "My goals" answers with real data, and the sample is never edited.
   return {
     ...message,
@@ -116,17 +186,23 @@ function board(eventId: number, siteUrl: string, now: number, pageUrl: string): 
   };
 }
 
-/** The bot's own pictures a sample attaches (BOT-20): the class icon of the feat, the recap's icons. Never the site's. */
-export function testFiles(kind: TestKind): FileSource[] {
-  const own = (files: FileSource[]) => files.filter((f) => "asset" in f);
-  if (kind === "feats") return own(milestoneFiles([featGroup(0)]));
-  if (kind === "recap") return own(recapFiles(recapSample()));
-  return [];
+/**
+ * The files a sample attaches, by the real posts' functions: the bot's own pictures (BOT-20: the class icon of the
+ * feat, the recap's icons) and, BOT-21, the site's sample images the test event named. Never another image of the
+ * site's (a real recap's header, say): only the ids in `images`.
+ */
+export function testFiles(kind: TestKind, images: TestImages = {}): FileSource[] {
+  const named = new Set(Object.values(images).map((id) => `${id}.png`));
+  const ours = (files: FileSource[]) => files.filter((f) => "asset" in f || named.has(f.name));
+  if (kind === "feats") return ours(milestoneFiles([featGroup(0, images)]));
+  if (kind === "recap") return ours(recapFiles(recapSample(images)));
+  const image = boardSample(0, images).image;
+  return image !== undefined ? [{ name: `${image}.png`, path: `cards/${image}.png` }] : [];
 }
 
 /**
  * The sample of a test kind, marked as a test. `now`: Unix seconds, for the board's times. `pageUrl`: the site's
- * Doomsday page. `attached`: the files of `testFiles` the poster could read.
+ * Doomsday page. `attached`: the files of `testFiles` the poster could get. `images`: the test event's (BOT-21).
  */
 export function testSample(
   kind: TestKind,
@@ -136,13 +212,14 @@ export function testSample(
   now: number,
   pageUrl: string,
   attached: readonly string[] = [],
+  images: TestImages = {},
 ): MessageContent {
   switch (kind) {
     case "feats":
-      return asTest(feats(eventId, siteUrl, siteHost, attached));
+      return asTest(feats(eventId, siteUrl, siteHost, attached, images));
     case "recap":
-      return asTest(recap(eventId, siteUrl, pageUrl, attached));
+      return asTest(recap(eventId, siteUrl, pageUrl, attached, images));
     case "doomsday":
-      return asTest(board(eventId, siteUrl, now, pageUrl));
+      return asTest(board(eventId, siteUrl, now, pageUrl, attached, images));
   }
 }
