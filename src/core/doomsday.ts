@@ -39,6 +39,8 @@ export interface BoardFriend {
   name: string;
   goals: FriendGoal[];
   doneCount?: number;
+  /** WEB-66: the goals on the friend's grid, the Duel slot included; `doneCount` then counts the Duel slot too. */
+  goalCount?: number;
   crossedOut: boolean;
   today?: Points;
   week?: Points;
@@ -144,6 +146,7 @@ function readFriend(value: unknown): BoardFriend | undefined {
     name,
     goals: (Array.isArray(value.goals) ? value.goals : []).flatMap((g) => readFriendGoal(g) ?? []),
     ...opt("doneCount", count(value.doneCount)),
+    ...opt("goalCount", count(value.goalCount)),
     crossedOut: value.crossedOut === true,
     ...opt("today", readPoints(value.today)),
     ...opt("week", readPoints(value.week)),
@@ -268,7 +271,7 @@ function boardRow(board: Board, friend: BoardFriend, b: Boxes): string {
     );
     tail = finished > 0 ? `all dailies ${at(finished, "t")}` : "all dailies";
   } else if (any) {
-    tail = `${done} / ${columns.length}`;
+    tail = `${done} / ${friend.goalCount ?? columns.length}`;
   } else if (board.update !== undefined) {
     tail = "—";
   }
@@ -338,7 +341,8 @@ export function boardMessage(
     if (board.friends.length === 0) lines.push("Nobody has Doomsday data yet.");
     const notes: string[] = [];
     if (board.news !== undefined) notes.push(escapeMarkdown(board.news));
-    if (board.withoutData.length > 0) {
+    // WEB-66: the site's news already names the friends without data.
+    if (board.withoutData.length > 0 && board.news === undefined) {
       notes.push(`No Doomsday data yet: ${board.withoutData.map(escapeMarkdown).join(", ")}.`);
     }
     if (board.yesterdayCrown !== undefined && !final) {

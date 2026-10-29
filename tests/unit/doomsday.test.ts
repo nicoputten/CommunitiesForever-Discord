@@ -492,3 +492,20 @@ describe("the board with the site's picture (BOT-20, board `bot-visual-daily`)",
     expect(discord.messages[1]?.content.embeds[0]?.image).toBeUndefined();
   });
 });
+
+describe("the text board with the WEB-66 fields (BOT-20)", () => {
+  it("counts against the site's goalCount (the Duel slot included) and doesn't repeat what the news says", () => {
+    const board = readBoard(
+      {
+        ...midday,
+        news: "Ada is 1 away. 1 friend without addon data.",
+        friends: [{ ...midday.friends[1], doneCount: 3, goalCount: 6 }],
+      },
+      true,
+    )!;
+    const description = boardMessage(board, 40, SITE, PAGE, B).embeds[0]!.description!;
+    expect(description).toContain("**Ada** [G][ ][ ] [R][ ] · 3 / 6 · PvE 5 · PvP 5");
+    expect(description).toContain("Ada is 1 away. 1 friend without addon data.");
+    expect(description).not.toContain("No Doomsday data yet");
+  });
+});
