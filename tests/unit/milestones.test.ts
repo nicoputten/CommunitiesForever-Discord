@@ -279,7 +279,18 @@ describe("the test post", () => {
     expect(decide({ ...test, data: { kind: "recap" } }, {}, new Map(), SITE, HOST)).toEqual({
       do: "sample",
       kind: "recap",
+      images: {},
     });
+    // BOT-21: the site's sample images, ids only.
+    expect(
+      decide(
+        { ...test, data: { kind: "recap", images: { award: "sample-recap-header", zone: "../x", board: 3 } } },
+        {},
+        new Map(),
+        SITE,
+        HOST,
+      ),
+    ).toEqual({ do: "sample", kind: "recap", images: { award: "sample-recap-header" } });
     expect(decide({ ...test, data: { kind: "somethingNew" } }, {}, new Map(), SITE, HOST).do).toBe("send");
   });
 });

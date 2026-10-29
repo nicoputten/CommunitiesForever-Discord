@@ -5,7 +5,7 @@ import { type MessageContent, testMessage } from "./message.js";
 import { type Board, readBoard } from "./doomsday.js";
 import { type Ladder, readLadder } from "./ladder.js";
 import { type Recap, readRecap } from "./recap.js";
-import type { TestKind } from "./samples.js";
+import { type TestImages, type TestKind, readTestImages } from "./samples.js";
 import { type Ask, type Ping, type Run, readAsk, readMention, readPing, readRun } from "./runs.js";
 import type { SiteSettings } from "./settings.js";
 import { isObject, number, opt, text } from "./read.js";
@@ -157,7 +157,7 @@ export type Action =
   /** Post this message on its own (the test post). */
   | { do: "send"; content: MessageContent }
   /** BOT-17: a test of a kind: its made-up sample, in that kind's channel. */
-  | { do: "sample"; kind: TestKind }
+  | { do: "sample"; kind: TestKind; images: TestImages }
   /** Post the weekly recap with its card images, in the recap channel (BOT-05). */
   | { do: "recap"; recap: Recap }
   /** A run event (BOT-04), for the runs channel; `posted`: its own message, when one was found by its marker. */
@@ -261,7 +261,9 @@ export function decide(
     // bot doesn't know the plain test in the posts channel (BOT-API.md "test").
     const kind = isObject(event.data) ? event.data.kind : undefined;
     if (messageId !== undefined) return { do: "ack", messageId };
-    if (kind === "feats" || kind === "recap" || kind === "doomsday") return { do: "sample", kind };
+    if (kind === "feats" || kind === "recap" || kind === "doomsday") {
+      return { do: "sample", kind, images: readTestImages(event.data) };
+    }
     return { do: "send", content: testMessage(event.id, siteUrl, siteHost) };
   }
   if (event.type === "recap") {
