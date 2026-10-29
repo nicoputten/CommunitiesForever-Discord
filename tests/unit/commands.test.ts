@@ -62,7 +62,11 @@ describe("/recap", () => {
     handlers.command(command);
     await answered;
     expect(answers[0]?.files).toEqual(["recap-5-header.png"]);
-    expect(answers[0]?.content.embeds[0]).toMatchObject({ title: "Dungeon week", url: "https://example.com/" });
+    expect(answers[0]?.content.embeds[0]).toMatchObject({
+      title: "Weekly recap · week 5",
+      description: "**Dungeon week**",
+      url: "https://example.com/",
+    });
   });
 
   it("says there is no recap yet before the first one", async () => {

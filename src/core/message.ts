@@ -11,9 +11,34 @@ export interface Embed {
   fields?: { name: string; value: string; inline?: boolean }[];
   /** BOT-05: a card image attached to the message (`attachment://<name>`). */
   image?: { url: string };
-  /** BOT-04: the line above the title ("Nico on Ves Doombringer (39 Warlock)") and the small line under the embed. */
-  author?: { name: string };
+  /** BOT-20: a small picture at the top right (a recap card's icon). */
+  thumbnail?: { url: string };
+  /**
+   * BOT-04: the line above the title ("Nico on Ves Doombringer (39 Warlock)") and the small line under the embed.
+   * BOT-20: the author line's picture (a class icon, attached).
+   */
+  author?: { name: string; icon_url?: string };
   footer?: { text: string };
+}
+
+/**
+ * BOT-20: a file a message attaches and references as `attachment://<name>`: an image the site renders
+ * (`cards/<id>.png`), or a picture of the bot's own under `assets/`.
+ */
+export type FileSource = { name: string; path: string } | { name: string; asset: string };
+
+/** The files a message references (`attachment://<name>` in images, thumbnails and author lines). */
+export function attachmentNames(content: MessageContent): string[] {
+  const urls = content.embeds.flatMap((e) => [e.image?.url, e.thumbnail?.url, e.author?.icon_url]);
+  return [...new Set(urls.flatMap((u) => (u?.startsWith("attachment://") ? [u.slice("attachment://".length)] : [])))];
+}
+
+/** The class icon of the bot's own (`assets/class-icons/`) as a file to attach, for an author line (BOT-20). */
+export function classIconFile(classFile: string | undefined): FileSource | undefined {
+  if (classFile === undefined || !/^[A-Z]+$/.test(classFile) || CLASS_COLOURS[classFile] === undefined)
+    return undefined;
+  const file = `${classFile.toLowerCase()}.png`;
+  return { name: `class-${file}`, asset: `class-icons/${file}` };
 }
 
 /** A button (type 2) or, BOT-04, a select menu (type 3) in an action row. */

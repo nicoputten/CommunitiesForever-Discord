@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runPoster } from "../../src/app/poster.js";
 import { markedEvents } from "../../src/core/message.js";
-import { TEST_FOOTER, testSample } from "../../src/core/samples.js";
+import { TEST_FOOTER, testFiles, testSample } from "../../src/core/samples.js";
 import { readSettings } from "../../src/core/settings.js";
 import { CHANNEL, FakeDiscord, FakeSite, logger, milestonesEvent } from "./fakes.js";
 
@@ -33,13 +33,28 @@ describe("test samples (BOT-17)", () => {
   }
 
   it("has the feat, the recap's Doomsday section, and a board with only the link", () => {
-    expect(testSample("feats", 70, SITE, HOST, NOW, PAGE).embeds[0]?.title).toBe("Test · Feat unlocked");
+    expect(testSample("feats", 70, SITE, HOST, NOW, PAGE).embeds[0]?.title).toBe("Test · Feat unlocked · Stone Guard");
     const recap = testSample("recap", 71, SITE, HOST, NOW, PAGE);
-    expect(recap.embeds[0]?.title).toBe("Test · A week of tests");
-    expect(recap.embeds.at(-1)?.fields?.map((f) => f.name)).toContain("Doomsday · this week");
+    expect(recap.embeds[0]?.title).toBe("Test · Weekly recap · week 1");
+    expect(recap.embeds.map((e) => e.title)).toContain("Doomsday · this week");
+    // Only test posts carry the "not real" footer (BOT-20).
+    expect(recap.embeds.at(-1)?.footer).toEqual({ text: TEST_FOOTER });
     const board = testSample("doomsday", 72, SITE, HOST, NOW, PAGE);
     expect(board.embeds[0]?.title).toBe("Test · Doomsday · Test day");
     expect(board.components?.[0]?.components).toEqual([{ type: 2, style: 5, label: "Open the board ↗", url: PAGE }]);
+  });
+
+  it("attaches the bot's own pictures, never the site's (BOT-20)", () => {
+    expect(testFiles("feats")).toEqual([{ name: "class-warlock.png", asset: "class-icons/warlock.png" }]);
+    expect(testFiles("recap")).toEqual([
+      { name: "recap_pvp.png", asset: "recap-icons/recap_pvp.png" },
+      { name: "recap_deaths.png", asset: "recap-icons/recap_deaths.png" },
+    ]);
+    expect(testFiles("doomsday")).toEqual([]);
+    const feat = testSample("feats", 70, SITE, HOST, NOW, PAGE, ["class-warlock.png"]).embeds[0];
+    expect(feat?.author).toEqual({ name: "Testy McTestface", icon_url: "attachment://class-warlock.png" });
+    const recap = testSample("recap", 71, SITE, HOST, NOW, PAGE, ["recap_deaths.png"]);
+    expect(recap.embeds.some((e) => e.thumbnail?.url === "attachment://recap_deaths.png")).toBe(true);
   });
 
   it("reads the feats channel", () => {
@@ -108,9 +123,11 @@ describe("the feats channel and test posts in the poster (BOT-17)", () => {
     site.add({ id: 14, type: "test", data: { kind: "posts" } });
     const running = run();
     await vi.waitFor(() => expect(site.acked.size).toBe(5));
+    // The test feat carries the class icon of its author line, read from assets/ (BOT-20).
+    expect(discord.messages[0]?.files).toEqual(["class-warlock.png"]);
     expect(discord.messages.map((m) => [m.channel, m.content.embeds[0]?.title])).toEqual([
-      [CHANNEL, "Test · Feat unlocked"],
-      [RECAP, "Test · A week of tests"],
+      [CHANNEL, "Test · Feat unlocked · Stone Guard"],
+      [RECAP, "Test · Weekly recap · week 1"],
       [DOOM, "Test · Doomsday · Test day"],
       [CHANNEL, "Test post"],
       [CHANNEL, "Test post"],
@@ -151,7 +168,7 @@ describe("test posts use the channel just picked (BOT-19)", () => {
     site.add({ id: 30, type: "test", data: { kind: "feats" } });
     await vi.waitFor(() => expect(site.acked.size).toBe(1));
     expect(discord.messages.map((m) => [m.channel, m.content.embeds[0]?.title])).toEqual([
-      [NEW, "Test · Feat unlocked"],
+      [NEW, "Test · Feat unlocked · Stone Guard"],
     ]);
     stop.abort();
     await running;

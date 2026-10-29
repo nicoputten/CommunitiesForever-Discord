@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DoomsdayBoards, EDIT_EVERY_MS, answerMyGoals } from "../../src/app/doomsdayPosts.js";
+import { DoomsdayBoards, EDIT_EVERY_MS, IMAGE_EVERY_MS, answerMyGoals } from "../../src/app/doomsdayPosts.js";
 import { runPoster } from "../../src/app/poster.js";
 import type { ButtonPress } from "../../src/adapters/discord.js";
 import {
@@ -144,8 +144,8 @@ describe("the daily board (BOT-15)", () => {
         "No Doomsday data yet: Sanne.",
         "Yesterday's crown: Tok.",
         "",
-        "-# Columns: 3 PvE dailies, then Hunt and Skirmish · names are crossed out when all dailies are done",
-        `-# resets <t:${END}:R> · this message updates during the day`,
+        // No legend and no notes (BOT-20, Nico: no notes in posts).
+        `-# resets <t:${END}:R>`,
       ].join("\n"),
     );
     expect(message.components?.[0]?.components).toEqual([
@@ -394,5 +394,118 @@ describe("My goals and the Doomsday reply", () => {
     expect(replies).toEqual(["Doomsday isn't available yet", "Link your Discord first", "Your Doomsday"]);
     expect(press.defer).toHaveBeenCalledWith("reply");
     expect(site.lookups[0]).toEqual({ what: "doomsday", params: { discordUserId: "100000000000000001" } });
+  });
+});
+
+describe("the board with the site's picture (BOT-20, board `bot-visual-daily`)", () => {
+  let site: FakeSite;
+  let discord: FakeDiscord;
+  let now: number;
+  let stop: AbortController;
+  let log: ReturnType<typeof logger>;
+  let boards: DoomsdayBoards;
+  const png = new Uint8Array([137, 80, 78, 71]);
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    site = new FakeSite();
+    discord = new FakeDiscord();
+    now = 1_793_240_000_000;
+    stop = new AbortController();
+    log = logger();
+    boards = new DoomsdayBoards({ siteUrl: SITE, site, discord, log: log.log, now: () => now }, stop.signal);
+    for (const id of ["doomsday-20754-a", "doomsday-20754-b", "doomsday-20754-c"])
+      site.images.set(`cards/${id}.png`, png);
+  });
+
+  afterEach(() => {
+    stop.abort();
+    vi.useRealTimers();
+  });
+
+  const visual = (id: number, image: string, extra: object = {}) =>
+    readBoard(
+      { ...midday, label: "Wed evening", messageId: "1100000000000000001", image, news: `News ${id}`, ...extra },
+      true,
+    )!;
+
+  it("is one embed with the news line and the picture, without the table or a legend", () => {
+    const message = boardMessage(
+      readBoard({ ...fresh, image: "doomsday-20754-a" })!,
+      40,
+      SITE,
+      PAGE,
+      B,
+      "doomsday-20754-a.png",
+    );
+    const embed = message.embeds[0]!;
+    expect(embed.image).toEqual({ url: "attachment://doomsday-20754-a.png" });
+    // Without the site's news, the start of the day names the goals.
+    expect(embed.description).toBe(
+      "**PvE** Finish 10 quests · Run a dungeon · Raise Cooking, First Aid or Fishing. **PvP** The Hunt\\: Night Elf Druid or Troll Priest · Lone wolf\\: 3 solo kills. 5 points each.",
+    );
+    expect(JSON.stringify(message)).not.toMatch(/Columns|\[ \]|updates during the day/);
+    const later = boardMessage(visual(41, "doomsday-20754-a"), 40, SITE, PAGE, B, "doomsday-20754-a.png");
+    expect(later.embeds[0]?.title).toBe("Doomsday · Wed evening");
+    expect(later.embeds[0]?.description).toBe("News 41");
+    expect(later.components?.[0]?.components.map((c) => c.label)).toEqual(["Open the board ↗", "My goals"]);
+  });
+
+  it("posts the picture, swaps it at most every 5 minutes and only when it changed, then shows the newest", async () => {
+    const id = await boards.handle(40, readBoard({ ...fresh, image: "doomsday-20754-a" })!, CHANNEL);
+    expect(discord.messages[0]?.files).toEqual(["doomsday-20754-a.png"]);
+    // 1 minute later a new picture: the text changes, the picture waits.
+    now += 60_000;
+    expect(await boards.handle(41, visual(41, "doomsday-20754-b"), CHANNEL)).toBe(id);
+    expect(discord.messages[0]?.content.embeds[0]?.description).toBe("News 41");
+    expect(discord.messages[0]?.files).toEqual(["doomsday-20754-a.png"]);
+    expect(discord.messages[0]?.content.embeds[0]?.image).toEqual({ url: "attachment://doomsday-20754-a.png" });
+    // Once the 5 minutes are over the newest picture is shown, without another update.
+    now += IMAGE_EVERY_MS;
+    await vi.advanceTimersByTimeAsync(IMAGE_EVERY_MS);
+    await vi.waitFor(() => expect(discord.messages[0]?.files).toEqual(["doomsday-20754-b.png"]));
+    expect(discord.messages[0]?.content.embeds[0]?.image).toEqual({ url: "attachment://doomsday-20754-b.png" });
+    // The same picture again: only the text is edited.
+    now += 60_000;
+    const edits = discord.edits;
+    await boards.handle(42, visual(42, "doomsday-20754-b"), CHANNEL);
+    expect(discord.edits).toBe(edits + 1);
+    expect(discord.messages[0]?.files).toEqual(["doomsday-20754-b.png"]);
+    // The final edit always gets the newest picture.
+    now += 60_000;
+    await boards.handle(43, visual(43, "doomsday-20754-c", { final: true }), CHANNEL);
+    expect(discord.messages[0]?.files).toEqual(["doomsday-20754-c.png"]);
+    expect(discord.messages[0]?.content.embeds[0]?.title).toBe("Doomsday · Wed evening · final");
+  });
+
+  it("falls back to the text board when the picture can't be had, and drops a picture the site stopped sending", async () => {
+    await boards.handle(40, readBoard({ ...fresh, image: "doomsday-20754-x" })!, CHANNEL);
+    expect(discord.messages[0]?.files).toEqual([]);
+    expect(discord.messages[0]?.content.embeds[0]?.description).toContain("**Ada**");
+    expect(log.texts()).toContain("site: board image doomsday-20754-x unavailable; showing the text board");
+
+    const other = new DoomsdayBoards({ siteUrl: SITE, site, discord, log: log.log, now: () => now }, stop.signal);
+    await other.handle(50, readBoard({ ...fresh, image: "doomsday-20754-a" })!, CHANNEL);
+    now += 60_000;
+    await other.handle(51, readBoard({ ...midday, boardEvent: 50, messageId: null }, true)!, CHANNEL);
+    expect(discord.messages[1]?.files).toEqual([]);
+    expect(discord.messages[1]?.content.embeds[0]?.image).toBeUndefined();
+  });
+});
+
+describe("the text board with the WEB-66 fields (BOT-20)", () => {
+  it("counts against the site's goalCount (the Duel slot included) and doesn't repeat what the news says", () => {
+    const board = readBoard(
+      {
+        ...midday,
+        news: "Ada is 1 away. 1 friend without addon data.",
+        friends: [{ ...midday.friends[1], doneCount: 3, goalCount: 6 }],
+      },
+      true,
+    )!;
+    const description = boardMessage(board, 40, SITE, PAGE, B).embeds[0]!.description!;
+    expect(description).toContain("**Ada** [G][ ][ ] [R][ ] · 3 / 6 · PvE 5 · PvP 5");
+    expect(description).toContain("Ada is 1 away. 1 friend without addon data.");
+    expect(description).not.toContain("No Doomsday data yet");
   });
 });

@@ -250,32 +250,30 @@ export function readRecapDoomsday(value: unknown): RecapDoomsday | undefined {
 }
 
 /**
- * The recap's "Doomsday · this week" section (board `bot-recap-doomsday`): Most devoted, Perfect week, the PvE and PvP
- * points side by side, the crowns and the link to the ladder on the site. Undefined when there is nothing to say.
+ * The recap's Doomsday section (boards `bot-recap-doomsday`, `bot-visual-recap`; BOT-20): its own gold embed with the
+ * PvE and PvP top 3 as two inline fields side by side (never added together) and "Most devoted" underneath. Perfect
+ * week and the crowns stay on the site, as the board shows (Nico, 2026-10-29). Undefined when there is nothing to say.
  */
-export function recapDoomsdayField(
-  d: RecapDoomsday,
-  pageUrl: string,
-): { name: string; value: string; inline: false } | undefined {
-  const lines: string[] = [];
-  if (d.mostDevoted !== undefined) {
-    const days = d.mostDevoted.days;
-    lines.push(
-      `**Most devoted:** ${escapeMarkdown(d.mostDevoted.name)}, goals on ${days >= 7 ? "all 7 days" : `${days} ${days === 1 ? "day" : "days"}`}`,
-    );
-  }
-  if (d.perfectWeek.length > 0) {
-    lines.push(`**Perfect week:** ${d.perfectWeek.map(escapeMarkdown).join(", ")}, every PvE goal`);
-  }
+export function recapDoomsdayEmbed(d: RecapDoomsday): Embed | undefined {
   const top = (rows: readonly { name: string; points: number }[]) =>
-    rows.map((r) => `${escapeMarkdown(r.name)} ${thousands(r.points)}`).join(" · ");
-  if (d.points.pve.length > 0) lines.push(`**PvE** ${top(d.points.pve)}`);
-  if (d.points.pvp.length > 0) lines.push(`**PvP** ${top(d.points.pvp)}`);
-  if (lines.length === 0) return undefined;
-  const crowns =
-    d.crowns.length > 0
-      ? `Crowns this week: ${d.crowns.map((c) => `${escapeMarkdown(c.name)} ${c.count}`).join(", ")}. `
-      : "";
-  lines.push(`${crowns}[Full ladder ↗](${pageUrl})`);
-  return { name: "Doomsday · this week", value: clip(lines.join("\n"), 1024), inline: false };
+    rows.length === 0
+      ? "Nobody yet"
+      : rows.map((r, i) => `${i + 1}. **${escapeMarkdown(r.name)}** ${thousands(r.points)}`).join("\n");
+  const devoted = d.mostDevoted;
+  if (d.points.pve.length === 0 && d.points.pvp.length === 0 && devoted === undefined) return undefined;
+  return {
+    title: "Doomsday · this week",
+    fields: [
+      { name: "PvE top 3", value: clip(top(d.points.pve), 1024), inline: true },
+      { name: "PvP top 3", value: clip(top(d.points.pvp), 1024), inline: true },
+    ],
+    color: GOLD,
+    ...(devoted !== undefined
+      ? {
+          footer: {
+            text: `Most devoted: ${devoted.name}, goals on ${devoted.days >= 7 ? "all 7 days" : `${devoted.days} ${devoted.days === 1 ? "day" : "days"}`}`,
+          },
+        }
+      : {}),
+  };
 }

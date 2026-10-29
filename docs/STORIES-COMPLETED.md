@@ -210,3 +210,58 @@ Nico, 2026-10-29: one clean-up before the Doomsday release, across the addon, th
 - No user-facing change, so no manual steps beyond a smoke test of the next release.
 - Decided with Nico (2026-10-29): @types/node stays on the Node the bot runs on (24) and TypeScript on 6 until typescript-eslint supports 7, so Dependabot skips both majors; eslint 10 and gitleaks-action 3 as Dependabot made them. All five refactors of the list: the shared readers, the message module, the emoji sync naming, the look-up parsing in core, the poster split.
 - Done: the story (PR #42), dependencies (PR #43, Dependabot #14 and #16 as they are, #15 closed), refactors (PR #44), dead code and CI (PR #45), docs (PR #46). No flaky tests were found; the one CI flake was gitleaks-action v2 ("stderr is not empty"), which v3 addresses.
+
+### BOT-19 Test posts use the channel just picked
+Agreed with Nico, 2026-10-29: a bug fix for v0.3.1.
+- **What Nico saw:** on the site's Discord page he changed the Feats channel, then clicked "Send a test feat". The test landed in the old channel.
+- **Cause:** the poster reads the settings again only every 30 s (`SETTINGS_EVERY_MS` in `src/app/poster.ts`), while the test event arrives at once.
+- **Fix:**
+  - Before handling a `test` event (every kind: posts, feats, recap, doomsday, and any other kind), the poster reads the settings from the site again, then posts.
+  - When a channel changed, the round starts again, so the new channel is read for the bot's markers before anything is posted there (rule 9). The test comes again, since it isn't acknowledged yet.
+  - If the read fails, the poster uses the settings it has and logs it.
+  - Other events keep the 30 s refresh.
+- **Tests:**
+  - a test right after a channel change posts in the new channel
+  - a failed read falls back to the settings it had, with a log line
+  - other events cause no extra read
+- **Manual (Nico, in Discord):** change the Feats channel on the site, press "Send a test feat" at once, and the sample lands in the new channel.
+- Done (PR #49), released in v0.3.1.
+
+### BOT-20 Visual posts
+Nico's brief, 2026-10-29: the web repo's `docs/DESIGN-BRIEF-LIVE-TEST.md` part 5, with the boards `bot-visual-recap`, `bot-visual-daily` and `bot-visual-feats` (web `design/boards/`). The site renders the images and sends their ids and texts (web WEB-66). Only what Discord renders: embeds, inline fields, an author line with an icon, a thumbnail, one image per embed, link buttons. No designer notes or legends in posts.
+- **Weekly recap** (`BV1Recap`): one message, 8 embeds:
+  - header (gold, six inline numbers)
+  - award (class colour, the award header image)
+  - stat card (with its zone map and credit when it has one)
+  - progress, social and fun cards (the recap icon's colour and the icon as thumbnail)
+  - Doomsday (PvE and PvP top 3 as two inline fields, "Most devoted" in the footer)
+  - challenge (grey `#4E5058`)
+  - the link buttons "The full week ↗" and "Doomsday ladder ↗"
+  - Without images, the same embeds without them.
+- **Daily board** (`BV2Daily`): one embed with the site's 800 × 560 image and the site's one line of news.
+  - The text is edited at most every 30 s. The image is re-attached at most every 5 minutes, and only when the site's image changed. The final edit at the reset always gets a fresh image; then the new day's message.
+  - The emoji table and the "Columns" legend go. Without an image, the old text table, without the legend.
+- **Feats** (`BV3Feats`): each post starts with the character (the class icon, attached, in the author line; the bar in the class colour), then what happened (the site's title and line), then one card (big or strip, chosen by the site).
+  - Several feats: one message grouped by character, one card for the most special feat, and the footer "N feats from one upload".
+  - New characters are not feats: one line "+3 new characters: Grosh Bonechewer 60, …", without a card.
+- The footer "Test post from the site's Discord page · not real" only on test posts.
+- Decided with Nico (2026-10-29):
+  - The board's text keeps the 30 s pace, the image 5 minutes.
+  - The class icon in the author line is the bot's own PNG, attached.
+  - The recap cards' colours and thumbnails come from the bot's icon table and PNGs.
+  - It is built now against fixtures, and each post switches to the visual layout by itself when the site sends the new fields (rule 10); without them it stays as it is, minus the legend.
+- Tests: each post with and without images, the 5-minute image throttle on the board, the grouping of feats and new characters, no test footer on real posts.
+- Manual (Nico, in the test channel): the test recap, board and feat from the Discord page's buttons look like the boards, on Discord desktop and on a phone.
+- Also decided with Nico (2026-10-29): the recap follows `bot-visual-recap` exactly. The closing line, Perfect week and the crowns stay on the site.
+- Done (PR #53), built against the fields asked of web WEB-66 (all optional; until the site sends them each post keeps today's layout, minus the legend):
+  - `doomsdayBoard`/`doomsdayBoardUpdate` `image` (the 800 × 560 picture's id, a new id per new picture) and `news`
+  - feats' `headline` and `line`, and a `card` on every feat
+  - the recap's `numbers.honorKills`, `battlegrounds` and `feats`; `award.classFile` and `image`; a card's `image` (its map); `url`
+- Code:
+  - `src/core/recap.ts`: the 8 embeds, the icon colours and thumbnails, the buttons
+  - `src/core/milestones.ts`: the author line with the attached class icon, the "+N new characters" line
+  - `src/core/doomsday.ts` and `src/app/doomsdayPosts.ts`: the picture, the news line, the 5-minute picture throttle with a refresh once it's due, the text fallback without the legend
+  - `src/app/files.ts`: the site's images and the bot's own pictures, attached
+  - `Discord.edit` can replace attachments
+- The test samples look like the new posts, with the bot's own pictures attached.
+- Manual (Nico, in the test channel, once the site has WEB-66): the test recap, board and feat from the Discord page's buttons match `BV1Recap`, `BV2Daily` and `BV3Feats`, on Discord desktop and on a phone; a real board swaps its picture at most every 5 minutes.

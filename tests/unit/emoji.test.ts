@@ -139,6 +139,8 @@ describe("names with their icon", () => {
               character: { guid: "Player-1-MIRA", name: "Mira Sunstrider", classFile: "MAGE" },
               level: 40,
             },
+            // Two feats: the list under the name (one feat has the author line instead, BOT-20).
+            { kind: "firstCatch", character: { guid: "Player-1-MIRA", name: "Mira Sunstrider", classFile: "MAGE" } },
           ],
         },
       ],
