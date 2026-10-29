@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- **Visual posts** (the site renders the images; until it does, posts keep their current look):
+  - The weekly recap is one message of 8 cards: the numbers, the award with its picture, the stat card with its map, three cards with their icon, the Doomsday top 3 and the challenge, with "The full week ↗" and "Doomsday ladder ↗" buttons.
+  - The daily Doomsday board is one picture of the day with one line of news, updated during the day (the picture at most every 5 minutes).
+  - Feat posts start with the character, then what happened, then one card. New characters get one line instead of a feat.
+  - The emoji table and its legend are gone from the board, and the "not real" footer shows only on test posts.
 
 ## v0.3.1 (2026-10-29)
 - A test post from the site's Discord page now goes to the channel you just picked, also when you press the button right after changing it.

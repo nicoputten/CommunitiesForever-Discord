@@ -8,7 +8,7 @@
 // - planned runs and asks (BOT-04, BOT-12): app/runPosts.ts, the runs channel
 // - the daily Doomsday board (BOT-15): app/doomsdayPosts.ts; the weekly ladder (BOT-16): the Doomsday channel
 // - test posts (WEB-39, BOT-17): the plain one in the posts channel, a sample per kind in that kind's channel
-import type { Attachment, Discord } from "../adapters/discord.js";
+import type { Discord } from "../adapters/discord.js";
 import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site, SiteAnswer } from "../adapters/site.js";
@@ -19,11 +19,12 @@ import { ladderMessage } from "../core/ladder.js";
 import { markedEvents } from "../core/message.js";
 import { opt } from "../core/read.js";
 import { recapFiles, recapMessage } from "../core/recap.js";
-import { testSample } from "../core/samples.js";
+import { testFiles, testSample } from "../core/samples.js";
 import { type SiteSettings, readSettings, settingsText } from "../core/settings.js";
 import { DoomsdayBoards } from "./doomsdayPosts.js";
 import type { EmojiBox } from "./emoji.js";
 import { FeatPosts } from "./featPosts.js";
+import { loadFiles } from "./files.js";
 import { RunPosts } from "./runPosts.js";
 
 /**
@@ -111,22 +112,24 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         return id;
       }
       case "sample": {
-        const content = testSample(action.kind, eventId, siteUrl, host, Math.floor(deps.now() / 1000), page);
-        const id = await discord.post(ch[action.kind], content);
+        const files = await loadFiles(testFiles(action.kind), site, log, signal);
+        const names = files.map((f) => f.name);
+        const content = testSample(action.kind, eventId, siteUrl, host, Math.floor(deps.now() / 1000), page, names);
+        const id = await discord.post(ch[action.kind], content, files);
         log.info(`posted event ${eventId} (test of ${action.kind})`);
         return id;
       }
       case "recap": {
-        // The card images; one the site can't give is left out, the post goes out anyway (never twice, rule 9).
-        const files: Attachment[] = [];
-        for (const file of recapFiles(action.recap)) {
-          const data = await site.image(file.path, signal);
-          if (data !== undefined) files.push({ name: file.name, data });
-          else log.error(`site: card image ${file.name} unavailable; posting the recap without it`);
-        }
+        // The images and icons; one that can't be had is left out, the post goes out anyway (never twice, rule 9).
+        const files = await loadFiles(recapFiles(action.recap), site, log, signal, "the recap");
         if (signal.aborted) return undefined;
-        const names = files.map((f) => f.name);
-        const content = recapMessage(action.recap, siteUrl, host, names, eventId, page, deps.icons?.current);
+        const content = recapMessage(
+          action.recap,
+          siteUrl,
+          files.map((f) => f.name),
+          eventId,
+          page,
+        );
         const id = await discord.post(ch.recap, content, files);
         log.info(`posted event ${eventId} (recap of week ${action.recap.week})`);
         return id;

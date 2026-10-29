@@ -1,10 +1,12 @@
 // Test posts per kind (BOT-17, web WEB-58 part 2): the Discord page's test buttons for feats, the recap and
-// Doomsday. Each sample is made up with names no friend has (Nico, 2026-10-28), carries no card image, says "Test ·" in
-// its title and "not real" in its footer, and is marked like any post so it is posted once. Pure.
+// Doomsday. Each sample is made up with names no friend has (Nico, 2026-10-28), carries no image of the site's, says
+// "Test ·" in its title and "not real" in its footer (only test posts do, BOT-20), and is marked like any post so it
+// is posted once. BOT-20: the samples look like the visual posts, with the bot's own pictures (the class icon, the
+// recap icons) attached. Pure.
 import { boardMessage, readBoard } from "./doomsday.js";
-import { groupedMessage } from "./milestones.js";
-import { type MessageContent } from "./message.js";
-import { readRecap, recapMessage } from "./recap.js";
+import { type Group, groupedMessage, milestoneFiles } from "./milestones.js";
+import { type FileSource, type MessageContent } from "./message.js";
+import { type Recap, readRecap, recapFiles, recapMessage } from "./recap.js";
 
 /** The test kinds with a sample of their own; any other kind gets the plain test message. */
 export type TestKind = "feats" | "recap" | "doomsday";
@@ -25,43 +27,61 @@ function asTest(content: MessageContent): MessageContent {
   return { ...content, embeds };
 }
 
-function feats(eventId: number, siteUrl: string, siteHost: string): MessageContent {
-  const message = groupedMessage(
-    [
+function featGroup(eventId: number): Group {
+  return {
+    eventId,
+    milestones: [
       {
-        eventId,
-        milestones: [
-          {
-            kind: "pvpRank",
-            character: CHARACTER,
-            rank: 6,
-            rankName: "Stone Guard",
-            title: "Mailbox Menace",
-            firstInGroup: true,
-          },
-        ],
+        kind: "pvpRank",
+        character: CHARACTER,
+        rank: 6,
+        rankName: "Stone Guard",
+        title: "Mailbox Menace",
+        firstInGroup: true,
+        headline: "Stone Guard",
+        line: "Rank 6, a.k.a. Mailbox Menace. First in the group.",
       },
     ],
-    siteUrl,
-    siteHost,
-  );
-  return message as MessageContent;
+  };
 }
 
-function recap(eventId: number, siteUrl: string, siteHost: string, doomsdayUrl: string): MessageContent {
-  const sample = readRecap({
+function feats(eventId: number, siteUrl: string, siteHost: string, attached: readonly string[]): MessageContent {
+  return groupedMessage([featGroup(eventId)], siteUrl, siteHost, attached) as MessageContent;
+}
+
+function recapSample(): Recap {
+  return readRecap({
     week: 1,
     headline: { text: "A week of tests" },
-    numbers: { levels: 3, friendsPlayed: 2, runs: 1, newCharacters: 0 },
-    cards: [{ id: "S2", name: "Class census", title: "One Warlock", text: `${CHARACTER.name} holds the line alone.` }],
+    numbers: { honorKills: 12, battlegrounds: 1, levels: 3, friendsPlayed: 2, runs: 1, feats: 4 },
+    award: {
+      id: "A11",
+      name: "Doombringer of the week · Warmonger",
+      title: `${CHARACTER.name} took 12 honorable kills`,
+      text: "All of them test dummies.",
+      classFile: CHARACTER.classFile,
+    },
+    cards: [
+      {
+        id: "S2",
+        slot: "stat",
+        name: "Class census",
+        title: "One Warlock",
+        text: `${CHARACTER.name} holds the line alone.`,
+      },
+      { id: "F16", slot: "fun", name: "Most deaths", title: `${FRIEND}: 3 deaths`, text: "The spirit healer waves." },
+    ],
     challenge: { text: "Send one more test post" },
     doomsday: {
       mostDevoted: { name: FRIEND, days: 3 },
       perfectWeek: [],
       points: { pve: [{ name: FRIEND, points: 15 }], pvp: [{ name: OTHER, points: 5 }] },
     },
-  });
-  return recapMessage(sample!, siteUrl, siteHost, [], eventId, doomsdayUrl);
+  }) as Recap;
+}
+
+function recap(eventId: number, siteUrl: string, doomsdayUrl: string, attached: readonly string[]): MessageContent {
+  return recapMessage(recapSample(), siteUrl, attached, eventId, doomsdayUrl);
 }
 
 function board(eventId: number, siteUrl: string, now: number, pageUrl: string): MessageContent {
@@ -96,9 +116,17 @@ function board(eventId: number, siteUrl: string, now: number, pageUrl: string): 
   };
 }
 
+/** The bot's own pictures a sample attaches (BOT-20): the class icon of the feat, the recap's icons. Never the site's. */
+export function testFiles(kind: TestKind): FileSource[] {
+  const own = (files: FileSource[]) => files.filter((f) => "asset" in f);
+  if (kind === "feats") return own(milestoneFiles([featGroup(0)]));
+  if (kind === "recap") return own(recapFiles(recapSample()));
+  return [];
+}
+
 /**
  * The sample of a test kind, marked as a test. `now`: Unix seconds, for the board's times. `pageUrl`: the site's
- * Doomsday page.
+ * Doomsday page. `attached`: the files of `testFiles` the poster could read.
  */
 export function testSample(
   kind: TestKind,
@@ -107,12 +135,13 @@ export function testSample(
   siteHost: string,
   now: number,
   pageUrl: string,
+  attached: readonly string[] = [],
 ): MessageContent {
   switch (kind) {
     case "feats":
-      return asTest(feats(eventId, siteUrl, siteHost));
+      return asTest(feats(eventId, siteUrl, siteHost, attached));
     case "recap":
-      return asTest(recap(eventId, siteUrl, siteHost, pageUrl));
+      return asTest(recap(eventId, siteUrl, pageUrl, attached));
     case "doomsday":
       return asTest(board(eventId, siteUrl, now, pageUrl));
   }

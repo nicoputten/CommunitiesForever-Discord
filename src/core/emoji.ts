@@ -81,12 +81,6 @@ export const RECAP_CARD_ICONS: Readonly<Record<string, string>> = {
   S11: "RECAP_GROUP", // Biggest group night
 };
 
-/** The icon and a space before a recap card's first line, or nothing (an unknown card, or no emoji yet). */
-export function cardIcon(icons: Emojis, cardId: string): string {
-  const key = RECAP_CARD_ICONS[cardId];
-  return key === undefined ? "" : icon(icons, key);
-}
-
 /** Every emoji the bot keeps as its own: the class icons, the boxes and the recap card icons. */
 export const BOT_EMOJI: readonly EmojiFile[] = [...CLASS_ICONS, ...BOX_ICONS, ...RECAP_ICONS];
 

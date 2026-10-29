@@ -1,7 +1,7 @@
 // The slash commands' answers (BOT-05 `/recap`, BOT-06 the look-ups in app/lookups.ts, BOT-04 the runs in
 // app/runActions.ts). Each answer is only for the asker (the adapter defers it ephemerally). Never fatal: a failed
 // answer is logged and the user can ask again.
-import type { Attachment, Autocomplete, ButtonPress, SlashCommand } from "../adapters/discord.js";
+import type { Autocomplete, ButtonPress, SlashCommand } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site } from "../adapters/site.js";
 import { MY_GOALS, boardUrl } from "../core/doomsday.js";
@@ -9,6 +9,7 @@ import { noRecapMessage, readRecap, recapFiles, recapMessage } from "../core/rec
 import type { SiteSettings } from "../core/settings.js";
 import type { EmojiBox } from "./emoji.js";
 import { answerMyGoals } from "./doomsdayPosts.js";
+import { loadFiles } from "./files.js";
 import { LOOKUPS, SharedAnswers, answerAutocomplete, answerLookup, answerShare } from "./lookups.js";
 import { RUN_COMMANDS, RunActions } from "./runActions.js";
 
@@ -34,20 +35,14 @@ export async function answerRecap(deps: CommandDeps, command: SlashCommand, sign
     await command.reply(noRecapMessage(deps.siteUrl, host, answer.ok || answer.status === 404));
     return;
   }
-  const files: Attachment[] = [];
-  for (const file of recapFiles(recap)) {
-    const data = await deps.site.image(file.path, signal);
-    if (data !== undefined) files.push({ name: file.name, data });
-  }
+  const files = await loadFiles(recapFiles(recap), deps.site, deps.log, signal, "the recap");
   await command.reply(
     recapMessage(
       recap,
       deps.siteUrl,
-      host,
       files.map((f) => f.name),
       undefined,
       boardUrl(deps.siteUrl, deps.settings?.()?.doomsdayUrl),
-      deps.icons?.current,
     ),
     files,
   );

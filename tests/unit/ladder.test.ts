@@ -3,8 +3,8 @@ import type { SlashCommand } from "../../src/adapters/discord.js";
 import { commandHandlers } from "../../src/app/commands.js";
 import { runPoster } from "../../src/app/poster.js";
 import { decide } from "../../src/core/events.js";
-import { ladderMessage, readLadder, readRecapDoomsday, recapDoomsdayField } from "../../src/core/ladder.js";
-import { type MessageContent, markedEvents } from "../../src/core/message.js";
+import { ladderMessage, readLadder, readRecapDoomsday, recapDoomsdayEmbed } from "../../src/core/ladder.js";
+import { GOLD, type MessageContent, markedEvents } from "../../src/core/message.js";
 import { readRecap, recapMessage } from "../../src/core/recap.js";
 import { CHANNEL, FakeDiscord, FakeSite, logger } from "./fakes.js";
 
@@ -131,22 +131,20 @@ describe("the recap's Doomsday section (BOT-16)", () => {
     },
   };
 
-  it("shows Most devoted, Perfect week and the points side by side, then the link to the ladder", () => {
-    expect(recapDoomsdayField(readRecapDoomsday(doomsday)!, PAGE)).toEqual({
-      name: "Doomsday · this week",
-      value: [
-        "**Most devoted:** Mira, goals on all 7 days",
-        "**Perfect week:** Tok, every PvE goal",
-        "**PvE** Mira 120 · Tok 95 · Ada 85",
-        "**PvP** Bob 1,310 · Ada 240",
-        "[Full ladder ↗](https://example.com/doomsday)",
-      ].join("\n"),
-      inline: false,
+  it("is its own embed: PvE and PvP top 3 side by side, Most devoted underneath (BOT-20)", () => {
+    expect(recapDoomsdayEmbed(readRecapDoomsday(doomsday)!)).toEqual({
+      title: "Doomsday · this week",
+      fields: [
+        { name: "PvE top 3", value: "1. **Mira** 120\n2. **Tok** 95\n3. **Ada** 85", inline: true },
+        { name: "PvP top 3", value: "1. **Bob** 1,310\n2. **Ada** 240", inline: true },
+      ],
+      color: GOLD,
+      footer: { text: "Most devoted: Mira, goals on all 7 days" },
     });
   });
 
-  it("adds the crowns once the site sends them, and leaves out what isn't there", () => {
-    const field = recapDoomsdayField(
+  it("leaves out Perfect week and the crowns, as the board does, and what isn't there", () => {
+    const embed = recapDoomsdayEmbed(
       readRecapDoomsday({
         mostDevoted: { name: "Ada", days: 1 },
         perfectWeek: [],
@@ -156,18 +154,15 @@ describe("the recap's Doomsday section (BOT-16)", () => {
           { name: "Tok", count: 2 },
         ],
       })!,
-      PAGE,
     );
-    expect(field?.value).toBe(
-      "**Most devoted:** Ada, goals on 1 day\nCrowns this week: Mira 3, Tok 2. [Full ladder ↗](https://example.com/doomsday)",
-    );
-    expect(recapDoomsdayField(readRecapDoomsday({ mostDevoted: null, perfectWeek: [], points: {} })!, PAGE)).toBe(
-      undefined,
-    );
+    expect(embed?.description).toBeUndefined();
+    expect(embed?.fields?.map((f) => f.value)).toEqual(["Nobody yet", "Nobody yet"]);
+    expect(embed?.footer).toEqual({ text: "Most devoted: Ada, goals on 1 day" });
+    expect(recapDoomsdayEmbed(readRecapDoomsday({ mostDevoted: null, perfectWeek: [], points: {} })!)).toBe(undefined);
     expect(readRecapDoomsday(undefined)).toBeUndefined();
   });
 
-  it("goes into the recap before the challenge", () => {
+  it("goes into the recap after the cards, before the challenge", () => {
     const recap = readRecap({
       week: 3,
       headline: { text: "A week" },
@@ -175,9 +170,9 @@ describe("the recap's Doomsday section (BOT-16)", () => {
       challenge: { text: "Duel every friend once" },
       doomsday,
     })!;
-    const fields = recapMessage(recap, SITE, HOST, [], 60).embeds.at(-1)?.fields ?? [];
-    expect(fields.map((f) => f.name)).toEqual(["Class census", "Doomsday · this week", "This week's challenge"]);
-    expect(recapMessage({ ...recap, doomsday: undefined }, SITE, HOST, []).embeds.at(-1)?.fields).toHaveLength(2);
+    const titles = recapMessage(recap, SITE, [], 60).embeds.map((e) => e.title);
+    expect(titles).toEqual(["Weekly recap · week 3", "Class census", "Doomsday · this week", "This week's challenge"]);
+    expect(recapMessage({ ...recap, doomsday: undefined }, SITE, []).embeds).toHaveLength(3);
   });
 });
 
