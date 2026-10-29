@@ -7,7 +7,7 @@ import type { Site } from "../adapters/site.js";
 import { MY_GOALS, boardUrl } from "../core/doomsday.js";
 import { noRecapMessage, readRecap, recapFiles, recapMessage } from "../core/recap.js";
 import type { SiteSettings } from "../core/settings.js";
-import type { IconBox } from "./classIcons.js";
+import type { EmojiBox } from "./emoji.js";
 import { answerMyGoals } from "./doomsdayPosts.js";
 import { LOOKUPS, SharedAnswers, answerAutocomplete, answerLookup, answerShare } from "./lookups.js";
 import { RUN_COMMANDS, RunActions } from "./runActions.js";
@@ -20,8 +20,8 @@ export interface CommandDeps {
   now(): number;
   /** BOT-04: the latest settings, as the poster read them. */
   settings?(): SiteSettings | undefined;
-  /** BOT-11: the class icons, once the start-up sync has them. */
-  icons?: IconBox;
+  /** BOT-11: the bot's emoji, once the start-up sync has them. */
+  icons?: EmojiBox;
 }
 
 /** `/recap`: the last weekly recap as it was posted, with its card images (without the post's marker). */

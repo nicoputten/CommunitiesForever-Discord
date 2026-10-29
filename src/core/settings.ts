@@ -1,3 +1,4 @@
+import { isObject } from "./read.js";
 // The site's settings answer (web repo docs/BOT-API.md "Settings"), read defensively: every field may be missing
 // (CLAUDE.md rule 10).
 
@@ -59,10 +60,6 @@ export function readSettings(body: unknown): SiteSettings {
     featsChannel: channels.feats === null ? null : isSnowflake(channels.feats) ? (channels.feats as string) : undefined,
     doomsdayUrl: typeof doomsday.url === "string" && /^https?:\/\/\S+$/.test(doomsday.url) ? doomsday.url : undefined,
   };
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
 
 /** A Discord id as text: digits only. */

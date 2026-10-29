@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Attachment, ButtonPress, SlashCommand } from "../../src/adapters/discord.js";
 import { commandHandlers } from "../../src/app/commands.js";
 import { SHARE_FOR_MS } from "../../src/app/lookups.js";
-import type { MessageContent } from "../../src/core/milestones.js";
+import type { MessageContent } from "../../src/core/message.js";
 import { FakeSite, logger } from "./fakes.js";
 
 // BOT-05 `/recap` and BOT-06 the look-ups: answers only for the asker, anyone in the server (Nico, 2026-10-28), only

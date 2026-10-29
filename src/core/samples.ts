@@ -2,7 +2,8 @@
 // Doomsday. Each sample is made up with names no friend has (Nico, 2026-10-28), carries no card image, says "Test ·" in
 // its title and "not real" in its footer, and is marked like any post so it is posted once. Pure.
 import { boardMessage, readBoard } from "./doomsday.js";
-import { type MessageContent, groupedMessage } from "./milestones.js";
+import { groupedMessage } from "./milestones.js";
+import { type MessageContent } from "./message.js";
 import { readRecap, recapMessage } from "./recap.js";
 
 /** The test kinds with a sample of their own; any other kind gets the plain test message. */

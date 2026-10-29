@@ -7,7 +7,7 @@ import type { ButtonPress, Discord } from "../adapters/discord.js";
 import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site } from "../adapters/site.js";
-import { NO_ICONS } from "../core/classIcons.js";
+import { NO_EMOJI } from "../core/emoji.js";
 import {
   type Board,
   boardMessage,
@@ -18,7 +18,7 @@ import {
   readLookup,
 } from "../core/doomsday.js";
 import { notLinkedMessage } from "../core/lookups.js";
-import type { IconBox } from "./classIcons.js";
+import type { EmojiBox } from "./emoji.js";
 
 /** At most one edit per board message in this time (BOT-15). */
 export const EDIT_EVERY_MS = 30_000;
@@ -33,7 +33,7 @@ export interface DoomsdayDeps {
   discord: Discord;
   log: Log;
   now(): number;
-  icons?: IconBox;
+  icons?: EmojiBox;
   /** The site's Doomsday page (settings `doomsday.url`), when it sent one. */
   pageUrl?(): string | undefined;
 }
@@ -157,7 +157,7 @@ export class DoomsdayBoards {
 
   private content(boardEvent: number, board: Board) {
     const { siteUrl, icons, pageUrl } = this.deps;
-    return boardMessage(board, boardEvent, siteUrl, boardUrl(siteUrl, pageUrl?.()), boxes(icons?.current ?? NO_ICONS));
+    return boardMessage(board, boardEvent, siteUrl, boardUrl(siteUrl, pageUrl?.()), boxes(icons?.current ?? NO_EMOJI));
   }
 }
 
@@ -181,7 +181,7 @@ export async function answerMyGoals(
   await press.reply(
     look === undefined
       ? notAvailableMessage(404)
-      : doomsdayReply(look, true, page, boxes(deps.icons?.current ?? NO_ICONS)),
+      : doomsdayReply(look, true, page, boxes(deps.icons?.current ?? NO_EMOJI)),
   );
 }
 

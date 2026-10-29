@@ -1,32 +1,29 @@
 // The poster (BOT-03): reads the site's settings, long-polls its events, posts each one once and acknowledges it
-// (CLAUDE.md rule 9). Posts carry a marker (core/milestones.ts), so after a restart the bot finds what it already
-// posted in the channel and only acknowledges it. Never fatal: the site and Discord may be away for a while.
-// Milestones of uploads within 5 minutes of a post are added to that post by editing it (BOT-09). The weekly recap
-// goes to the recap channel (the posts channel when none is set) with the site's card images attached (BOT-05); a
-// recap missed while the bot was away comes when it is back, since the site keeps it until it is acknowledged.
-// Planned runs go to the runs channel (the posts channel when none is set): app/runPosts.ts (BOT-04). The daily
-// Doomsday board goes to the Doomsday channel (the posts channel when none is set): app/doomsdayPosts.ts (BOT-15).
+// (CLAUDE.md rule 9). Posts carry a marker (core/message.ts), so after a restart the bot finds what it already posted
+// in its channels and only acknowledges it. Never fatal: the site and Discord may be away for a while. Each kind of
+// event has its channel (the posts channel when none is set) and its handler:
+// - feats (the `milestones` event): app/featPosts.ts, grouped by editing (BOT-09, BOT-14), the feats channel (BOT-17)
+// - the weekly recap with its card images (BOT-05): the recap channel. A recap missed while the bot was away comes
+//   when it is back, since the site keeps it until it is acknowledged.
+// - planned runs and asks (BOT-04, BOT-12): app/runPosts.ts, the runs channel
+// - the daily Doomsday board (BOT-15): app/doomsdayPosts.ts; the weekly ladder (BOT-16): the Doomsday channel
+// - test posts (WEB-39, BOT-17): the plain one in the posts channel, a sample per kind in that kind's channel
 import type { Attachment, Discord } from "../adapters/discord.js";
 import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site, SiteAnswer } from "../adapters/site.js";
 import { MAX_BACKOFF_SECONDS, backoffSeconds } from "../core/connection.js";
-import { decide, readEvents } from "../core/events.js";
-import {
-  type Group,
-  type MessageContent,
-  groupedMessage,
-  joinsPost,
-  markedEvents,
-  milestoneFiles,
-} from "../core/milestones.js";
 import { boardUrl } from "../core/doomsday.js";
+import { type Action, decide, readEvents } from "../core/events.js";
 import { ladderMessage } from "../core/ladder.js";
+import { markedEvents } from "../core/message.js";
+import { opt } from "../core/read.js";
 import { recapFiles, recapMessage } from "../core/recap.js";
 import { testSample } from "../core/samples.js";
 import { type SiteSettings, readSettings, settingsText } from "../core/settings.js";
-import type { IconBox } from "./classIcons.js";
 import { DoomsdayBoards } from "./doomsdayPosts.js";
+import type { EmojiBox } from "./emoji.js";
+import { FeatPosts } from "./featPosts.js";
 import { RunPosts } from "./runPosts.js";
 
 /**
@@ -43,11 +40,22 @@ export interface PosterDeps {
   now(): number;
   /** BOT-04: the run posts, shared with the run commands; made here when not given. */
   runPosts?: RunPosts;
-  /** BOT-11: the class icons, once the start-up sync has them. */
-  icons?: IconBox;
+  /** BOT-11: the bot's emoji, once the start-up sync has them. */
+  icons?: EmojiBox;
   /** BOT-04: the latest settings, for the run commands. */
   shared?: { settings?: SiteSettings };
 }
+
+/** The channel of each kind of post: its own when set, else the posts channel. */
+interface Channels {
+  posts: string;
+  recap: string;
+  runs: string;
+  doomsday: string;
+  feats: string;
+}
+
+type Handled = Exclude<Action, { do: "leave" }>;
 
 export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<void> {
   const { siteUrl, site, discord, log } = deps;
@@ -59,16 +67,15 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
   let cursor = "0";
   let channel: string | undefined;
   let posted = new Map<number, string>();
-  // The other channels (recap BOT-05, runs BOT-04, Doomsday BOT-15, feats BOT-17) whose posts were read for markers.
+  // The other channels whose posts were read for markers.
   let scanned = new Set<string>();
-  const runs = deps.runPosts ?? new RunPosts({ siteUrl, discord, log, now: deps.now, ...opt("icons", deps.icons) });
+  const icons = opt("icons", deps.icons);
+  const runs = deps.runPosts ?? new RunPosts({ siteUrl, discord, log, now: deps.now, ...icons });
   const boards = new DoomsdayBoards(
-    { siteUrl, site, discord, log, now: deps.now, ...opt("icons", deps.icons), pageUrl: () => settings?.doomsdayUrl },
+    { siteUrl, site, discord, log, now: deps.now, ...icons, pageUrl: () => settings?.doomsdayUrl },
     signal,
   );
-  // The post that still takes milestones (BOT-09); at most MAX_LINES milestones, so bounded.
-  // `attached`: its card images (BOT-05). An edit keeps them; milestones added by an edit go without an image.
-  let open: { id: string; channel: string; at: number; groups: Group[]; attached: string[] } | undefined;
+  const feats = new FeatPosts({ siteUrl, site, discord, log, now: deps.now, ...icons }, signal);
 
   const retry = async (text: string, seconds = backoffSeconds(++attempt)) => {
     log.error(`${text}; trying again in ${seconds} s`);
@@ -78,6 +85,54 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
     answer.status === 401
       ? `site: ${siteUrl} refuses BOT_API_TOKEN (docs/DISCORD-SETUP.md)`
       : `site: ${siteUrl} ${answer.status ? `answers ${answer.status}` : "is not reachable"}`;
+
+  /** Posts (or edits) what an event asks; resolves the message id to acknowledge it with, or undefined to leave it. */
+  const handle = async (action: Handled, eventId: number, s: SiteSettings, ch: Channels) => {
+    const page = boardUrl(siteUrl, s.doomsdayUrl);
+    switch (action.do) {
+      case "ack":
+        return action.messageId;
+      case "post":
+        return feats.handle(eventId, action.milestones, action.card, ch.feats);
+      case "run":
+        // Undefined: nothing to acknowledge with (a notice to someone unreachable); the site lets it expire.
+        return runs.handle(action.event, eventId, ch.runs, s, action.posted);
+      case "board":
+        // Undefined: waiting for the edit throttle, acknowledged once shown.
+        return boards.handle(eventId, action.board, ch.doomsday, action.posted);
+      case "ladder": {
+        const id = await discord.post(ch.doomsday, ladderMessage(action.ladder, eventId, siteUrl, host, page));
+        log.info(`posted event ${eventId} (Doomsday ladder)`);
+        return id;
+      }
+      case "send": {
+        const id = await discord.post(ch.posts, action.content);
+        log.info(`posted event ${eventId} (test)`);
+        return id;
+      }
+      case "sample": {
+        const content = testSample(action.kind, eventId, siteUrl, host, Math.floor(deps.now() / 1000), page);
+        const id = await discord.post(ch[action.kind], content);
+        log.info(`posted event ${eventId} (test of ${action.kind})`);
+        return id;
+      }
+      case "recap": {
+        // The card images; one the site can't give is left out, the post goes out anyway (never twice, rule 9).
+        const files: Attachment[] = [];
+        for (const file of recapFiles(action.recap)) {
+          const data = await site.image(file.path, signal);
+          if (data !== undefined) files.push({ name: file.name, data });
+          else log.error(`site: card image ${file.name} unavailable; posting the recap without it`);
+        }
+        if (signal.aborted) return undefined;
+        const names = files.map((f) => f.name);
+        const content = recapMessage(action.recap, siteUrl, host, names, eventId, page, deps.icons?.current);
+        const id = await discord.post(ch.recap, content, files);
+        log.info(`posted event ${eventId} (recap of week ${action.recap.week})`);
+        return id;
+      }
+    }
+  };
 
   while (!signal.aborted) {
     if (settings === undefined || deps.now() - settingsAt >= SETTINGS_EVERY_MS) {
@@ -98,7 +153,6 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
     }
 
     // Without a posts channel the runs, Doomsday and feats channels still take theirs; the other posts wait.
-    const postsSet = typeof settings.postsChannel === "string";
     const wanted =
       settings.postsChannel ?? settings.runsChannel ?? settings.doomsdayChannel ?? settings.featsChannel ?? undefined;
     if (wanted === undefined) {
@@ -118,28 +172,26 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       }
       channel = wanted;
       cursor = "0";
-      open = undefined;
+      feats.forget();
       scanned = new Set([wanted]);
     }
-    const recapChannel = settings.recapChannel ?? channel;
-    const runsChannel = settings.runsChannel ?? channel;
-    const doomsdayChannel = settings.doomsdayChannel ?? channel;
-    const featsChannel = settings.featsChannel ?? channel;
+    const ch: Channels = {
+      posts: channel,
+      recap: settings.recapChannel ?? channel,
+      runs: settings.runsChannel ?? channel,
+      doomsday: settings.doomsdayChannel ?? channel,
+      feats: settings.featsChannel ?? channel,
+    };
     let unread: string | undefined;
-    for (const [what, other] of [
-      ["recap", recapChannel],
-      ["runs", runsChannel],
-      ["Doomsday", doomsdayChannel],
-      ["feats", featsChannel],
-    ] as const) {
-      if (scanned.has(other)) continue;
+    for (const what of ["recap", "runs", "doomsday", "feats"] as const) {
+      if (scanned.has(ch[what])) continue;
       try {
-        const recent = await discord.recentPosts(other);
+        const recent = await discord.recentPosts(ch[what]);
         for (const [id, message] of markedEvents(siteUrl, recent)) posted.set(id, message);
         runs.learn(recent);
-        scanned.add(other);
+        scanned.add(ch[what]);
       } catch (error) {
-        unread = `discord: reading the ${what} channel failed (${codeOf(error)})`;
+        unread = `discord: reading the ${what === "doomsday" ? "Doomsday" : what} channel failed (${codeOf(error)})`;
         break;
       }
     }
@@ -158,159 +210,18 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
     let failed = false;
     for (const event of events) {
       const action = decide(event, settings, posted, siteUrl, host);
-      if (action.do === "leave") continue;
-      if (!postsSet && action.do === "post" && typeof settings.featsChannel !== "string") continue;
-      const testOf = action.do === "sample" ? action.kind : undefined;
-      if (
-        !postsSet &&
-        (action.do === "send" || action.do === "sample") &&
-        typeof settingFor(settings, testOf) !== "string"
-      )
-        continue;
-      if (!postsSet && action.do === "recap" && typeof settings.recapChannel !== "string") continue;
-      if (
-        !postsSet &&
-        (action.do === "board" || action.do === "ladder") &&
-        typeof settings.doomsdayChannel !== "string"
-      )
-        continue;
+      if (action.do === "leave" || waits(action, settings)) continue;
       let messageId: string | undefined;
-      if (action.do === "ack") {
-        messageId = action.messageId;
-      } else if (action.do === "run") {
-        try {
-          messageId = await runs.handle(action.event, event.id, runsChannel, settings, action.posted);
-        } catch (error) {
-          failed = true;
-          await retry(`discord: run event ${event.id} failed (${codeOf(error)})`);
-          break;
-        }
-        // Nothing to acknowledge with (a notice to someone unreachable, no post): left, the site lets it expire.
-        if (messageId === undefined) continue;
-        posted.set(event.id, messageId);
-      } else if (action.do === "board") {
-        try {
-          messageId = await boards.handle(event.id, action.board, doomsdayChannel, action.posted);
-        } catch (error) {
-          failed = true;
-          await retry(`discord: Doomsday board event ${event.id} failed (${codeOf(error)})`);
-          break;
-        }
-        // Waiting for the edit throttle: acknowledged once shown.
-        if (messageId === undefined) continue;
-        posted.set(event.id, messageId);
-      } else if (action.do === "ladder") {
-        const content = ladderMessage(action.ladder, event.id, siteUrl, host, boardUrl(siteUrl, settings.doomsdayUrl));
-        try {
-          messageId = await discord.post(doomsdayChannel, content);
-        } catch (error) {
-          failed = true;
-          await retry(`discord: posting the Doomsday ladder (event ${event.id}) failed (${codeOf(error)})`);
-          break;
-        }
-        posted.set(event.id, messageId);
-        log.info(`posted event ${event.id} (Doomsday ladder)`);
-      } else if (action.do === "send" || action.do === "sample") {
-        // BOT-17: a test of a kind is that kind's made-up sample, in that kind's channel.
-        const content =
-          action.do === "sample"
-            ? testSample(
-                action.kind,
-                event.id,
-                siteUrl,
-                host,
-                Math.floor(deps.now() / 1000),
-                boardUrl(siteUrl, settings.doomsdayUrl),
-              )
-            : action.content;
-        const to =
-          testOf === undefined
-            ? channel
-            : { feats: featsChannel, recap: recapChannel, doomsday: doomsdayChannel }[testOf];
-        try {
-          messageId = await discord.post(to, content);
-        } catch (error) {
-          failed = true;
-          await retry(`discord: posting event ${event.id} failed (${codeOf(error)})`);
-          break;
-        }
-        posted.set(event.id, messageId);
-        log.info(`posted event ${event.id} (test${testOf !== undefined ? ` of ${testOf}` : ""})`);
-      } else if (action.do === "recap") {
-        // The card images; one the site can't give is left out, the post goes out anyway (never twice, rule 9).
-        const files: Attachment[] = [];
-        for (const file of recapFiles(action.recap)) {
-          const data = await site.image(file.path, signal);
-          if (data !== undefined) files.push({ name: file.name, data });
-          else log.error(`site: card image ${file.name} unavailable; posting the recap without it`);
-        }
-        if (signal.aborted) return;
-        const content = recapMessage(
-          action.recap,
-          siteUrl,
-          host,
-          files.map((f) => f.name),
-          event.id,
-          boardUrl(siteUrl, settings.doomsdayUrl),
-          deps.icons?.current,
-        );
-        try {
-          messageId = await discord.post(recapChannel, content, files);
-        } catch (error) {
-          failed = true;
-          await retry(`discord: posting the recap (event ${event.id}) failed (${codeOf(error)})`);
-          break;
-        }
-        posted.set(event.id, messageId);
-        log.info(`posted event ${event.id} (recap of week ${action.recap.week})`);
-      } else {
-        const group: Group = {
-          eventId: event.id,
-          milestones: action.milestones,
-          ...(action.card !== undefined ? { card: action.card } : {}),
-        };
-        const shownInOpen = open?.groups.reduce((n, g) => n + g.milestones.length, 0) ?? 0;
-        if (open?.channel === featsChannel && joinsPost(open.at, shownInOpen, group.milestones.length, deps.now())) {
-          const groups = [...open.groups, group];
-          try {
-            await discord.edit(
-              featsChannel,
-              open.id,
-              groupedMessage(groups, siteUrl, host, open.attached, deps.icons?.current) as MessageContent,
-            );
-            open.groups = groups;
-            messageId = open.id;
-            log.info(`added event ${event.id} to the post of event ${groups[0]?.eventId}`);
-          } catch (error) {
-            // Deleted or not editable: a new post instead.
-            log.error(`discord: adding event ${event.id} to the open post failed (${codeOf(error)}); posting it`);
-            open = undefined;
-          }
-        }
-        if (messageId === undefined) {
-          const files: Attachment[] = [];
-          for (const file of milestoneFiles([group])) {
-            const data = await site.image(file.path, signal);
-            if (data !== undefined) files.push({ name: file.name, data });
-          }
-          if (signal.aborted) return;
-          const attached = files.map((f) => f.name);
-          try {
-            messageId = await discord.post(
-              featsChannel,
-              groupedMessage([group], siteUrl, host, attached, deps.icons?.current) as MessageContent,
-              files,
-            );
-          } catch (error) {
-            failed = true;
-            await retry(`discord: posting event ${event.id} failed (${codeOf(error)})`);
-            break;
-          }
-          open = { id: messageId, channel: featsChannel, at: deps.now(), groups: [group], attached };
-          log.info(`posted event ${event.id}`);
-        }
-        posted.set(event.id, messageId);
+      try {
+        messageId = await handle(action, event.id, settings, ch);
+      } catch (error) {
+        failed = true;
+        await retry(`${failure(action, event.id)} (${codeOf(error)})`);
+        break;
       }
+      if (signal.aborted) return;
+      if (messageId === undefined) continue;
+      posted.set(event.id, messageId);
       const ack = await site.posted(event.id, messageId, signal);
       if (signal.aborted) return;
       // 409: acknowledged before with another message; 410: expired. Either way the site is done with it.
@@ -331,12 +242,46 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
   }
 }
 
-/** The channel setting of a test post's kind (BOT-17); the posts channel's for the plain test. */
-function settingFor(settings: SiteSettings, to: "feats" | "recap" | "doomsday" | undefined): string | null | undefined {
-  if (to === "feats") return settings.featsChannel ?? settings.postsChannel;
-  if (to === "recap") return settings.recapChannel ?? settings.postsChannel;
-  if (to === "doomsday") return settings.doomsdayChannel ?? settings.postsChannel;
-  return settings.postsChannel;
+/**
+ * Whether an event waits for its channel: without a posts channel, a kind whose own channel isn't set either is left
+ * until the admin picks one. Runs always have one (the poster runs only with some channel set).
+ */
+function waits(action: Handled, settings: SiteSettings): boolean {
+  if (typeof settings.postsChannel === "string") return false;
+  const own = (value: string | null | undefined) => typeof value !== "string";
+  switch (action.do) {
+    case "post":
+      return own(settings.featsChannel);
+    case "send":
+      return true;
+    case "sample":
+      return own(
+        { feats: settings.featsChannel, recap: settings.recapChannel, doomsday: settings.doomsdayChannel }[action.kind],
+      );
+    case "recap":
+      return own(settings.recapChannel);
+    case "board":
+    case "ladder":
+      return own(settings.doomsdayChannel);
+    default:
+      return false;
+  }
+}
+
+/** The log line when posting an event failed (before the error code). */
+function failure(action: Handled, eventId: number): string {
+  switch (action.do) {
+    case "run":
+      return `discord: run event ${eventId} failed`;
+    case "board":
+      return `discord: Doomsday board event ${eventId} failed`;
+    case "ladder":
+      return `discord: posting the Doomsday ladder (event ${eventId}) failed`;
+    case "recap":
+      return `discord: posting the recap (event ${eventId}) failed`;
+    default:
+      return `discord: posting event ${eventId} failed`;
+  }
 }
 
 function codeOf(error: unknown): string {
@@ -355,8 +300,4 @@ export function sleep(ms: number, signal: AbortSignal): Promise<void> {
     const timer = setTimeout(done, Math.max(0, ms));
     signal.addEventListener("abort", done, { once: true });
   });
-}
-
-function opt<K extends string, V>(key: K, value: V | undefined): { [P in K]?: V } {
-  return (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
 }

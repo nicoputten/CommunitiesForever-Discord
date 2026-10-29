@@ -1,12 +1,14 @@
 // The site's event feed (web repo docs/BOT-API.md "Events") read defensively, and what the bot does with each event
 // (BOT-03). Pure: settings and what is already posted come in as arguments.
-import { type FeatItem, type MessageContent, type Milestone, showable, testMessage } from "./milestones.js";
+import { type FeatItem, type Milestone, showable } from "./milestones.js";
+import { type MessageContent, testMessage } from "./message.js";
 import { type Board, readBoard } from "./doomsday.js";
 import { type Ladder, readLadder } from "./ladder.js";
 import { type Recap, readRecap } from "./recap.js";
 import type { TestKind } from "./samples.js";
 import { type Ask, type Ping, type Run, readAsk, readMention, readPing, readRun } from "./runs.js";
 import type { SiteSettings } from "./settings.js";
+import { isObject, number, opt, text } from "./read.js";
 
 export interface SiteEvent {
   id: number;
@@ -47,9 +49,9 @@ export function readMilestones(data: unknown): Milestone[] {
     // WEB-56, on every kind: the site's line, the badge and the card image.
     const feat = {
       index,
-      ...optional("text", text(m.text)),
+      ...opt("text", text(m.text)),
       ...(m.firstInGroup === true ? { firstInGroup: true } : {}),
-      ...optional("card", text(m.card)),
+      ...opt("card", text(m.card)),
     };
     switch (m.kind) {
       case "level":
@@ -64,33 +66,33 @@ export function readMilestones(data: unknown): Milestone[] {
             skillLine: number(m.skillLine),
             profession: text(m.profession),
             rank: number(m.rank),
-            ...optional("title", text(m.title)),
+            ...opt("title", text(m.title)),
           },
         ];
       case "newCharacter":
       case "firstCatch":
         return [{ ...feat, kind: m.kind, character }];
       case "honorKills":
-        return [{ ...feat, kind: m.kind, character, ...optional("kills", number(m.kills)) }];
+        return [{ ...feat, kind: m.kind, character, ...opt("kills", number(m.kills)) }];
       case "pvpRank":
         return [
           {
             ...feat,
             kind: m.kind,
             character,
-            ...optional("rank", number(m.rank)),
-            ...optional("rankName", text(m.rankName)),
-            ...optional("title", text(m.title)),
+            ...opt("rank", number(m.rank)),
+            ...opt("rankName", text(m.rankName)),
+            ...opt("title", text(m.title)),
           },
         ];
       case "duelWins":
-        return [{ ...feat, kind: m.kind, character, ...optional("wins", number(m.wins)) }];
+        return [{ ...feat, kind: m.kind, character, ...opt("wins", number(m.wins)) }];
       case "bgFirstWin":
-        return [{ ...feat, kind: m.kind, character, ...optional("battleground", text(m.battleground)) }];
+        return [{ ...feat, kind: m.kind, character, ...opt("battleground", text(m.battleground)) }];
       case "deaths100":
-        return [{ ...feat, kind: m.kind, character, ...optional("deaths", number(m.deaths)) }];
+        return [{ ...feat, kind: m.kind, character, ...opt("deaths", number(m.deaths)) }];
       case "firstEpic":
-        return [{ ...feat, kind: m.kind, character, ...optional("item", item(m.item)) }];
+        return [{ ...feat, kind: m.kind, character, ...opt("item", item(m.item)) }];
       case "mount":
       case "epicMount":
         return [
@@ -98,9 +100,9 @@ export function readMilestones(data: unknown): Milestone[] {
             ...feat,
             kind: m.kind,
             character,
-            ...optional("riding", number(m.riding)),
-            ...optional("level", number(m.level)),
-            ...optional("place", number(m.place)),
+            ...opt("riding", number(m.riding)),
+            ...opt("level", number(m.level)),
+            ...opt("place", number(m.place)),
           },
         ];
       case "jackOfAllTrades":
@@ -118,8 +120,8 @@ export function readMilestones(data: unknown): Milestone[] {
             ...feat,
             kind: m.kind,
             character,
-            ...optional("notable", text(m.notable)),
-            ...optional("item", item(m.item)),
+            ...opt("notable", text(m.notable)),
+            ...opt("item", item(m.item)),
           },
         ];
       default:
@@ -132,10 +134,10 @@ export function readMilestones(data: unknown): Milestone[] {
 function item(value: unknown): FeatItem | undefined {
   if (!isObject(value)) return undefined;
   return {
-    ...optional("id", number(value.id)),
-    ...optional("name", text(value.name)),
-    ...optional("slot", text(value.slot)),
-    ...optional("level", number(value.level)),
+    ...opt("id", number(value.id)),
+    ...opt("name", text(value.name)),
+    ...opt("slot", text(value.slot)),
+    ...opt("level", number(value.level)),
   };
 }
 
@@ -219,20 +221,20 @@ export function readRunEvent(event: SiteEvent): RunEvent | undefined {
         changed: (Array.isArray(data.changed) ? data.changed : []).filter((c): c is string => typeof c === "string"),
       };
     case "runCancelled":
-      return { type: "runCancelled", run, ...optional("by", text(data.by)), mention };
+      return { type: "runCancelled", run, ...opt("by", text(data.by)), mention };
     case "runReminder":
-      return { type: "runReminder", run, ...optional("minutes", number(data.minutes)), mention };
+      return { type: "runReminder", run, ...opt("minutes", number(data.minutes)), mention };
     case "runStarting":
       return { type: "runStarting", run, mention };
     case "runMovedUp":
-      return { type: "runMovedUp", run, ...optional("who", discordId(data.who)) };
+      return { type: "runMovedUp", run, ...opt("who", discordId(data.who)) };
     case "runMoved":
       return {
         type: "runMoved",
         run,
-        ...optional("who", discordId(data.who)),
+        ...opt("who", discordId(data.who)),
         to: text(data.to) ?? "removed",
-        ...optional("by", text(data.by)),
+        ...opt("by", text(data.by)),
       };
     default: {
       const ping = readPing(data);
@@ -293,20 +295,4 @@ export function decide(
   if (milestones.length === 0) return { do: "leave" };
   const card = readFeatCard(event.data);
   return { do: "post", milestones, ...(card !== undefined ? { card } : {}) };
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function text(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
-function number(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-function optional<K extends string, V>(key: K, value: V | undefined): { [P in K]?: V } {
-  return (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
 }

@@ -3,29 +3,8 @@
 // **Mailbox Menace**.") and the short line under a character in a post with several ("**Stone Guard**, a.k.a.
 // **Mailbox Menace** · rank 6"). Words only: which feats exist, "First in the group" and the card are the site's
 // (CLAUDE.md rule 2). A kind the bot doesn't know is posted with the site's `text` (Nico, 2026-10-28).
+import { className, escapeMarkdown } from "./message.js";
 import type { Milestone } from "./milestones.js";
-
-const CLASS_NAMES: Readonly<Record<string, string>> = {
-  WARRIOR: "Warrior",
-  PALADIN: "Paladin",
-  HUNTER: "Hunter",
-  ROGUE: "Rogue",
-  PRIEST: "Priest",
-  SHAMAN: "Shaman",
-  MAGE: "Mage",
-  WARLOCK: "Warlock",
-  DRUID: "Druid",
-};
-
-/** The class's name, or undefined. */
-export function className(classFile: string | undefined): string | undefined {
-  return classFile ? CLASS_NAMES[classFile] : undefined;
-}
-
-/** Names and item names come from players and the game: no Discord markdown from them. */
-export function escapeMarkdown(text: string): string {
-  return text.replace(/[\\*_~`|>[\]()<@#:]/g, "\\$&");
-}
 
 /** 1000 → "1,000", the same on every machine. */
 export function thousands(n: number): string {

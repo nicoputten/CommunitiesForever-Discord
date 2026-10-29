@@ -1,8 +1,9 @@
 // The weekly Doomsday ladder post (BOT-16, board `bot-doomsday-weekly`) and the recap's Doomsday section (board
 // `bot-recap-doomsday`). Pure: the site's `doomsdayLadder` event and the recap's `doomsday` field come in as read from
 // the site. PvE and PvP are two rankings side by side, never one; a PvP Virgin is never on the PvP ladder.
-import { type Embed, GOLD, type MessageContent, escapeMarkdown, marker } from "./milestones.js";
+import { type Embed, GOLD, type MessageContent, escapeMarkdown, marker } from "./message.js";
 import { thousands } from "./feats.js";
+import { clip, count, isObject, list, names, opt, text } from "./read.js";
 
 export interface LadderRow {
   place: number;
@@ -26,34 +27,6 @@ export interface Ladder {
   };
   pvpVirgins: string[];
   withoutData: string[];
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function text(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
-function count(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : undefined;
-}
-
-function opt<K extends string, V>(key: K, value: V | undefined): { [P in K]?: V } {
-  return (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
-}
-
-function names(value: unknown): string[] {
-  return (Array.isArray(value) ? value : []).flatMap((n) => text(n) ?? []);
-}
-
-function list(value: unknown): Record<string, unknown>[] {
-  return (Array.isArray(value) ? value : []).filter(isObject);
-}
-
-function clip(value: string, max: number): string {
-  return value.length <= max ? value : `${value.slice(0, max - 1)}…`;
 }
 
 function readRows(value: unknown): LadderRow[] {
