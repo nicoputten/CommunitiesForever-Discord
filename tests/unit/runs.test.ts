@@ -174,6 +174,39 @@ describe("the run post", () => {
   });
 });
 
+describe("a friend's note with an answer (BOT-22, web WEB-67)", () => {
+  it("shows the note next to that answer in its slot and in the lists, escaped and at most 80 characters", () => {
+    const m = runMessage(
+      run({
+        answers: [
+          {
+            name: "Nico",
+            character: "Ves Doombringer",
+            answer: "in",
+            role: "damage",
+            level: 39,
+            note: "Late, *start* without me",
+          },
+          {
+            name: "Bob",
+            character: "Tok Ironhide",
+            answer: "maybe",
+            role: "damage",
+            level: 33,
+            reserve: true,
+            note: "x".repeat(100),
+          },
+        ],
+      }),
+      ctx,
+    );
+    expect(slotLines(m)).toContain("Damage · Ves Doombringer 39 · Nico · “Late, \\*start\\* without me”");
+    expect(m.embeds[0]?.description).toContain(`Reserve: Tok Ironhide 33 · Bob · “${"x".repeat(80)}”`);
+    // Without a note nothing changes.
+    expect(slotLines(runMessage(run(), ctx)).join("\n")).not.toContain("“");
+  });
+});
+
 describe("settings for runs", () => {
   it("reads the runs channel, the mention role and the reminder time", () => {
     const s = readSettings({
