@@ -121,12 +121,16 @@ describe("runPoster", () => {
     discord.postFailures = 2;
     site.add(milestonesEvent(4));
     const running = run();
-    await vi.advanceTimersByTimeAsync(0);
-    expect(log.texts()).toContain("discord: posting event 4 failed (code 50013); trying again in 5 s");
+    // The post reads its class icon from assets/ first (BOT-20), so each step waits for the log.
+    await vi.waitFor(() =>
+      expect(log.texts()).toContain("discord: posting event 4 failed (code 50013); trying again in 5 s"),
+    );
     await vi.advanceTimersByTimeAsync(5_000);
-    expect(log.texts()).toContain("discord: posting event 4 failed (code 50013); trying again in 10 s");
+    await vi.waitFor(() =>
+      expect(log.texts()).toContain("discord: posting event 4 failed (code 50013); trying again in 10 s"),
+    );
     await vi.advanceTimersByTimeAsync(10_000);
-    expect(site.acked.has(4)).toBe(true);
+    await vi.waitFor(() => expect(site.acked.has(4)).toBe(true));
     expect(discord.messages).toHaveLength(1);
     stop.abort();
     await running;
@@ -142,7 +146,7 @@ describe("runPoster", () => {
     await vi.advanceTimersByTimeAsync(5_000);
     expect(log.texts()).toContain("site: https://example.com answers 502; trying again in 10 s");
     await vi.advanceTimersByTimeAsync(10_000);
-    expect(site.acked.has(5)).toBe(true);
+    await vi.waitFor(() => expect(site.acked.has(5)).toBe(true));
     stop.abort();
     await running;
   });
@@ -193,12 +197,19 @@ describe("runPoster", () => {
     });
     const running = run();
     await vi.waitFor(() => expect(site.acked.size).toBe(1));
-    expect(discord.messages[0]?.files).toEqual(["milestone-30-0.png"]);
+    // BOT-20: the card and the class icon of the author line.
+    expect(discord.messages[0]?.files).toEqual(["milestone-30-0.png", "class-mage.png"]);
     expect(discord.messages[0]?.content.embeds[0]?.image).toEqual({ url: "attachment://milestone-30-0.png" });
+    expect(discord.messages[0]?.content.embeds[0]?.author).toEqual({
+      name: "Mira Sunstrider",
+      icon_url: "attachment://class-mage.png",
+    });
     site.add(milestonesEvent(31, "Ves Doombringer"));
     await vi.waitFor(() => expect(site.acked.size).toBe(2));
     expect(discord.edits).toBe(1);
     expect(discord.messages[0]?.content.embeds[0]?.image).toEqual({ url: "attachment://milestone-30-0.png" });
+    // Two characters now: no author line, so the class icon goes (Discord would show it as a loose file).
+    expect(discord.messages[0]?.files).toEqual(["milestone-30-0.png"]);
     stop.abort();
     await running;
   });
@@ -232,8 +243,10 @@ describe("runPoster", () => {
       const post = discord.messages[0]!;
       expect(post.channel).toBe(RECAP_CHANNEL);
       expect(post.files).toEqual(["recap-3-header.png", "recap-3-zone.png"]);
+      // No award: the header image on top (BOT-20).
       expect(post.content.embeds[0]).toMatchObject({
-        title: "18 levels and a lot of Duskwood",
+        title: "Weekly recap · week 3",
+        description: "**18 levels and a lot of Duskwood**",
         image: { url: "attachment://recap-3-header.png" },
       });
       expect(site.acked.get(20)).toBe(post.id);

@@ -58,6 +58,10 @@ export interface Board {
   crown?: { name: string; at?: number };
   /** Asked of the site (2026-10-28); shown when it is sent. */
   yesterdayCrown?: string;
+  /** BOT-20 (web WEB-66): the site's 800 × 560 picture of the board (`cards/<image>.png`); its id changes with it. */
+  image?: string;
+  /** BOT-20: the site's one line of news ("Mira finished all dailies first (23:13). Ada and Tok are 1 away."). */
+  news?: string;
   update?: BoardUpdate;
 }
 
@@ -167,6 +171,8 @@ export function readBoard(data: unknown, isUpdate = false): Board | undefined {
       ? { crown: { name: crownName, ...opt("at", time((data.crown as Record<string, unknown>).at)) } }
       : {}),
     ...opt("yesterdayCrown", isObject(data.yesterdayCrown) ? text(data.yesterdayCrown.name) : undefined),
+    ...opt("image", imageId(data.image)),
+    ...opt("news", text(data.news)),
   };
   if (!isUpdate) return board;
   const boardEvent = count(data.boardEvent);
@@ -198,7 +204,13 @@ export function readBoard(data: unknown, isUpdate = false): Board | undefined {
   return board;
 }
 
-// --- the daily board (BOT-15) ----------------------------------------------------------------------------------
+/** A card image id of the site's (`[a-z0-9-]`); anything else is never fetched. */
+function imageId(value: unknown): string | undefined {
+  const id = text(value);
+  return id !== undefined && /^[a-z0-9][a-z0-9-]{0,80}$/i.test(id) ? id : undefined;
+}
+
+// --- the daily board (BOT-15, BOT-20) ---------------------------------------------------------------------------
 
 /** Discord's timestamp markup, shown in each reader's own time zone. */
 const at = (seconds: number, style: "t" | "R") => `<t:${seconds}:${style}>`;
@@ -269,11 +281,41 @@ export function boardUrl(siteUrl: string, settingUrl: string | undefined): strin
   return settingUrl ?? `${siteUrl}/doomsday`;
 }
 
+/** The day's goals in one line, for the start of a day without the site's news: "PvE … · PvP …. 5 points each." */
+function goalsLine(goals: readonly Goal[]): string {
+  const daily = goals.filter((g) => (DAILY_SLOTS as readonly string[]).includes(g.slot));
+  const part = (track: Track, label: string) => {
+    const these = daily.filter((g) => g.track === track).map((g) => escapeMarkdown(g.title));
+    return these.length > 0 ? `**${label}** ${these.join(" · ")}.` : undefined;
+  };
+  const points = [...new Set(daily.map((g) => g.points))];
+  const each = points.length === 1 && points[0] !== undefined ? `${points[0]} points each.` : undefined;
+  return [part("pve", "PvE"), part("pvp", "PvP"), each].filter(Boolean).join(" ");
+}
+
+/** "Day over: 14 goals done · Ada won the Hunt race at … · longest streak Mira, 12 days." */
+function dayOver(board: Board): string | undefined {
+  const summary = board.update?.summary;
+  if (board.update?.final !== true || summary === undefined) return undefined;
+  const parts = [
+    summary.goalsDone !== undefined ? `${summary.goalsDone} ${summary.goalsDone === 1 ? "goal" : "goals"} done` : "",
+    summary.hunt !== undefined
+      ? `${escapeMarkdown(summary.hunt.name)} won the Hunt race${summary.hunt.at ? ` at ${at(summary.hunt.at, "t")}` : ""}`
+      : "",
+    summary.longestStreak !== undefined
+      ? `longest streak ${escapeMarkdown(summary.longestStreak.name)}, ${summary.longestStreak.days} ${summary.longestStreak.days === 1 ? "day" : "days"}`
+      : "",
+  ].filter(Boolean);
+  return parts.length > 0 ? `Day over: ${parts.join(" · ")}.` : undefined;
+}
+
 /**
- * The daily board post (board `bot-doomsday-daily`): "Doomsday · Tue 28 Oct", the day's goals, a row per friend with
- * Doomsday data, "resets in …", and the buttons "Open the board ↗" and "My goals". An update (`board.update`) is the
- * same post edited; the final one says "final" with the day's summary and has no buttons. `eventId`: the
- * `doomsdayBoard` event, whose marker is on the title link so a restart finds the post.
+ * The daily board post (boards `bot-doomsday-daily`, `bot-visual-daily`): "Doomsday · Wed evening", then
+ * - BOT-20, with the site's picture attached as `image` (`attachment://<image>`): one line of news (the site's, else
+ *   the day's goals or the day's summary) and the picture;
+ * - without a picture: the day's goals and a row per friend with Doomsday data, as text.
+ * No legend (Nico: no notes in posts). The buttons "Open the board ↗" and "My goals"; the final version says "final"
+ * and has none. `eventId`: the `doomsdayBoard` event, whose marker is on the title link so a restart finds the post.
  */
 export function boardMessage(
   board: Board,
@@ -281,45 +323,41 @@ export function boardMessage(
   siteUrl: string,
   pageUrl: string,
   b: Boxes = PLAIN_BOXES,
+  image?: string,
 ): MessageContent {
   const final = board.update?.final === true;
-  const lines = [...goalLines(board.goals), ""];
-  lines.push(...board.friends.map((f) => boardRow(board, f, b)));
-  if (board.friends.length === 0) lines.push("Nobody has Doomsday data yet.");
-  const notes: string[] = [];
-  if (board.withoutData.length > 0) {
-    notes.push(`No Doomsday data yet: ${board.withoutData.map(escapeMarkdown).join(", ")}.`);
-  }
-  if (board.yesterdayCrown !== undefined && !final) {
-    notes.push(`Yesterday's crown: ${escapeMarkdown(board.yesterdayCrown)}.`);
-  }
-  const summary = board.update?.summary;
-  if (final && summary !== undefined) {
-    const parts = [
-      summary.goalsDone !== undefined ? `${summary.goalsDone} ${summary.goalsDone === 1 ? "goal" : "goals"} done` : "",
-      summary.hunt !== undefined
-        ? `${escapeMarkdown(summary.hunt.name)} won the Hunt race${summary.hunt.at ? ` at ${at(summary.hunt.at, "t")}` : ""}`
-        : "",
-      summary.longestStreak !== undefined
-        ? `longest streak ${escapeMarkdown(summary.longestStreak.name)}, ${summary.longestStreak.days} ${summary.longestStreak.days === 1 ? "day" : "days"}`
-        : "",
-    ].filter(Boolean);
-    if (parts.length > 0) notes.push(`Day over: ${parts.join(" · ")}.`);
-  }
-  if (notes.length > 0) lines.push("", ...notes);
-  lines.push("", "-# Columns: 3 PvE dailies, then Hunt and Skirmish · names are crossed out when all dailies are done");
-  if (board.end !== undefined) {
-    lines.push(
-      final
-        ? `-# final · new goals ${at(board.end, "R")}`
-        : `-# resets ${at(board.end, "R")} · this message updates during the day`,
-    );
+  let description: string;
+  if (image !== undefined) {
+    description =
+      board.news !== undefined
+        ? escapeMarkdown(board.news)
+        : (dayOver(board) ?? (board.update === undefined ? goalsLine(board.goals) : ""));
+  } else {
+    const lines = [...goalLines(board.goals), ""];
+    lines.push(...board.friends.map((f) => boardRow(board, f, b)));
+    if (board.friends.length === 0) lines.push("Nobody has Doomsday data yet.");
+    const notes: string[] = [];
+    if (board.news !== undefined) notes.push(escapeMarkdown(board.news));
+    if (board.withoutData.length > 0) {
+      notes.push(`No Doomsday data yet: ${board.withoutData.map(escapeMarkdown).join(", ")}.`);
+    }
+    if (board.yesterdayCrown !== undefined && !final) {
+      notes.push(`Yesterday's crown: ${escapeMarkdown(board.yesterdayCrown)}.`);
+    }
+    const over = board.news === undefined ? dayOver(board) : undefined;
+    if (over !== undefined) notes.push(over);
+    if (notes.length > 0) lines.push("", ...notes);
+    if (board.end !== undefined) {
+      lines.push("", final ? `-# final · new goals ${at(board.end, "R")}` : `-# resets ${at(board.end, "R")}`);
+    }
+    description = lines.join("\n");
   }
   const embed: Embed = {
     title: `Doomsday · ${board.label}${final ? " · final" : ""}`,
     url: `${siteUrl}/doomsday${marker(eventId)}`,
-    description: clip(lines.join("\n"), 4096),
+    ...(description !== "" ? { description: clip(description, 4096) } : {}),
     color: GOLD,
+    ...(image !== undefined ? { image: { url: `attachment://${image}` } } : {}),
   };
   return {
     embeds: [embed],

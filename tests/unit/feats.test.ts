@@ -212,8 +212,12 @@ describe("feats from the site (BOT-14)", () => {
         text: "Ada Nightshade is Exalted with the Argent Dawn",
       },
     ]);
+    // BOT-20: the character link with its marker is the title's.
+    expect(milestoneMessage(51, read, SITE, HOST)?.embeds[0]?.url).toBe(
+      "https://example.com/character/Player-1-ADA#e51",
+    );
     expect(milestoneMessage(51, read, SITE, HOST)?.embeds[0]?.description).toBe(
-      "Ada Nightshade is Exalted with the Argent Dawn\n**[Ada Nightshade](https://example.com/character/Player-1-ADA#e51)**",
+      "Ada Nightshade is Exalted with the Argent Dawn",
     );
     expect(
       decide(
@@ -226,11 +230,22 @@ describe("feats from the site (BOT-14)", () => {
     ).toBe("leave");
   });
 
+  it("reads the site's headline and line (WEB-66) on every kind, and posts a new kind with only a headline", () => {
+    const read = readMilestones({
+      milestones: [
+        { kind: "firstCatch", character: ada, headline: "First catch", line: "It was a boot. Probably." },
+        { kind: "reputation", character: ada, headline: "Exalted" },
+      ],
+    });
+    expect(read[0]).toMatchObject({ kind: "firstCatch", headline: "First catch", line: "It was a boot. Probably." });
+    expect(read[1]).toMatchObject({ kind: "other", headline: "Exalted", text: "Exalted" });
+  });
+
   it("uses the site's text for a known kind it can't word", () => {
     const m = feat({ kind: "honorKills", text: "First blood: Ada Nightshade" });
     expect(milestoneMessage(53, [m], SITE, HOST)?.embeds[0]?.description).toBe(
       // Escaped like any text from the site: Discord shows "First blood: Ada Nightshade".
-      "First blood\\: Ada Nightshade\n**[Ada Nightshade](https://example.com/character/Player-1-ADA#e53)**",
+      "First blood\\: Ada Nightshade",
     );
   });
 
@@ -243,7 +258,7 @@ describe("feats from the site (BOT-14)", () => {
       firstInGroup: true,
     });
     expect(milestoneMessage(54, [rank], SITE, HOST)?.embeds[0]?.description).toBe(
-      "**[Ada Nightshade](https://example.com/character/Player-1-ADA#e54)** is now a **Stone Guard**, a.k.a. **Mailbox Menace**.\n**First in the group**",
+      "**Ada Nightshade** is now a **Stone Guard**, a.k.a. **Mailbox Menace**.\n**First in the group**",
     );
     const mount = feat({ kind: "mount", riding: 75, level: 40, place: 1, firstInGroup: true });
     expect(milestoneMessage(55, [rank, mount], SITE, HOST)?.embeds[0]?.description).toContain(

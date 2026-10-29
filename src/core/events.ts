@@ -52,6 +52,9 @@ export function readMilestones(data: unknown): Milestone[] {
       ...opt("text", text(m.text)),
       ...(m.firstInGroup === true ? { firstInGroup: true } : {}),
       ...opt("card", text(m.card)),
+      // WEB-66: the site's words for the visual post.
+      ...opt("headline", text(m.headline)),
+      ...opt("line", text(m.line)),
     };
     switch (m.kind) {
       case "level":
@@ -126,7 +129,9 @@ export function readMilestones(data: unknown): Milestone[] {
         ];
       default:
         // A kind from a newer site: posted with its text, skipped without one (Nico, 2026-10-28).
-        return feat.text !== undefined ? [{ ...feat, kind: "other", character, text: feat.text }] : [];
+        return feat.text !== undefined || feat.headline !== undefined
+          ? [{ ...feat, kind: "other", character, text: feat.text ?? feat.headline ?? "" }]
+          : [];
     }
   });
 }

@@ -26,8 +26,11 @@ export interface Discord {
   registerCommands(commands: readonly CommandDefinition[]): Promise<number>;
   /** Posts a message, with image files it references as `attachment://<name>` (BOT-05); resolves its id. Throws a PostError. */
   post(channelId: string, content: MessageContent, files?: readonly Attachment[]): Promise<string>;
-  /** Replaces a posted message's content (BOT-09). Throws a PostError. */
-  edit(channelId: string, messageId: string, content: MessageContent): Promise<void>;
+  /**
+   * Replaces a posted message's content (BOT-09). Without `files` its attachments stay; with them (BOT-20) they
+   * replace the attachments. Throws a PostError.
+   */
+  edit(channelId: string, messageId: string, content: MessageContent, files?: readonly Attachment[]): Promise<void>;
   /** A direct message to a user (BOT-04's quiet notices); resolves its id. Throws a PostError (50007: DMs closed). */
   dm(userId: string, content: MessageContent): Promise<string>;
   /** BOT-11: the bot's own application emoji. Throws a PostError. */
@@ -290,9 +293,16 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
         throw refused(error);
       }
     },
-    async edit(channelId, messageId, content) {
+    async edit(channelId, messageId, content, files) {
       try {
-        await rest.patch(Routes.channelMessage(channelId, messageId), { body: content });
+        await rest.patch(Routes.channelMessage(channelId, messageId), {
+          // Discord keeps the attachments listed in `attachments`; the new files are listed by their index.
+          body:
+            files === undefined
+              ? content
+              : { ...content, attachments: files.map((f, id) => ({ id, filename: f.name })) },
+          ...(files !== undefined ? { files: files.map((f) => ({ name: f.name, data: Buffer.from(f.data) })) } : {}),
+        });
       } catch (error) {
         throw refused(error);
       }
