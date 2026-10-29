@@ -276,6 +276,6 @@ Nico, 2026-10-29 ("Yes, fix now"), with web WEB-68 (web PR #140). After v0.4.0 t
 - The test marks stay: "Test ·" in the title and the "not real" footer.
 - Without `images`, or when an image can't be had, the samples look as before (the text board).
 - `strip` is read but not shown: the feat sample has one feat, and a post shows one card.
-- Done (PR #?): `readTestImages`, and `testFiles`/`testSample` with `images`, in `src/core/samples.ts`; the poster attaches only what the sample shows. Tests cover each kind with and without images, the fallback, and the poster.
+- Done (PR #56): `readTestImages`, and `testFiles`/`testSample` with `images`, in `src/core/samples.ts`; the poster attaches only what the sample shows. Tests cover each kind with and without images, the fallback, and the poster.
 - Manual (Nico, in the test channel): the test board, feat and recap from the Discord page's buttons show the site's sample pictures.
 
