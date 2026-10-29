@@ -25,3 +25,18 @@ The feat card images are the site's (web `design/boards/doomsday-feat-cards`). W
 Order:
 1. BOT-14 after web WEB-56.
 2. BOT-15 and BOT-16 after web WEB-58. The formatting can be built earlier from the API contract in the web repo's `docs/BOT-API.md` and fixtures.
+
+### BOT-18 Clean-up before the Doomsday release
+Nico, 2026-10-29: one clean-up before the Doomsday release, across the addon, the site and the bot.
+- **Dependencies:**
+  - Handle the open Dependabot PRs (eslint 10, `@types/node` 26, gitleaks-action 3) and any other outdated packages.
+  - Take a major bump only when lint, tests and build pass. A Dependabot PR that needs changes is redone on our own branch, and the original is closed with a pointer.
+- **Technical debt:** first a list of refactors with effort and risk for Nico to pick from, then build his picks.
+- **Docs:**
+  - Finished stories go to `docs/STORIES-COMPLETED.md`.
+  - The README, DESIGN-NOTES, DISCORD-SETUP and `design/README.md` are brought up to date.
+  - `CHANGELOG.md` `## Unreleased` reads well as release notes.
+- **Dead code, leftovers and CI:** remove dead code and leftovers, and fix flaky tests.
+- Not part of it: branches (cleaned up separately) and the NAS deployment.
+- No user-facing change, so no manual steps beyond a smoke test of the next release.
+
