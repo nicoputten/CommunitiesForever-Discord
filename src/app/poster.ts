@@ -134,24 +134,37 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
     }
   };
 
+  /** Reads the settings from the site; the refusal when that failed (the cached settings stay). */
+  const loadSettings = async (): Promise<Extract<SiteAnswer, { ok: false }> | undefined> => {
+    const answer = await site.settings(signal);
+    if (!answer.ok) return answer;
+    settings = readSettings(answer.body);
+    if (deps.shared !== undefined) deps.shared.settings = settings;
+    const text = settingsText(siteUrl, settings);
+    if (text !== lastSettingsText) log.info(text);
+    lastSettingsText = text;
+    settingsAt = deps.now();
+    return undefined;
+  };
+  // BOT-19: the test events whose settings were just read again, so a test right after a channel change goes there.
+  let freshFor = new Set<number>();
+
   while (!signal.aborted) {
     if (settings === undefined || deps.now() - settingsAt >= SETTINGS_EVERY_MS) {
-      const answer = await site.settings(signal);
+      const refused = await loadSettings();
       if (signal.aborted) return;
-      if (answer.ok) {
-        settings = readSettings(answer.body);
-        if (deps.shared !== undefined) deps.shared.settings = settings;
-        const text = settingsText(siteUrl, settings);
-        if (text !== lastSettingsText) log.info(text);
-        lastSettingsText = text;
-      } else if (settings === undefined) {
-        await retry(siteProblem(answer), answer.status === 401 ? MAX_BACKOFF_SECONDS : undefined);
-        continue;
+      if (refused !== undefined) {
+        if (settings === undefined) {
+          await retry(siteProblem(refused), refused.status === 401 ? MAX_BACKOFF_SECONDS : undefined);
+          continue;
+        }
+        // With an old answer the bot keeps going and asks again after the next interval.
+        settingsAt = deps.now();
       }
-      // With an old answer the bot keeps going and asks again after the next interval.
-      settingsAt = deps.now();
     }
 
+    // Set by loadSettings by now; TypeScript can't see that through the closure.
+    if (settings === undefined) continue;
     // Without a posts channel the runs, Doomsday and feats channels still take theirs; the other posts wait.
     const wanted =
       settings.postsChannel ?? settings.runsChannel ?? settings.doomsdayChannel ?? settings.featsChannel ?? undefined;
@@ -208,7 +221,22 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
     }
     const { events, cursor: next } = readEvents(answer.body);
     let failed = false;
+    let changed = false;
     for (const event of events) {
+      if (event.type === "test" && !freshFor.has(event.id)) {
+        // BOT-19: the admin may have picked a channel just before pressing the test button; read the settings again
+        // first. A new channel is read for markers before anything is posted in it, so the round starts again.
+        freshFor = new Set(events.filter((e) => e.type === "test").map((e) => e.id));
+        const before = channelsOf(settings);
+        const refused = await loadSettings();
+        if (signal.aborted) return;
+        if (refused !== undefined) {
+          log.error(`${siteProblem(refused)}; posting test event ${event.id} with the settings read before`);
+        } else if (channelsOf(settings) !== before) {
+          changed = true;
+          break;
+        }
+      }
       const action = decide(event, settings, posted, siteUrl, host);
       if (action.do === "leave" || waits(action, settings)) continue;
       let messageId: string | undefined;
@@ -232,7 +260,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       }
       posted.delete(event.id);
     }
-    if (failed) {
+    if (failed || changed) {
       // From the start again: what wasn't acknowledged comes again, and the markers prevent a second post.
       cursor = "0";
     } else {
@@ -240,6 +268,12 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       cursor = next ?? cursor;
     }
   }
+}
+
+/** The channel settings as one text, to see whether the admin changed any (BOT-19). */
+function channelsOf(settings: SiteSettings | undefined): string {
+  const s = settings ?? {};
+  return JSON.stringify([s.postsChannel, s.recapChannel, s.runsChannel, s.doomsdayChannel, s.featsChannel]);
 }
 
 /**

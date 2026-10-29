@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- A test post from the site's Discord page now goes to the channel you just picked, also when you press the button right after changing it.
 
 ## v0.3.0 (2026-10-29)
 - **Doomsday:** daily and weekly goals with points for PvE and PvP, always shown side by side and never added together.
