@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.1 (2026-10-30)
+- Test posts from the site's Discord page show the site's sample images, as the real posts do: the Doomsday board picture, the feat card, and the recap's award picture and zone map. They still say "Test" and "not real". An older site still gets the text board.
+- A note a friend adds to an answer in the game ("Late, start without me") shows next to that answer in the run or ask post.
+
 ## v0.4.0 (2026-10-29)
 - **Visual posts** (the site renders the images; until it does, posts keep their current look):
   - The weekly recap is one message of 8 cards: the numbers, the award with its picture, the stat card with its map, three cards with their icon, the Doomsday top 3 and the challenge, with "The full week ↗" and "Doomsday ladder ↗" buttons.

@@ -208,3 +208,104 @@ describe("test posts use the channel just picked (BOT-19)", () => {
     await running;
   });
 });
+
+describe("test samples with the site's sample images (BOT-21, web WEB-68)", () => {
+  const images = {
+    board: "sample-board",
+    feat: "sample-feat-big",
+    strip: "sample-feat-strip",
+    award: "sample-recap-header",
+    zone: "sample-recap-zone",
+  };
+
+  it("names the site's images where a real post has its own, besides the bot's pictures", () => {
+    expect(testFiles("doomsday", images)).toEqual([{ name: "sample-board.png", path: "cards/sample-board.png" }]);
+    expect(testFiles("feats", images)).toEqual([
+      { name: "sample-feat-big.png", path: "cards/sample-feat-big.png" },
+      { name: "class-warlock.png", asset: "class-icons/warlock.png" },
+    ]);
+    expect(testFiles("recap", images).map((f) => f.name)).toEqual([
+      "sample-recap-header.png",
+      "sample-recap-zone.png",
+      "recap_pvp.png",
+      "recap_deaths.png",
+    ]);
+    // Without images, only the bot's own pictures (never a real recap's header).
+    expect(testFiles("recap").every((f) => "asset" in f)).toBe(true);
+    expect(testFiles("doomsday")).toEqual([]);
+  });
+
+  it("shows them like the real posts, keeping the test marks", () => {
+    const board = testSample("doomsday", 80, SITE, HOST, NOW, PAGE, ["sample-board.png"], images);
+    expect(board.embeds[0]?.image).toEqual({ url: "attachment://sample-board.png" });
+    expect(board.embeds[0]?.description).not.toContain("**Test Friend**");
+    expect(board.embeds[0]?.footer).toEqual({ text: TEST_FOOTER });
+    const feat = testSample("feats", 81, SITE, HOST, NOW, PAGE, ["sample-feat-big.png", "class-warlock.png"], images);
+    expect(feat.embeds[0]).toMatchObject({
+      title: "Test · Feat unlocked · Stone Guard",
+      image: { url: "attachment://sample-feat-big.png" },
+      footer: { text: TEST_FOOTER },
+    });
+    const recap = testSample(
+      "recap",
+      82,
+      SITE,
+      HOST,
+      NOW,
+      PAGE,
+      ["sample-recap-header.png", "sample-recap-zone.png"],
+      images,
+    );
+    expect(recap.embeds[1]?.image).toEqual({ url: "attachment://sample-recap-header.png" });
+    expect(recap.embeds[2]).toMatchObject({
+      title: "Bloodbath zone",
+      image: { url: "attachment://sample-recap-zone.png" },
+    });
+    expect(recap.embeds.at(-1)?.footer).toEqual({ text: TEST_FOOTER });
+  });
+
+  it("falls back to today's samples when the site can't give an image", () => {
+    const board = testSample("doomsday", 83, SITE, HOST, NOW, PAGE, [], images);
+    expect(board.embeds[0]?.image).toBeUndefined();
+    expect(board.embeds[0]?.description).toContain("**Test Friend**");
+    const feat = testSample("feats", 84, SITE, HOST, NOW, PAGE, [], images);
+    expect(feat.embeds[0]?.image).toBeUndefined();
+  });
+
+  describe("through the poster", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it("fetches the site's sample images with the token and attaches them, posted once", async () => {
+      const site = new FakeSite();
+      const discord = new FakeDiscord();
+      const stop = new AbortController();
+      const png = new Uint8Array([137, 80, 78, 71]);
+      site.images.set("cards/sample-board.png", png);
+      site.images.set("cards/sample-feat-big.png", png);
+      site.settingsBody = { channels: { posts: CHANNEL } };
+      site.add({ id: 90, type: "test", data: { kind: "doomsday", images: { board: "sample-board" } } });
+      site.add({
+        id: 91,
+        type: "test",
+        data: { kind: "feats", images: { feat: "sample-feat-big", strip: "sample-feat-strip" } },
+      });
+      // An older site: no images, the text board as before.
+      site.add({ id: 92, type: "test", data: { kind: "doomsday" } });
+      const running = runPoster(
+        { siteUrl: SITE, site, discord, log: logger().log, now: () => NOW * 1000 },
+        stop.signal,
+      );
+      await vi.waitFor(() => expect(site.acked.size).toBe(3));
+      expect(discord.messages.map((m) => m.files)).toEqual([
+        ["sample-board.png"],
+        ["sample-feat-big.png", "class-warlock.png"],
+        [],
+      ]);
+      expect(discord.messages[0]?.content.embeds[0]?.image).toEqual({ url: "attachment://sample-board.png" });
+      expect(discord.messages[2]?.content.embeds[0]?.image).toBeUndefined();
+      stop.abort();
+      await running;
+    });
+  });
+});

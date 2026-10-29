@@ -44,6 +44,8 @@ export interface RunAnswer extends RunPerson {
   reserve: boolean;
   guid?: string;
   fit?: Fit;
+  /** BOT-22 (web WEB-67): the friend's note with an answer given in game ("Late, start without me"). */
+  note?: string;
 }
 
 export interface Candidate {
@@ -148,6 +150,8 @@ function readAnswer(value: unknown): RunAnswer[] {
       reserve: value.reserve === true || value.waitlisted === true,
       ...optional("guid", text(value.guid)),
       ...optional("fit", readFit(value.fit)),
+      // At most 80 characters on the site; clipped here too, in case.
+      ...optional("note", text(value.note)?.slice(0, 80)),
     },
   ];
 }
@@ -272,7 +276,13 @@ function slotText(a: RunAnswer, icons: Emojis): string {
   const parts = [characterText(a, icons)];
   if (a.character !== undefined && a.name !== undefined) parts.push(escapeMarkdown(a.name));
   if (a.fit?.kind === "carry") parts.push("carry");
+  if (a.note !== undefined) parts.push(noteText(a.note));
   return parts.join(" · ");
+}
+
+/** BOT-22: a friend's note with an answer, in quotes like the run's own note. */
+function noteText(note: string): string {
+  return `“${escapeMarkdown(note)}”`;
 }
 
 /** "Nico on Ves Doombringer (39 Warlock)", or "Nico organises". */
@@ -702,9 +712,9 @@ export function askMessage(ask: Ask, ctx: AskContext): MessageContent {
       : who;
   const ended = askEnded(ask, ctx.now);
   const name = (a: RunAnswer) =>
-    a.character !== undefined
+    (a.character !== undefined
       ? `${icon(icons, a.classFile)}${escapeMarkdown(a.character)}${a.name !== undefined ? ` (${escapeMarkdown(a.name)})` : ""}`
-      : (esc(a.name) ?? "Someone");
+      : (esc(a.name) ?? "Someone")) + (a.note !== undefined ? ` ${noteText(a.note)}` : "");
   const list = (label: string, kind: RunAnswer["answer"]) => {
     const answers = ask.answers.filter((a) => a.answer === kind);
     return answers.length === 0 ? undefined : `**${label}** · ${answers.map(name).join(" · ")}`;
