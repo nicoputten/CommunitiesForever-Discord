@@ -265,3 +265,12 @@ Nico's brief, 2026-10-29: the web repo's `docs/DESIGN-BRIEF-LIVE-TEST.md` part 5
   - `Discord.edit` can replace attachments
 - The test samples look like the new posts, with the bot's own pictures attached.
 - Manual (Nico, in the test channel, once the site has WEB-66): the test recap, board and feat from the Discord page's buttons match `BV1Recap`, `BV2Daily` and `BV3Feats`, on Discord desktop and on a phone; a real board swaps its picture at most every 5 minutes.
+
+### BOT-22 A friend's note with a run answer
+With web WEB-67 (web PR #139; addon CF-63), 2026-10-29. An answer given in game may carry `note` (at most 80 characters, plain text). A later answer from the site or Discord replaces it.
+- The run post shows it next to that answer in quotes, like the run's own note: in its slot, among the reserves and in "Also maybe". The ask post shows it next to the name in its list.
+- Escaped like every name, and clipped to 80 characters. Without `note`, nothing changes.
+- A Can't answer has no place on the run post, so its note isn't shown there. The ask post lists Can't, so there it is shown.
+- Done (PR #?): `RunAnswer.note` in `src/core/runs.ts`, shown by `slotText` and the ask post's names; tests in `runs.test.ts` and `asks.test.ts`.
+- Manual (Nico): answer a run in game with a note, upload, and see the note next to the answer in Discord.
+

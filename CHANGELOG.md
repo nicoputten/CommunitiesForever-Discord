@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- A note a friend adds to an answer in the game ("Late, start without me") shows next to that answer in the run or ask post.
 
 ## v0.4.0 (2026-10-29)
 - **Visual posts** (the site renders the images; until it does, posts keep their current look):

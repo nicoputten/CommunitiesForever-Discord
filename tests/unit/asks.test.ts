@@ -56,6 +56,18 @@ describe("the ask post", () => {
     expect(labels(m)).toEqual(["I'm in", "Maybe", "Can't"]);
   });
 
+  it("shows a friend's note with the answer (BOT-22)", () => {
+    const m = askMessage(
+      ask({
+        answers: [
+          { name: "Femke", character: "Lia Thornwhisper", answer: "maybe", role: "healer", note: "After dinner" },
+        ],
+      }),
+      { siteUrl: SITE, now: NOW + 60, eventId: 5 },
+    );
+    expect(m.embeds[0]?.description).toContain("**Maybe** · Lia Thornwhisper (Femke) “After dinner”");
+  });
+
   it("is Expired without buttons after its 10 minutes, by the site's state or by the time", () => {
     for (const m of [
       askMessage(ask({ state: "expired" }), { siteUrl: SITE, now: NOW + 60, eventId: 5 }),
