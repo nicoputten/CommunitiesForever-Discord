@@ -253,7 +253,7 @@ Nico's brief, 2026-10-29: the web repo's `docs/DESIGN-BRIEF-LIVE-TEST.md` part 5
 - Tests: each post with and without images, the 5-minute image throttle on the board, the grouping of feats and new characters, no test footer on real posts.
 - Manual (Nico, in the test channel): the test recap, board and feat from the Discord page's buttons look like the boards, on Discord desktop and on a phone.
 - Also decided with Nico (2026-10-29): the recap follows `bot-visual-recap` exactly. The closing line, Perfect week and the crowns stay on the site.
-- Done (PR #?), built against the fields asked of web WEB-66 (all optional; until the site sends them each post keeps today's layout, minus the legend):
+- Done (PR #53), built against the fields asked of web WEB-66 (all optional; until the site sends them each post keeps today's layout, minus the legend):
   - `doomsdayBoard`/`doomsdayBoardUpdate` `image` (the 800 × 560 picture's id, a new id per new picture) and `news`
   - feats' `headline` and `line`, and a `card` on every feat
   - the recap's `numbers.honorKills`, `battlegrounds` and `feats`; `award.classFile` and `image`; a card's `image` (its map); `url`
