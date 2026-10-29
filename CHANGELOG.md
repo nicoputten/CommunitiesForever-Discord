@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.3.0 (2026-10-29)
 - **Doomsday:** daily and weekly goals with points for PvE and PvP, always shown side by side and never added together.
   - The daily board: at each reset (19:00 realm time, set on the site) the bot posts the day's goals in the Doomsday channel, with a row of boxes per friend. It edits that one post as uploads come in: names are struck through when the dailies are done, the first to finish gets the crown, and the points per track show. A final version with the day's summary closes the day.
   - "My goals" on the board, and `/doomsday` (or `/doom`), show your goals today and this week, your points, your place on both ladders and your streak, only to you. `friend:` shows a friend's day.
