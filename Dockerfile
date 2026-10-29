@@ -25,6 +25,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
 # The class icons the bot uploads as its own emoji at start (BOT-11); the SVG sources stay out.
 COPY assets/class-icons/*.png ./assets/class-icons/
+COPY assets/recap-icons/*.png ./assets/recap-icons/
 # The image's own unprivileged user (UID/GID 1000).
 USER node
 # Healthy while connected to Discord: the bot writes a heartbeat file every 15 s (BOT-02, no port needed).

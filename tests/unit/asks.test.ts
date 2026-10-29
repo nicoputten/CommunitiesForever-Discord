@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ButtonPress, SlashCommand } from "../../src/adapters/discord.js";
 import { runPoster } from "../../src/app/poster.js";
 import { RunActions } from "../../src/app/runActions.js";
-import type { MessageContent } from "../../src/core/milestones.js";
+import type { MessageContent } from "../../src/core/message.js";
 import { askMessage, markedAsks, readAsk } from "../../src/core/runs.js";
 import { CHANNEL, FakeDiscord, FakeSite, logger } from "./fakes.js";
 

@@ -3,7 +3,7 @@ import type { ButtonPress, SlashCommand } from "../../src/adapters/discord.js";
 import { runPoster } from "../../src/app/poster.js";
 import { RunActions } from "../../src/app/runActions.js";
 import { readRunEvent } from "../../src/core/events.js";
-import type { MessageContent } from "../../src/core/milestones.js";
+import type { MessageContent } from "../../src/core/message.js";
 import { dayChoices, dungeonChoices, readPlanChoices, runChoices } from "../../src/core/runReplies.js";
 import { type Run, markedRuns, postState, readRun, runMessage, slots } from "../../src/core/runs.js";
 import { readSettings } from "../../src/core/settings.js";

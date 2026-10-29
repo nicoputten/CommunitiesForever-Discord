@@ -95,3 +95,118 @@ Needs the web's WEB-51 (asks on the site). Split from BOT-04 (Nico, 2026-10-28).
 ### BOT-13 Run post layout and I'm in as the picker
 - Nico (2026-10-28, after testing v0.2.0): the slots as lines in the embed, one per slot, instead of inline fields (3 + 2 didn't line up), keeping Could fill and the footer; I'm in opens the Pick my character flow (character with its fit tag, then the role) with the best fitting character preselected, the separate Pick my character button goes; Maybe and Can't stay one click; any level may say I'm in (web WEB-52, "recommend, never restrict").
 - Done (PR #28, web PR #90): `runMessage` (slot lines), the run and ask posts without Pick my character, `pickerMessage` (the select with the site's first character preselected and its role buttons; another pick swaps them; a one-role class answers at once; "tough" for low and 6+ below). Posts from before keep their Pick my character button, which opens the same picker.
+
+## Doomsday (BOT-14 to BOT-17) (decided with Nico, 2026-10-28)
+Daily and weekly goals with points per track (PvE and PvP, never added together), a streak, a crown, feats and a ladder. **The rules are in the addon repo's `docs/DOOMSDAY.md`**; the site computes everything (web E8, WEB-56 and WEB-58), and the bot formats and posts. It replaces the workshop stories for milestones, `/ladder` and dailies (their PRs were closed unmerged).
+
+Boards (`design/README.md`):
+- `bot-doomsday-daily`
+- `bot-doomsday-weekly`
+- `bot-doomsday-feats`
+- `bot-recap-doomsday`
+
+The feat card images are the site's (web `design/boards/doomsday-feat-cards`). Where a board and `DOOMSDAY.md` disagree, `DOOMSDAY.md` wins: the day resets at **19:00** realm time (a setting on the site), not 09:00, and the weekly post comes on Sunday at that time. The crown gives no points.
+
+**Rules:**
+- No pings.
+- No BattleTags or Discord IDs in posts.
+- Gold never as an amount.
+- "PvE" and "PvP" points are never summed.
+
+Order:
+1. BOT-14 after web WEB-56.
+2. BOT-15 and BOT-16 after web WEB-58. The formatting can be built earlier from the API contract in the web repo's `docs/BOT-API.md` and fixtures.
+
+### BOT-14 "Feat unlocked" posts
+After web WEB-56. Every milestone becomes a feat. The event type stays `milestones`; the post becomes "Feat unlocked" as on `bot-doomsday-feats`.
+- One feat: "Feat unlocked", the character, the feat text, a "First in the group" line when the site marks it, and the site's card image when there is one.
+- Several feats from one upload: "Feats unlocked · 4", the character, one line per feat. The one card image is the most special feat's (the site says which).
+- The existing kinds (`level`, `maxLevel`, `professionCap`, `newCharacter`) move to the feat look too.
+- **The new kinds** (texts from web WEB-56):
+  - `honorKills`: first ("First blood"), 100, 1,000, 5,000, 10,000
+  - `pvpRank`: the official rank, then "a.k.a." our title; the site sends both. Below rank 6: "Cards start at rank 6, keep going."
+  - `duelWins`, `bgFirstWin`, `deaths100`
+  - `firstEpic`: the item name in epic purple, its slot, the level
+  - `mount`, `epicMount`: with "the 3rd mount in the group"
+  - `firstCatch`, `jackOfAllTrades`, `notableItem`
+  - the flavour title on profession cap 300
+- The recap card icons for WEB-57's new cards (PvP, death, fall, fire, epic, mount, night owl, early bird).
+- Recap card icons, 2026-10-29 (board `bot-recap-v2-icons`, PR #41): the designer's 12 icons in `assets/recap-icons/`, synced as application emoji with the class icons (`RECAP_ICONS`), and `RECAP_CARD_ICONS` maps each new or changed card id of web WEB-57 to its icon (Big spender: the horse). The icon starts the card's first line (Nico); a card without one, or unknown, shows none. Manual: after the bot starts, the developer portal lists 24 emoji; the first recap with a WEB-57 card shows its icon.
+- Kinds the bot doesn't know are still skipped and acknowledged. Tests for each kind's formatting, one and several feats.
+- Decided with Nico (2026-10-28): the bot words each kind it knows from the fields, with the board's bold, and posts a kind it doesn't know with the site's `text` (skipped without one); the 5-minute grouping of BOT-09 stays, with a block per character and upload and one card per post (the first upload's `card`); the board's lines the site doesn't send ("First Doombringer to reach rank 6.", the joke under 1,000 kills) are left out; the epic item is bold and the border epic purple, since Discord can't colour text; the "recap card icons" are dropped (the recap shows the site's card texts, with no icons on the board either). See DESIGN-NOTES "Deviations".
+- Done (PR #35): `src/core/feats.ts` (the sentence of one feat and the short line of several, per kind), `groupedMessage` in `src/core/milestones.ts` ("Feat unlocked" or "Feats unlocked · N", "had a big upload." for one character, the badge, the one card and its colour) and `readMilestones` (the new kinds, `text`, `firstInGroup`, `card`, the event's `card`). The contract says `firstEpic.item.level` is the level it was looted at, so the post says "looted at level 58" where the board says "item level 66".
+- Manual (Nico, in Discord, once the site has WEB-56): an upload with one feat (e.g. a duel win milestone) gives "Feat unlocked" with its sentence; an upload with several gives "Feats unlocked · N" with one card; a second upload within 5 minutes is added to that post.
+
+### BOT-15 The daily Doomsday board post
+After web WEB-58 (events `doomsdayBoard` and `doomsdayBoardUpdate`), as on `bot-doomsday-daily`.
+- At each reset the site sends `doomsdayBoard`; the bot posts it in the Doomsday channel (a site setting) and acknowledges it with the message id. The post shows:
+  - "Doomsday · Tue 28 Oct"
+  - the PvE dailies and PvP goals with their points
+  - a row per friend with boxes per goal (green PvE, red PvP; the bot's own custom emoji)
+  - "resets in …"
+  - the "Open the board ↗" and "My goals" buttons
+- Each `doomsdayBoardUpdate` for that day **edits the same message**, never a new one. A finished friend's name is struck through, the crown goes to the first, and progress shows ("3 / 5"). Rate-limit the edits: at most one per message per 30 s, keeping only the newest state.
+- The final update (`final: true`) shows "final" and the day's summary: goals done, who won the Hunt race, the longest streak.
+- Friends without the addon get no row ("Sanne: no addon, so no row"). PvP Virgin is shown next to the name.
+- "My goals" answers like `/doomsday` (BOT-16), ephemeral.
+- Custom emoji: the bot uses its own if they're uploaded to the server, else plain characters (✅, ▢). Document in `docs/DISCORD-SETUP.md` how to add them.
+- Tests: formatting at 19:00 (fresh), midday and final; the edit throttle; a message that was deleted (post a new one and acknowledge that).
+- Decided with Nico (2026-10-28): the boxes are the bot's own application emoji, uploaded at start with the class icons (✅ and ▢ until then); the site is asked for `yesterdayCrown` (shown when sent), a friend with nothing done gets "—" instead of the board's joke, and `withoutData` is "No Doomsday data yet: Sanne."; "My goals" answers with the `/doomsday` reply, built here, and BOT-16 adds the command.
+- Done (PR #36): `src/core/doomsday.ts` (`readBoard`, `boardMessage`: the goals per track, a row per friend with a box per goal, the strike-through, the crown, "n / 5" and the points per track, the notes, "resets <t:…:R>", the buttons; the final with its summary and no buttons; `readLookup` and `doomsdayReply` for "My goals"), `src/app/doomsdayPosts.ts` (post, edit, the 30 s throttle with only the newest waiting update, posting again when the message is gone; "My goals"), the Doomsday settings and channel in the poster, and the box emoji in the icon sync. The board's marker is on its title link (`/doomsday#e<board event>`), so a restart finds it.
+- Manual (Nico, in Discord, once the site has WEB-58): pick a Doomsday channel on the site; at the reset the board appears with open boxes; after an upload it is edited (at most every 30 s), with ~~struck~~ names and the crown; My goals answers only you; delete the post and upload again: a new post comes; the next reset edits it to "final".
+
+### BOT-16 Weekly ladder post, `/doomsday` and the recap section
+After web WEB-58, as on `bot-doomsday-weekly` and `bot-recap-doomsday`.
+- **Weekly ladder post:** on the site's `doomsdayLadder` event (Sunday at the reset). It shows:
+  - "Doomsday ladder · week 44"
+  - PvP top 5 and PvE top 5 with movement
+  - the duel champion with rating, the most kills in one zone
+  - the battleground block ("kept apart from the kills above")
+  - the PvP Virgin of the week line, when the site sends one
+  - the link to the all-time ladder on the site
+- **`/doomsday`** (alias `/doom`), ephemeral, from the site's `doomsday` look-up:
+  - your goals today with progress
+  - this week and all time per track, your place on both ladders, the streak and best
+  - "resets in …"
+  
+  With an optional `friend:` (a display name, with autocomplete from the site's friends), it shows that friend's day the same way. Not linked: the usual "Link your Discord first" reply. An older site (404) or no data: "Doomsday isn't available yet."
+- **Recap section:** the recap's optional `doomsday` field renders as the Doomsday section on `bot-recap-doomsday`: Most devoted, Perfect week, and PvE and PvP points side by side.
+- Register the command globally with the others. Tests for each view's formatting and the fallbacks.
+- Decided with Nico (2026-10-28): the title takes the site's `label` ("week 44", asked of the site), else "Doomsday ladder" with "The week of <date>" in the text; the intro and the PvP Virgin line are fixed texts without facts ("Week 44 is done. Proud of the grind.", "Still pure. The Night Elves of Ashenvale send their thanks."); the recap section's crowns come once the site sends `crowns`, and "Full ladder" links to the site's Doomsday page, not `/doomsday`.
+- Done (PR #37): `src/core/ladder.ts` (`readLadder`, `ladderMessage`, `readRecapDoomsday`, `recapDoomsdayField`), the `doomsdayLadder` event in the poster (the Doomsday channel, marked like any post), `/doomsday` and `/doom` (one command under two names, Discord has no aliases) in `src/app/lookups.ts` with BOT-15's `doomsdayReply`, Share and the friend autocomplete, and the section in `recapMessage` before the challenge.
+- Manual (Nico, in Discord, once the site has WEB-58): `/doomsday` and `/doom` answer only you, `/doomsday friend:` fills in names and shows that friend's day, Share posts it; on Sunday at the reset the ladder post comes in the Doomsday channel; the next recap has the Doomsday section.
+
+### BOT-17 Feats channel and test posts per kind
+With web WEB-58 part 2 (the reorganised Discord page; contract in web `docs/BOT-API.md`, "Settings" and "`test`"). Decided with Nico, 2026-10-28.
+- **Feats channel:**
+  - Settings `channels.feats` is the channel for feats (the `milestones` event). `null` or missing means the posts channel, as now.
+  - The BOT-09 grouping and the markers work in that channel. After a restart the bot reads it for markers like the other channels.
+- **Test posts per kind:** the `test` event's `kind` may be `posts`, `feats`, `recap` or `doomsday`.
+  - `feats`, `recap` and `doomsday` get a made-up sample of that kind, posted in that kind's channel (each falls back to the posts channel when unset):
+    - `feats`: a "Feat unlocked" post
+    - `recap`: a short recap
+    - `doomsday`: a daily board
+  - The samples use names no friend has: the character "Testy McTestface", the friends "Test Friend" and "Another Test".
+  - The samples have no card images. The title starts with "Test ·" and the footer says "Test post from the site's Discord page · not real".
+  - The board sample has only "Open the board ↗" and is never edited.
+  - `posts` stays the plain test message. A kind the bot doesn't know gets the plain test message in the posts channel (today the bot leaves it).
+  - Each test is acknowledged like any event and posted once (marker).
+- Tests: the feats channel (posting, grouping, marker scan, fallback); each test kind, its channel, its marks, and the unknown kind.
+- Done (PR #39): `featsChannel` in `src/core/settings.ts`; the poster posts and groups feats in it and reads every other channel (recap, runs, Doomsday, feats) for markers in one loop; `src/core/samples.ts` (`testSample` per kind, from the real formatting with made-up data); `decide` answers `sample` for `feats`, `recap` and `doomsday`, and the plain test for any other kind.
+- Manual (Nico, in Discord, once the site has WEB-58 part 2): pick a feats channel and press each test button on the Discord page; each sample appears once in its channel, titled "Test ·"; an upload's feats go to the feats channel.
+
+### BOT-18 Clean-up before the Doomsday release
+Nico, 2026-10-29: one clean-up before the Doomsday release, across the addon, the site and the bot.
+- **Dependencies:**
+  - Handle the open Dependabot PRs (eslint 10, `@types/node` 26, gitleaks-action 3) and any other outdated packages.
+  - Take a major bump only when lint, tests and build pass. A Dependabot PR that needs changes is redone on our own branch, and the original is closed with a pointer.
+- **Technical debt:** first a list of refactors with effort and risk for Nico to pick from, then build his picks.
+- **Docs:**
+  - Finished stories go to `docs/STORIES-COMPLETED.md`.
+  - The README, DESIGN-NOTES, DISCORD-SETUP and `design/README.md` are brought up to date.
+  - `CHANGELOG.md` `## Unreleased` reads well as release notes.
+- **Dead code, leftovers and CI:** remove dead code and leftovers, and fix flaky tests.
+- Not part of it: branches (cleaned up separately) and the NAS deployment.
+- No user-facing change, so no manual steps beyond a smoke test of the next release.
+- Decided with Nico (2026-10-29): @types/node stays on the Node the bot runs on (24) and TypeScript on 6 until typescript-eslint supports 7, so Dependabot skips both majors; eslint 10 and gitleaks-action 3 as Dependabot made them. All five refactors of the list: the shared readers, the message module, the emoji sync naming, the look-up parsing in core, the poster split.
+- Done: the story (PR #42), dependencies (PR #43, Dependabot #14 and #16 as they are, #15 closed), refactors (PR #44), dead code and CI (PR #45), docs (PR #46). No flaky tests were found; the one CI flake was gitleaks-action v2 ("stderr is not empty"), which v3 addresses.

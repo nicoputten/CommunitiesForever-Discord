@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.3.0 (2026-10-29)
+- **Doomsday:** daily and weekly goals with points for PvE and PvP, always shown side by side and never added together.
+  - The daily board: at each reset (19:00 realm time, set on the site) the bot posts the day's goals in the Doomsday channel, with a row of boxes per friend. It edits that one post as uploads come in: names are struck through when the dailies are done, the first to finish gets the crown, and the points per track show. A final version with the day's summary closes the day.
+  - "My goals" on the board, and `/doomsday` (or `/doom`), show your goals today and this week, your points, your place on both ladders and your streak, only to you. `friend:` shows a friend's day.
+  - The weekly ladder on Sunday at the reset: the PvP and PvE top 5 with movement, the duel champion, the most kills in one zone, the battlegrounds and the PvP Virgin of the week.
+  - The weekly recap gets a Doomsday section: most devoted, perfect week and the top points per track.
+- **Feats:** milestone posts become "Feat unlocked" posts ("Feats unlocked · 4" for several), with "First in the group" and one card image per post.
+  - New feats: honorable kills, PvP ranks with their "a.k.a." titles, duel wins, first battleground wins, 100 deaths, the first epic, mounts, the first catch, Jack of all trades and notable items (Arcanite Reaper, Mooncloth, the Fishing Extravaganza, ...).
+  - Feats from a newer site are posted with the site's own text.
+- **Recap card icons:** cards about PvP, deaths, loot, mounts, battlegrounds, late nights and early mornings show a small icon.
+- **Channels:** feats can have their own channel now, like the recap, runs and Doomsday; the default channel takes the rest. The site's test buttons for feats, the recap and Doomsday post a made-up sample in that channel, marked as a test.
+- The bot's own emoji (class icons, Doomsday boxes, recap icons) are uploaded at start; the log now says `emoji: 24 of 24 ready`.
+- Maintenance: eslint 10 and gitleaks-action 3, and a code clean-up with no change in behaviour.
+
 ## v0.2.1 (2026-10-28)
 - Run posts list the slots one per line ("Tank · Vesgar Bloodhoof 27 · Vestras", "Healer · needed"), so they line up. I'm in opens the character picker with your best fitting character already chosen; pick a role, or another character. Any character may say I'm in, also one far below the dungeon ("tough"). The separate Pick my character button is gone.
 

@@ -1,7 +1,7 @@
 // The look-up commands (BOT-06, board `bot-commands-runs`): `/whereis`, `/who`, `/whocancraft`, `/character`,
 // `/alts`, `/me`, their autocomplete, and Share. Answers are only for the asker; Share posts a copy in the channel with
 // "Shared by <display name>". They answer anyone in the server (only friends are in it, Nico 2026-10-28); only `/me`
-// needs the asker's Discord linked on the site. The site has the data (CLAUDE.md rule 2); src/core formats it.
+// needs the asker's Discord linked on the site, and `/doomsday` (alias `/doom`, BOT-16) without a friend. The site has the data (CLAUDE.md rule 2); src/core formats it.
 import type { Attachment, Autocomplete, ButtonPress, SlashCommand } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site, SiteAnswer } from "../adapters/site.js";
@@ -11,17 +11,25 @@ import {
   craftMessage,
   notLinkedMessage,
   nothingMessage,
+  readAlts,
+  readAsker,
   readCharacter,
-  readCharacters,
+  readCrafters,
+  readNames,
+  readProfessions,
+  readWhereis,
+  readWho,
   sharedMessage,
   whereisMessage,
   whoMessage,
 } from "../core/lookups.js";
-import { NO_ICONS } from "../core/classIcons.js";
-import type { MessageContent } from "../core/milestones.js";
-import type { IconBox } from "./classIcons.js";
+import { NO_EMOJI } from "../core/emoji.js";
+import { boardUrl, boxes, doomsdayReply, notAvailableMessage, readLookup } from "../core/doomsday.js";
+import type { MessageContent } from "../core/message.js";
+import { isObject } from "../core/read.js";
+import type { EmojiBox } from "./emoji.js";
 
-export const LOOKUPS = ["whereis", "who", "whocancraft", "character", "alts", "me"] as const;
+export const LOOKUPS = ["whereis", "who", "whocancraft", "character", "alts", "me", "doomsday", "doom"] as const;
 
 /** How long a Share button works, and how many answers are kept for it: bounded (CLAUDE.md rule 11 spirit). */
 export const SHARE_FOR_MS = 15 * 60_000;
@@ -64,12 +72,11 @@ export interface LookupDeps {
   log: Log;
   now(): number;
   shares: SharedAnswers;
-  /** BOT-11: the class icons, once the start-up sync has them. */
-  icons?: IconBox;
+  /** BOT-11: the bot's emoji, once the start-up sync has them. */
+  icons?: EmojiBox;
+  /** BOT-16: the site's Doomsday page (settings `doomsday.url`), when it sent one. */
+  doomsdayUrl?(): string | undefined;
 }
-
-const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
-const text = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
 
 function failure(answer: Extract<SiteAnswer, { ok: false }>, what: string): MessageContent {
   if (answer.status === 404) return nothingMessage("Not found", `Nothing found for ${what}.`);
@@ -80,7 +87,7 @@ function failure(answer: Extract<SiteAnswer, { ok: false }>, what: string): Mess
 export async function answerLookup(deps: LookupDeps, command: SlashCommand, signal: AbortSignal): Promise<void> {
   const host = new URL(deps.siteUrl).host;
   const nowSeconds = Math.floor(deps.now() / 1000);
-  const icons = deps.icons?.current ?? NO_ICONS;
+  const icons = deps.icons?.current ?? NO_EMOJI;
   const o = command.options;
   const param = (name: string) => (typeof o[name] === "string" ? (o[name] as string) : undefined);
   const ask = (what: string, params: Record<string, string | undefined>) => {
@@ -106,15 +113,13 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         await command.reply(failure(answer, friend ?? character ?? "that"));
         return;
       }
-      const body = isObject(answer.body) ? answer.body : {};
-      const chars = readCharacters(body.characters);
-      const card = text(body.card);
+      const { friend: whose, characters: chars, card } = readWhereis(answer.body);
       if (card !== undefined) {
         const name = `whereis-${card.replace(/[^\w-]/g, "")}.png`;
         const data = await deps.site.image(`cards/whereis-${encodeURIComponent(card)}.png`, signal);
         if (data !== undefined) files.push({ name, data });
       }
-      const title = text(body.friend) !== undefined ? `${text(body.friend)}'s characters` : (chars[0]?.name ?? "Where");
+      const title = whose !== undefined ? `${whose}'s characters` : (chars[0]?.name ?? "Where");
       content = whereisMessage(title, chars, nowSeconds, deps.siteUrl, host, files[0]?.name, icons);
       break;
     }
@@ -129,9 +134,7 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         await command.reply(failure(answer, "that"));
         return;
       }
-      const body = isObject(answer.body) ? answer.body : {};
-      const chars = readCharacters(body.characters);
-      const total = typeof body.total === "number" ? body.total : chars.length;
+      const { total, characters: chars } = readWho(answer.body);
       const className = param("class") ? param("class")!.charAt(0) + param("class")!.slice(1).toLowerCase() : undefined;
       content = whoMessage(
         total,
@@ -148,13 +151,8 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         await command.reply(failure(answer, param("profession") ?? "that"));
         return;
       }
-      const body = isObject(answer.body) ? answer.body : {};
-      const crafters = (Array.isArray(body.crafters) ? body.crafters : []).flatMap((c) => {
-        const read = readCharacter(c);
-        if (read === undefined || !isObject(c) || typeof c.rank !== "number") return [];
-        return [{ ...read, rank: c.rank, ...(typeof c.max === "number" ? { max: c.max } : {}), best: c.best === true }];
-      });
-      content = craftMessage(text(body.profession) ?? param("profession") ?? "", crafters, icons);
+      const { profession, crafters } = readCrafters(answer.body);
+      content = craftMessage(profession ?? param("profession") ?? "", crafters, icons);
       siteLink = `${deps.siteUrl}/professions`;
       break;
     }
@@ -184,25 +182,39 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
         );
         return;
       }
-      const body = isObject(answer.body) ? answer.body : {};
-      const week = isObject(body.week) ? body.week : undefined;
-      content = altsMessage(
-        text(body.friend) ?? "You",
-        readCharacters(body.characters),
-        nowSeconds,
-        week && [week.levels, week.quests, week.runs].every((n) => typeof n === "number")
-          ? { levels: week.levels as number, quests: week.quests as number, runs: week.runs as number }
-          : undefined,
-        icons,
-      );
+      const alts = readAlts(answer.body);
+      content = altsMessage(alts.friend ?? "You", alts.characters, nowSeconds, alts.week, icons);
       siteLink = `${deps.siteUrl}/roster`;
+      break;
+    }
+    case "doomsday":
+    case "doom": {
+      const friend = param("friend");
+      answer = await ask("doomsday", { friend });
+      if (!answer.ok) {
+        await command.reply(
+          answer.status === 403
+            ? notLinkedMessage(deps.siteUrl, host, undefined)
+            : friend !== undefined && answer.error === "not_found"
+              ? nothingMessage("Not found", "No friend by that name.")
+              : notAvailableMessage(answer.status),
+        );
+        return;
+      }
+      const look = readLookup(answer.body);
+      if (look === undefined) {
+        await command.reply(notAvailableMessage(404));
+        return;
+      }
+      siteLink = boardUrl(deps.siteUrl, deps.doomsdayUrl?.());
+      content = doomsdayReply(look, friend === undefined, siteLink, boxes(icons));
       break;
     }
     default:
       return;
   }
 
-  const asker = isObject(answer.body) ? text(answer.body.asker) : undefined;
+  const asker = readAsker(answer.body);
   const customId = deps.shares.keep({ content, files, ...(asker !== undefined ? { asker } : {}), at: deps.now() });
   await command.reply(
     {
@@ -233,12 +245,10 @@ export async function answerShare(deps: LookupDeps, press: ButtonPress): Promise
 export async function answerAutocomplete(deps: LookupDeps, request: Autocomplete, signal: AbortSignal): Promise<void> {
   if (request.option === "profession") {
     const answer = await deps.site.lookup("professions", {}, signal);
-    const all =
-      answer.ok && isObject(answer.body) && Array.isArray(answer.body.professions) ? answer.body.professions : [];
     const wanted = request.value.toLowerCase();
     await request.respond(
-      all
-        .filter((p): p is string => typeof p === "string" && p.toLowerCase().includes(wanted))
+      (answer.ok ? readProfessions(answer.body) : [])
+        .filter((p) => p.toLowerCase().includes(wanted))
         .map((p) => ({ name: p, value: p })),
     );
     return;
@@ -251,12 +261,5 @@ export async function answerAutocomplete(deps: LookupDeps, request: Autocomplete
         : undefined;
   if (kind === undefined) return;
   const answer = await deps.site.lookup("names", { q: request.value, kind }, signal);
-  const names = answer.ok && isObject(answer.body) && Array.isArray(answer.body.names) ? answer.body.names : [];
-  await request.respond(
-    names.flatMap((n) =>
-      isObject(n) && typeof n.name === "string" && typeof n.value === "string"
-        ? [{ name: n.name, value: n.value }]
-        : [],
-    ),
-  );
+  await request.respond(answer.ok ? readNames(answer.body) : []);
 }

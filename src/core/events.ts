@@ -1,9 +1,14 @@
 // The site's event feed (web repo docs/BOT-API.md "Events") read defensively, and what the bot does with each event
 // (BOT-03). Pure: settings and what is already posted come in as arguments.
-import { type MessageContent, type Milestone, showable, testMessage } from "./milestones.js";
+import { type FeatItem, type Milestone, showable } from "./milestones.js";
+import { type MessageContent, testMessage } from "./message.js";
+import { type Board, readBoard } from "./doomsday.js";
+import { type Ladder, readLadder } from "./ladder.js";
 import { type Recap, readRecap } from "./recap.js";
+import type { TestKind } from "./samples.js";
 import { type Ask, type Ping, type Run, readAsk, readMention, readPing, readRun } from "./runs.js";
 import type { SiteSettings } from "./settings.js";
+import { isObject, number, opt, text } from "./read.js";
 
 export interface SiteEvent {
   id: number;
@@ -41,38 +46,124 @@ export function readMilestones(data: unknown): Milestone[] {
       level: number(c.level),
       ownerName: text(c.ownerName),
     };
+    // WEB-56, on every kind: the site's line, the badge and the card image.
+    const feat = {
+      index,
+      ...opt("text", text(m.text)),
+      ...(m.firstInGroup === true ? { firstInGroup: true } : {}),
+      ...opt("card", text(m.card)),
+    };
     switch (m.kind) {
       case "level":
       case "maxLevel":
-        return [{ index, kind: m.kind, character, level: number(m.level), from: number(m.from) }];
+        return [{ ...feat, kind: m.kind, character, level: number(m.level), from: number(m.from) }];
       case "professionCap":
         return [
           {
-            index,
+            ...feat,
             kind: m.kind,
             character,
             skillLine: number(m.skillLine),
             profession: text(m.profession),
             rank: number(m.rank),
+            ...opt("title", text(m.title)),
           },
         ];
       case "newCharacter":
-        return [{ index, kind: m.kind, character }];
+      case "firstCatch":
+        return [{ ...feat, kind: m.kind, character }];
+      case "honorKills":
+        return [{ ...feat, kind: m.kind, character, ...opt("kills", number(m.kills)) }];
+      case "pvpRank":
+        return [
+          {
+            ...feat,
+            kind: m.kind,
+            character,
+            ...opt("rank", number(m.rank)),
+            ...opt("rankName", text(m.rankName)),
+            ...opt("title", text(m.title)),
+          },
+        ];
+      case "duelWins":
+        return [{ ...feat, kind: m.kind, character, ...opt("wins", number(m.wins)) }];
+      case "bgFirstWin":
+        return [{ ...feat, kind: m.kind, character, ...opt("battleground", text(m.battleground)) }];
+      case "deaths100":
+        return [{ ...feat, kind: m.kind, character, ...opt("deaths", number(m.deaths)) }];
+      case "firstEpic":
+        return [{ ...feat, kind: m.kind, character, ...opt("item", item(m.item)) }];
+      case "mount":
+      case "epicMount":
+        return [
+          {
+            ...feat,
+            kind: m.kind,
+            character,
+            ...opt("riding", number(m.riding)),
+            ...opt("level", number(m.level)),
+            ...opt("place", number(m.place)),
+          },
+        ];
+      case "jackOfAllTrades":
+        return [
+          {
+            ...feat,
+            kind: m.kind,
+            character,
+            professions: (Array.isArray(m.professions) ? m.professions : []).flatMap((p) => text(p) ?? []),
+          },
+        ];
+      case "notableItem":
+        return [
+          {
+            ...feat,
+            kind: m.kind,
+            character,
+            ...opt("notable", text(m.notable)),
+            ...opt("item", item(m.item)),
+          },
+        ];
       default:
-        return [];
+        // A kind from a newer site: posted with its text, skipped without one (Nico, 2026-10-28).
+        return feat.text !== undefined ? [{ ...feat, kind: "other", character, text: feat.text }] : [];
     }
   });
 }
 
+function item(value: unknown): FeatItem | undefined {
+  if (!isObject(value)) return undefined;
+  return {
+    ...opt("id", number(value.id)),
+    ...opt("name", text(value.name)),
+    ...opt("slot", text(value.slot)),
+    ...opt("level", number(value.level)),
+  };
+}
+
+/** The event's one card image for a post of several feats (WEB-56), when the site sent one. */
+export function readFeatCard(data: unknown): string | undefined {
+  return isObject(data) ? text(data.card) : undefined;
+}
+
 export type Action =
-  /** Post (or add to the open post, BOT-09): the milestones that can be shown. */
-  | { do: "post"; milestones: Milestone[] }
+  /** Post (or add to the open post, BOT-09): the feats that can be shown and the event's card image (BOT-14). */
+  | { do: "post"; milestones: Milestone[]; card?: string }
   /** Post this message on its own (the test post). */
   | { do: "send"; content: MessageContent }
+  /** BOT-17: a test of a kind: its made-up sample, in that kind's channel. */
+  | { do: "sample"; kind: TestKind }
   /** Post the weekly recap with its card images, in the recap channel (BOT-05). */
   | { do: "recap"; recap: Recap }
   /** A run event (BOT-04), for the runs channel; `posted`: its own message, when one was found by its marker. */
   | { do: "run"; event: RunEvent; posted?: string }
+  /**
+   * BOT-15: the daily Doomsday board, or an update of it (`board.update`), for the Doomsday channel. `posted`: the
+   * board's message found by its marker, when known.
+   */
+  | { do: "board"; board: Board; posted?: string }
+  /** BOT-16: the weekly Doomsday ladder, for the Doomsday channel. */
+  | { do: "ladder"; ladder: Ladder }
   /** Already in the channel (found by its marker): only acknowledge it. */
   | { do: "ack"; messageId: string }
   /** Nothing to post: leave it; the site lets it expire. */
@@ -119,8 +210,6 @@ export function readRunEvent(event: SiteEvent): RunEvent | undefined {
     const id = isObject(value) ? value.discordId : undefined;
     return typeof id === "string" && /^\d{1,20}$/.test(id) ? id : undefined;
   };
-  const optional = <K extends string, V>(key: K, value: V | undefined) =>
-    (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
   switch (event.type) {
     case "runCreated":
     case "runChanged":
@@ -132,20 +221,20 @@ export function readRunEvent(event: SiteEvent): RunEvent | undefined {
         changed: (Array.isArray(data.changed) ? data.changed : []).filter((c): c is string => typeof c === "string"),
       };
     case "runCancelled":
-      return { type: "runCancelled", run, ...optional("by", text(data.by)), mention };
+      return { type: "runCancelled", run, ...opt("by", text(data.by)), mention };
     case "runReminder":
-      return { type: "runReminder", run, ...optional("minutes", number(data.minutes)), mention };
+      return { type: "runReminder", run, ...opt("minutes", number(data.minutes)), mention };
     case "runStarting":
       return { type: "runStarting", run, mention };
     case "runMovedUp":
-      return { type: "runMovedUp", run, ...optional("who", discordId(data.who)) };
+      return { type: "runMovedUp", run, ...opt("who", discordId(data.who)) };
     case "runMoved":
       return {
         type: "runMoved",
         run,
-        ...optional("who", discordId(data.who)),
+        ...opt("who", discordId(data.who)),
         to: text(data.to) ?? "removed",
-        ...optional("by", text(data.by)),
+        ...opt("by", text(data.by)),
       };
     default: {
       const ping = readPing(data);
@@ -163,10 +252,11 @@ export function decide(
 ): Action {
   const messageId = posted.get(event.id);
   if (event.type === "test") {
-    // Only the posts channel's test so far (BOT-API.md "test"); kinds for other channels come with their stories.
+    // The posts channel's plain test; BOT-17: feats, the recap and Doomsday get a sample of their own, and a kind the
+    // bot doesn't know the plain test in the posts channel (BOT-API.md "test").
     const kind = isObject(event.data) ? event.data.kind : undefined;
-    if (kind !== undefined && kind !== "posts") return { do: "leave" };
     if (messageId !== undefined) return { do: "ack", messageId };
+    if (kind === "feats" || kind === "recap" || kind === "doomsday") return { do: "sample", kind };
     return { do: "send", content: testMessage(event.id, siteUrl, siteHost) };
   }
   if (event.type === "recap") {
@@ -175,6 +265,22 @@ export function decide(
     if (messageId !== undefined) return { do: "ack", messageId };
     const recap = readRecap(event.data);
     return recap !== undefined ? { do: "recap", recap } : { do: "leave" };
+  }
+  if (event.type === "doomsdayLadder") {
+    // Off on the site's Discord page: left (BOT-API.md "Doomsday").
+    if (settings.doomsdayLadder === false) return { do: "leave" };
+    if (messageId !== undefined) return { do: "ack", messageId };
+    const ladder = readLadder(event.data);
+    return ladder !== undefined ? { do: "ladder", ladder } : { do: "leave" };
+  }
+  if (event.type === "doomsdayBoard" || event.type === "doomsdayBoardUpdate") {
+    // Off on the site's Discord page: left (BOT-API.md "Doomsday").
+    if (settings.doomsdayBoard === false) return { do: "leave" };
+    const board = readBoard(event.data, event.type === "doomsdayBoardUpdate");
+    if (board === undefined) return { do: "leave" };
+    if (board.update === undefined && messageId !== undefined) return { do: "ack", messageId };
+    const known = board.update !== undefined ? posted.get(board.update.boardEvent) : undefined;
+    return { do: "board", board, ...(known !== undefined ? { posted: known } : {}) };
   }
   if (RUN_TYPES.has(event.type)) {
     // Off on the site's Discord page: left (BOT-API.md "Run events").
@@ -186,17 +292,7 @@ export function decide(
   if (event.type !== "milestones" || settings.milestones === false) return { do: "leave" };
   if (messageId !== undefined) return { do: "ack", messageId };
   const milestones = showable(readMilestones(event.data));
-  return milestones.length > 0 ? { do: "post", milestones } : { do: "leave" };
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function text(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
-function number(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  if (milestones.length === 0) return { do: "leave" };
+  const card = readFeatCard(event.data);
+  return { do: "post", milestones, ...(card !== undefined ? { card } : {}) };
 }

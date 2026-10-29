@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { readIconFile, syncClassIcons } from "../../src/app/classIcons.js";
-import { CLASS_ICONS, NO_ICONS, emojiName, icon, optionEmoji, syncPlan } from "../../src/core/classIcons.js";
+import { readEmojiFile, syncEmoji } from "../../src/app/emoji.js";
+import { CLASS_ICONS, NO_EMOJI, emojiName, icon, optionEmoji, syncPlan } from "../../src/core/emoji.js";
 import { whoMessage } from "../../src/core/lookups.js";
 import { groupedMessage } from "../../src/core/milestones.js";
 import { pickerMessage } from "../../src/core/runReplies.js";
 import { type Run, readRun, runMessage } from "../../src/core/runs.js";
 import { FakeDiscord, logger } from "./fakes.js";
 
-// BOT-11: the class icons as the bot's own application emoji, named with a hash of their picture (Nico, 2026-10-28),
+// BOT-11: the class icons (and since BOT-15 and BOT-14 the boxes and recap icons) as the bot's own application emoji, named with a hash of their picture (Nico, 2026-10-28),
 // before every character name; without the emoji the name shows without an icon. Made-up ids (CLAUDE.md rule 1).
 const SITE = "https://example.com";
 const MAGE = "<:cf_mage_3fa9c1:1100000000000000101>";
 
 describe("the class to emoji mapping", () => {
   it("has an icon file for all nine classes, named cf_<class>_<hash>", async () => {
-    expect(CLASS_ICONS.map((c) => c.classFile)).toEqual([
+    expect(CLASS_ICONS.map((c) => c.key)).toEqual([
       "WARRIOR",
       "PALADIN",
       "HUNTER",
@@ -26,19 +26,19 @@ describe("the class to emoji mapping", () => {
       "DRUID",
     ]);
     for (const { file } of CLASS_ICONS) {
-      const png = await readIconFile(file);
+      const png = await readEmojiFile(file);
       // A PNG, under Discord's 256 KiB emoji limit.
       expect(png?.slice(1, 4)).toEqual(new TextEncoder().encode("PNG"));
       expect(png!.length).toBeLessThan(256 * 1024);
     }
     expect(emojiName("DRUID", "ABCDEF0123")).toBe("cf_druid_abcdef");
-    for (const { classFile } of CLASS_ICONS) expect(emojiName(classFile, "abcdef")).toMatch(/^[a-z_]{2,26}abcdef$/);
+    for (const { key } of CLASS_ICONS) expect(emojiName(key, "abcdef")).toMatch(/^[a-z_]{2,26}abcdef$/);
   });
 
   it("puts the icon before a name, or nothing without one (never a broken one)", () => {
     expect(icon({ MAGE }, "MAGE")).toBe(`${MAGE} `);
     expect(icon({ MAGE }, "PRIEST")).toBe("");
-    expect(icon(NO_ICONS, undefined)).toBe("");
+    expect(icon(NO_EMOJI, undefined)).toBe("");
     expect(optionEmoji({ MAGE }, "MAGE")).toEqual({ name: "cf_mage_3fa9c1", id: "1100000000000000101" });
     expect(optionEmoji({ MAGE }, "ROGUE")).toBeUndefined();
   });
@@ -54,46 +54,47 @@ describe("the start-up sync", () => {
       { id: "3", name: "party_parrot" },
     ]);
     expect(plan.icons).toEqual({ MAGE: "<:cf_mage_3fa9c1:1>" });
-    expect(plan.upload).toEqual([{ classFile: "PRIEST", name: "cf_priest_00aa11", file: "priest.png" }]);
+    expect(plan.upload).toEqual([{ key: "PRIEST", name: "cf_priest_00aa11", file: "class-icons/priest.png" }]);
     expect(plan.remove).toEqual([{ id: "2", name: "cf_priest_999999" }]);
   });
 
-  it("uploads all nine the first time, nothing when unchanged, and only a changed one after that", async () => {
+  it("uploads all nine class icons and the three Doomsday boxes and the 12 recap card icons the first time, nothing when unchanged, and only a changed one after that", async () => {
     const discord = new FakeDiscord();
     const log = logger();
-    const first = await syncClassIcons(discord, log.log);
-    expect(Object.keys(first)).toHaveLength(9);
-    expect(discord.emojiList.map((e) => e.name).every((n) => /^cf_[a-z]+_[0-9a-f]{6}$/.test(n))).toBe(true);
-    expect(log.texts()).toContain("class icons: 9 of 9 ready (9 uploaded)");
+    const first = await syncEmoji(discord, log.log);
+    expect(Object.keys(first)).toHaveLength(24);
+    expect(first.BOX_PVE).toMatch(/^<:cf_box_pve_[0-9a-f]{6}:\d+>$/);
+    expect(discord.emojiList.map((e) => e.name).every((n) => /^cf_[a-z_]+_[0-9a-f]{6}$/.test(n))).toBe(true);
+    expect(log.texts()).toContain("emoji: 24 of 24 ready (24 uploaded)");
 
-    const again = await syncClassIcons(discord, log.log);
+    const again = await syncEmoji(discord, log.log);
     expect(again).toEqual(first);
-    expect(discord.emojiList).toHaveLength(9);
-    expect(log.texts().at(-1)).toBe("class icons: 9 of 9 ready (0 uploaded)");
+    expect(discord.emojiList).toHaveLength(24);
+    expect(log.texts().at(-1)).toBe("emoji: 24 of 24 ready (0 uploaded)");
 
     // A new mage picture: the mage is uploaded again and its old emoji deleted after.
     const oldMage = discord.emojiList.find((e) => e.name.startsWith("cf_mage_"))!;
-    const changed = await syncClassIcons(discord, log.log, async (file) =>
-      file === "mage.png" ? new Uint8Array([1, 2, 3]) : readIconFile(file),
+    const changed = await syncEmoji(discord, log.log, async (file) =>
+      file === "class-icons/mage.png" ? new Uint8Array([1, 2, 3]) : readEmojiFile(file),
     );
     expect(changed.MAGE).not.toBe(first.MAGE);
     expect(discord.deletedEmoji).toEqual([oldMage.id]);
-    expect(discord.emojiList).toHaveLength(9);
+    expect(discord.emojiList).toHaveLength(24);
   });
 
   it("goes on without icons when Discord refuses, and without one icon when its upload fails", async () => {
     const discord = new FakeDiscord();
     const log = logger();
     discord.emojiReadFails = true;
-    expect(await syncClassIcons(discord, log.log)).toEqual(NO_ICONS);
-    expect(log.texts()).toContain("discord: reading the class icons failed (code 50001); names show without icons");
+    expect(await syncEmoji(discord, log.log)).toEqual(NO_EMOJI);
+    expect(log.texts()).toContain("discord: reading the bot's emoji failed (code 50001); names show without icons");
 
     discord.emojiReadFails = false;
     discord.emojiFailures = 1;
-    const icons = await syncClassIcons(discord, log.log);
-    expect(Object.keys(icons)).toHaveLength(8);
+    const icons = await syncEmoji(discord, log.log);
+    expect(Object.keys(icons)).toHaveLength(23);
     expect(icons.WARRIOR).toBeUndefined();
-    expect(log.texts()).toContain("discord: uploading the warrior icon failed (code 50035)");
+    expect(log.texts()).toContain("discord: uploading the warrior emoji failed (code 50035)");
   });
 });
 

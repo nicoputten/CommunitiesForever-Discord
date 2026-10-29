@@ -1,7 +1,10 @@
 // The weekly recap post (BOT-05, board `bot-recap`): the site computes the recap (web WEB-41, BOT-API.md "`recap`")
 // and the bot posts its texts exactly as the site wrote them. Pure: the event comes in as read from the site, the
 // message goes out as Discord's JSON, the card images (web WEB-41d) as files for the poster to fetch and attach.
-import { type Embed, GOLD, type MessageContent, marker } from "./milestones.js";
+import { type Emojis, NO_EMOJI, cardIcon } from "./emoji.js";
+import { type RecapDoomsday, readRecapDoomsday, recapDoomsdayField } from "./ladder.js";
+import { type Embed, GOLD, type MessageContent, marker } from "./message.js";
+import { clip, count, isObject, text } from "./read.js";
 
 export interface RecapCard {
   id: string;
@@ -19,6 +22,8 @@ export interface Recap {
   cards: RecapCard[];
   challenge?: string;
   closing?: string;
+  /** BOT-16: the Doomsday section, when the site sent one. */
+  doomsday?: RecapDoomsday;
 }
 
 /** A card image to fetch from the site (`cards/<id>.png`) and attach under `name`. */
@@ -29,22 +34,6 @@ export interface CardFile {
 
 /** Discord's limits: embed description 4096, field value 1024, title 256 characters. */
 const LIMIT = { description: 4096, field: 1024, title: 256 } as const;
-
-function clip(text: string, max: number): string {
-  return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function text(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
-function count(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : undefined;
-}
 
 function card(value: unknown): RecapCard | undefined {
   if (!isObject(value)) return undefined;
@@ -80,6 +69,8 @@ export function readRecap(data: unknown): Recap | undefined {
   if (challenge !== undefined) recap.challenge = challenge;
   const closing = text(data.closing);
   if (closing !== undefined) recap.closing = closing;
+  const doomsday = readRecapDoomsday(data.doomsday);
+  if (doomsday !== undefined) recap.doomsday = doomsday;
   return recap;
 }
 
@@ -110,7 +101,9 @@ export function recapFiles(recap: Recap): CardFile[] {
  * The recap as one message: the header image and headline with the numbers, the award, the cards two by two, the
  * challenge and the closing line. Texts exactly as the site wrote them ("Who am I?" answers are Discord spoilers);
  * mentions are off. `attached`: the images the poster could fetch; a missing one is left out. `eventId` marks the post
- * (core/milestones.ts `marker`) so a restart finds it; undefined for `/recap`, which is not a post.
+ * (core/milestones.ts `marker`) so a restart finds it; undefined for `/recap`, which is not a post. BOT-16: the
+ * Doomsday section before the challenge, its "Full ladder" linking to `doomsdayUrl`. BOT-14: a card's icon starts
+ * its first line, since Discord shows no custom emoji in a field name or title (DESIGN-NOTES "Deviations").
  */
 export function recapMessage(
   recap: Recap,
@@ -118,6 +111,8 @@ export function recapMessage(
   siteHost: string,
   attached: readonly string[],
   eventId?: number,
+  doomsdayUrl = `${siteUrl}/doomsday`,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   const image = (name: string) => (attached.includes(name) ? { image: { url: `attachment://${name}` } } : {});
   const [header, zone] = recapFiles(recap).map((f) => f.name);
@@ -133,15 +128,20 @@ export function recapMessage(
   if (recap.award !== undefined) {
     embeds.push({
       title: clip(recap.award.name, LIMIT.title),
-      description: clip(`**${recap.award.title}**\n${recap.award.text}`, LIMIT.description),
+      description: clip(
+        `${cardIcon(icons, recap.award.id)}**${recap.award.title}**\n${recap.award.text}`,
+        LIMIT.description,
+      ),
       color: GOLD,
     });
   }
   const fields = recap.cards.map((c) => ({
     name: clip(c.name, LIMIT.title),
-    value: clip(`**${c.title}**\n${c.text}`, LIMIT.field),
+    value: clip(`${cardIcon(icons, c.id)}**${c.title}**\n${c.text}`, LIMIT.field),
     inline: true,
   }));
+  const doomsday = recap.doomsday !== undefined ? recapDoomsdayField(recap.doomsday, doomsdayUrl) : undefined;
+  if (doomsday !== undefined) fields.push(doomsday);
   if (recap.challenge !== undefined) {
     fields.push({ name: "This week's challenge", value: clip(recap.challenge, LIMIT.field), inline: false });
   }

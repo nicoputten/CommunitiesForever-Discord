@@ -6,8 +6,8 @@ import type { Discord } from "../adapters/discord.js";
 import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { RunEvent } from "../core/events.js";
-import type { IconBox } from "./classIcons.js";
-import type { MessageContent, PostedMessage } from "../core/milestones.js";
+import type { EmojiBox } from "./emoji.js";
+import type { MessageContent, PostedMessage } from "../core/message.js";
 import {
   type PostContext,
   type Run,
@@ -25,6 +25,7 @@ import {
   startingMessage,
 } from "../core/runs.js";
 import type { SiteSettings } from "../core/settings.js";
+import { opt } from "../core/read.js";
 
 /** "Starting soon" from this many minutes before the start when the site doesn't say (BOT-API.md "Settings"). */
 export const DEFAULT_REMINDER_MINUTES = 30;
@@ -38,8 +39,8 @@ export interface RunPostDeps {
   discord: Discord;
   log: Log;
   now(): number;
-  /** BOT-11: the class icons, once the start-up sync has them. */
-  icons?: IconBox;
+  /** BOT-11: the bot's emoji, once the start-up sync has them. */
+  icons?: EmojiBox;
 }
 
 export class RunPosts {
@@ -235,8 +236,4 @@ export class RunPosts {
       this.posts.delete(old);
     }
   }
-}
-
-function opt<K extends string, V>(key: K, value: V | undefined): { [P in K]?: V } {
-  return (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
 }
