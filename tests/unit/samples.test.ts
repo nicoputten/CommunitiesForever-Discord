@@ -119,3 +119,75 @@ describe("the feats channel and test posts in the poster (BOT-17)", () => {
     await running;
   });
 });
+
+describe("test posts use the channel just picked (BOT-19)", () => {
+  const NEW = "100000000000000007";
+  let site: FakeSite;
+  let discord: FakeDiscord;
+  let stop: AbortController;
+  let log: ReturnType<typeof logger>;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    site = new FakeSite();
+    discord = new FakeDiscord();
+    stop = new AbortController();
+    log = logger();
+    site.settingsBody = { posts: { milestones: true }, channels: { posts: CHANNEL, feats: FEATS } };
+  });
+
+  afterEach(() => {
+    stop.abort();
+    vi.useRealTimers();
+  });
+
+  const run = () => runPoster({ siteUrl: SITE, site, discord, log: log.log, now: () => NOW * 1000 }, stop.signal);
+
+  it("reads the settings again for a test, right after the admin changed the channel", async () => {
+    const running = run();
+    // The bot has read the settings and waits for events.
+    await vi.waitFor(() => expect(site.waiting.length).toBe(1));
+    site.settingsBody = { posts: { milestones: true }, channels: { posts: CHANNEL, feats: NEW } };
+    site.add({ id: 30, type: "test", data: { kind: "feats" } });
+    await vi.waitFor(() => expect(site.acked.size).toBe(1));
+    expect(discord.messages.map((m) => [m.channel, m.content.embeds[0]?.title])).toEqual([
+      [NEW, "Test · Feat unlocked"],
+    ]);
+    stop.abort();
+    await running;
+  });
+
+  it("posts with the settings it has when reading them again fails, and says so", async () => {
+    const running = run();
+    await vi.waitFor(() => expect(site.waiting.length).toBe(1));
+    site.settingsBody = { posts: { milestones: true }, channels: { posts: CHANNEL, feats: NEW } };
+    site.settingsDown = 1;
+    site.add({ id: 31, type: "test", data: { kind: "feats" } });
+    await vi.waitFor(() => expect(site.acked.size).toBe(1));
+    expect(discord.messages.map((m) => m.channel)).toEqual([FEATS]);
+    expect(log.texts()).toContain(
+      "site: https://example.com is not reachable; posting test event 31 with the settings read before",
+    );
+    stop.abort();
+    await running;
+  });
+
+  it("reads the settings once for a test, not for other events", async () => {
+    let reads = 0;
+    const settings = site.settings.bind(site);
+    site.settings = async () => {
+      reads++;
+      return settings();
+    };
+    const running = run();
+    await vi.waitFor(() => expect(site.waiting.length).toBe(1));
+    site.add(milestonesEvent(32));
+    await vi.waitFor(() => expect(site.acked.size).toBe(1));
+    expect(reads).toBe(1);
+    site.add({ id: 33, type: "test", data: { kind: "posts" } });
+    await vi.waitFor(() => expect(site.acked.size).toBe(2));
+    expect(reads).toBe(2);
+    stop.abort();
+    await running;
+  });
+});
