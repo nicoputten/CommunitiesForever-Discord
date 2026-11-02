@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { refusalMessage } from "../../src/core/runReplies.js";
 import type { ButtonPress, SlashCommand } from "../../src/adapters/discord.js";
 import { runPoster } from "../../src/app/poster.js";
 import { RunActions } from "../../src/app/runActions.js";
@@ -694,5 +695,14 @@ describe("the run commands and buttons", () => {
       { name: "Scarlet Monastery: Armory · Tue 27 Oct 18:40", value: "7" },
     ]);
     expect(runChoices(runs, IDS.nico, true, "Europe/Amsterdam", "")).toHaveLength(2);
+  });
+});
+
+describe("refusalMessage", () => {
+  it("has words for the site's refusals, and a plain one for a code it doesn't know", () => {
+    expect(refusalMessage("same", 409).embeds[0]?.description).toBe("That's already your answer.");
+    expect(refusalMessage("unknown_sign_up", 404).embeds[0]?.description).toBe("That sign-up is no longer on the run.");
+    expect(refusalMessage("something_new", 409).embeds[0]?.description).toBe("The site refused that.");
+    expect(refusalMessage(undefined, 502).embeds[0]?.title).toBe("The site isn't answering");
   });
 });

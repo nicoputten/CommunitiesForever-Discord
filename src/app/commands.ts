@@ -11,6 +11,7 @@ import type { EmojiBox } from "./emoji.js";
 import { answerMyGoals } from "./doomsdayPosts.js";
 import { loadFiles } from "./files.js";
 import { LOOKUPS, SharedAnswers, answerAutocomplete, answerLookup, answerShare } from "./lookups.js";
+import { failedMessage } from "../core/lookups.js";
 import { RUN_COMMANDS, RunActions } from "./runActions.js";
 
 export interface CommandDeps {
@@ -59,15 +60,20 @@ export interface Handlers {
 export function commandHandlers(deps: CommandDeps, signal: AbortSignal): Handlers {
   const lookups = { ...deps, shares: new SharedAnswers(), doomsdayUrl: () => deps.settings?.()?.doomsdayUrl };
   const runs = new RunActions({ ...deps, settings: () => deps.settings?.() });
-  const failed = (what: string) => (error: unknown) =>
+  // A failed answer is logged and, where there is one to give, the asker gets "Something went wrong" instead of
+  // waiting until Discord gives up.
+  const failed = (what: string, tell?: () => Promise<void>) => (error: unknown) => {
     deps.log.error(`discord: answering ${what} failed (${problemOf(error)})`);
+    tell?.().catch(() => undefined);
+  };
   return {
     command(command) {
-      if (command.name === "recap") answerRecap(deps, command, signal).catch(failed("/recap"));
+      const tell = () => command.reply(failedMessage());
+      if (command.name === "recap") answerRecap(deps, command, signal).catch(failed("/recap", tell));
       else if ((RUN_COMMANDS as readonly string[]).includes(command.name)) {
-        runs.command(command, signal).catch(failed(`/${command.name}`));
+        runs.command(command, signal).catch(failed(`/${command.name}`, tell));
       } else if ((LOOKUPS as readonly string[]).includes(command.name)) {
-        answerLookup(lookups, command, signal).catch(failed(`/${command.name}`));
+        answerLookup(lookups, command, signal).catch(failed(`/${command.name}`, tell));
       }
     },
     autocomplete(request) {
@@ -78,17 +84,18 @@ export function commandHandlers(deps: CommandDeps, signal: AbortSignal): Handler
       answerAutocomplete(lookups, request, signal).catch(failed(`/${request.command} autocomplete`));
     },
     button(press) {
+      const tell = () => press.reply(failedMessage());
       if (RunActions.handles(press.customId)) {
-        runs.press(press, signal).catch(failed("a run button"));
+        runs.press(press, signal).catch(failed("a run button", tell));
         return;
       }
       if (press.customId === MY_GOALS) {
         answerMyGoals({ ...deps, pageUrl: () => deps.settings?.()?.doomsdayUrl }, press, signal).catch(
-          failed("My goals"),
+          failed("My goals", tell),
         );
         return;
       }
-      answerShare(lookups, press).catch(failed("Share"));
+      answerShare(lookups, press).catch(failed("Share", tell));
     },
   };
 }
