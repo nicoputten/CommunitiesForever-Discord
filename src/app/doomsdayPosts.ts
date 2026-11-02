@@ -7,7 +7,7 @@
 // and the final edit always gets the newest picture. A board whose message is gone is posted again and acknowledged
 // with the new message. "My goals" answers like `/doomsday`.
 import type { Attachment, ButtonPress, Discord } from "../adapters/discord.js";
-import { PostError } from "../adapters/discord.js";
+import { PostError, problemOf } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site } from "../adapters/site.js";
 import {
@@ -126,7 +126,7 @@ export class DoomsdayBoards {
       }
     } catch (error) {
       // The next update shows the newest board anyway.
-      this.deps.log.error(`discord: updating the Doomsday board (event ${w.eventId}) failed (${codeOf(error)})`);
+      this.deps.log.error(`discord: updating the Doomsday board (event ${w.eventId}) failed (${problemOf(error)})`);
     }
   }
 
@@ -139,7 +139,7 @@ export class DoomsdayBoards {
     try {
       await this.show(shown.eventId, shown.board, shown.channel, shown);
     } catch (error) {
-      this.deps.log.error(`discord: updating the Doomsday board's picture failed (${codeOf(error)})`);
+      this.deps.log.error(`discord: updating the Doomsday board's picture failed (${problemOf(error)})`);
     }
   }
 
@@ -275,8 +275,4 @@ export async function answerMyGoals(
       ? notAvailableMessage(404)
       : doomsdayReply(look, true, page, boxes(deps.icons?.current ?? NO_EMOJI)),
   );
-}
-
-function codeOf(error: unknown): string {
-  return error instanceof PostError ? `code ${error.code ?? "none"}` : "no answer";
 }

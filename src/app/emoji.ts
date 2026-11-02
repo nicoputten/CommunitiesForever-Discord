@@ -4,7 +4,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import type { Discord } from "../adapters/discord.js";
-import { PostError } from "../adapters/discord.js";
+import { problemOf } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import { BOT_EMOJI, type Emojis, NO_EMOJI, markup, syncPlan } from "../core/emoji.js";
 
@@ -42,7 +42,7 @@ export async function syncEmoji(discord: Discord, log: Log, read: ReadEmoji = re
   try {
     existing = await discord.emojis();
   } catch (error) {
-    log.error(`discord: reading the bot's emoji failed (${codeOf(error)}); names show without icons`);
+    log.error(`discord: reading the bot's emoji failed (${problemOf(error)}); names show without icons`);
     return NO_EMOJI;
   }
   const plan = syncPlan(hashes, existing);
@@ -51,7 +51,7 @@ export async function syncEmoji(discord: Discord, log: Log, read: ReadEmoji = re
     try {
       icons[key] = markup(await discord.createEmoji(name, files.get(key) as Uint8Array));
     } catch (error) {
-      log.error(`discord: uploading the ${key.toLowerCase()} emoji failed (${codeOf(error)})`);
+      log.error(`discord: uploading the ${key.toLowerCase()} emoji failed (${problemOf(error)})`);
     }
   }
   // The older emoji only after the new ones are there; one that stays only takes a slot.
@@ -59,14 +59,10 @@ export async function syncEmoji(discord: Discord, log: Log, read: ReadEmoji = re
     try {
       await discord.deleteEmoji(old.id);
     } catch (error) {
-      log.error(`discord: deleting an old emoji failed (${codeOf(error)})`);
+      log.error(`discord: deleting an old emoji failed (${problemOf(error)})`);
     }
   }
   const uploaded = plan.upload.filter((u) => icons[u.key] !== undefined).length;
   log.info(`emoji: ${Object.keys(icons).length} of ${BOT_EMOJI.length} ready (${uploaded} uploaded)`);
   return icons;
-}
-
-function codeOf(error: unknown): string {
-  return error instanceof PostError ? `code ${error.code ?? "none"}` : "no answer";
 }

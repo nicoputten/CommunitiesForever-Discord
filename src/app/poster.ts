@@ -9,7 +9,7 @@
 // - the daily Doomsday board (BOT-15): app/doomsdayPosts.ts; the weekly ladder (BOT-16): the Doomsday channel
 // - test posts (WEB-39, BOT-17): the plain one in the posts channel, a sample per kind in that kind's channel
 import type { Discord } from "../adapters/discord.js";
-import { PostError } from "../adapters/discord.js";
+import { problemOf } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site, SiteAnswer } from "../adapters/site.js";
 import { MAX_BACKOFF_SECONDS, backoffSeconds } from "../core/connection.js";
@@ -191,7 +191,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         runs.forget();
         runs.learn(recent);
       } catch (error) {
-        await retry(`discord: reading the posts channel failed (${codeOf(error)})`);
+        await retry(`discord: reading the posts channel failed (${problemOf(error)})`);
         continue;
       }
       channel = wanted;
@@ -215,7 +215,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         runs.learn(recent);
         scanned.add(ch[what]);
       } catch (error) {
-        unread = `discord: reading the ${what === "doomsday" ? "Doomsday" : what} channel failed (${codeOf(error)})`;
+        unread = `discord: reading the ${what === "doomsday" ? "Doomsday" : what} channel failed (${problemOf(error)})`;
         break;
       }
     }
@@ -255,7 +255,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         messageId = await handle(action, event.id, settings, ch);
       } catch (error) {
         failed = true;
-        await retry(`${failure(action, event.id)} (${codeOf(error)})`);
+        await retry(`${failure(action, event.id)} (${problemOf(error)})`);
         break;
       }
       if (signal.aborted) return;
@@ -327,10 +327,6 @@ function failure(action: Handled, eventId: number): string {
     default:
       return `discord: posting event ${eventId} failed`;
   }
-}
-
-function codeOf(error: unknown): string {
-  return error instanceof PostError ? `code ${error.code ?? "none"}` : "no answer";
 }
 
 /** Waits `ms`, or less when `signal` aborts. */

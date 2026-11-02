@@ -117,6 +117,16 @@ export class PostError extends Error {
   }
 }
 
+/**
+ * What went wrong, for the log: Discord's code for a refusal, else the error's name and message (a bug in the bot);
+ * never message content or ids.
+ */
+export function problemOf(error: unknown): string {
+  if (error instanceof PostError) return `code ${error.code ?? "none"}`;
+  if (error instanceof Error) return `${error.name}: ${error.message}`.replace(/\s+/g, " ").slice(0, 200);
+  return "no answer";
+}
+
 interface ApiMessage {
   id: string;
   author?: { id?: string };
