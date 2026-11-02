@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- When a changed icon can't be uploaded at start, names keep the old icon instead of showing none.
 
 ## v0.4.1 (2026-10-30)
 - Test posts from the site's Discord page show the site's sample images, as the real posts do: the Doomsday board picture, the feat card, and the recap's award picture and zone map. They still say "Test" and "not real". An older site still gets the text board.
