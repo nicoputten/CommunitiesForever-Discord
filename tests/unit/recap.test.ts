@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CLASS_COLOURS, GOLD, markedEvents } from "../../src/core/message.js";
-import { MAP_CREDIT, numberFields, readRecap, recapFiles, recapMessage } from "../../src/core/recap.js";
+import { MAP_CREDIT, numberFields, readRecap, recapFiles, recapMessage, withClassIcons } from "../../src/core/recap.js";
 
 // BOT-05, BOT-20 (board `bot-visual-recap`): the weekly recap post from the site's `recap` event (web BOT-API.md).
 // Made-up names (CLAUDE.md rule 1).
@@ -192,5 +192,50 @@ describe("recapMessage (board `bot-visual-recap`)", () => {
   it("keeps within Discord's limits", () => {
     const long = readRecap({ ...EVENT, cards: [{ id: "S2", name: "x", title: "y", text: "z".repeat(5000) }] })!;
     expect(recapMessage(long, SITE, []).embeds[2]?.description?.length).toBeLessThanOrEqual(4096);
+  });
+});
+
+describe("class icons per name (BOT-23, web WEB-72)", () => {
+  const ICONS = { MAGE: "<:cf_mage_aaaaaa:100000000000000011>", WARRIOR: "<:cf_warrior_bbbbbb:100000000000000012>" };
+  const MAGE = `${ICONS.MAGE} `;
+  const WARRIOR = `${ICONS.WARRIOR} `;
+
+  it("reads `classes` per card and leaves it out when it names nobody", () => {
+    const recap = readRecap({
+      ...EVENT,
+      award: { ...EVENT.award, classes: { Mira: "MAGE", "": "MAGE", Tok: 7 } },
+      cards: [{ ...EVENT.cards[0], classes: "MAGE" }],
+    })!;
+    expect(recap.award?.classes).toEqual({ Mira: "MAGE" });
+    expect(recap.cards[0]).not.toHaveProperty("classes");
+  });
+
+  it("puts the icon before each name, the longest first and whole names only", () => {
+    const classes = { Mira: "MAGE", "Mira Sunstrider": "MAGE", "Tok Ironhide": "WARRIOR" };
+    expect(withClassIcons("Mira Sunstrider beat Tok Ironhide; Mira cheered.", classes, ICONS)).toBe(
+      `${MAGE}Mira Sunstrider beat ${WARRIOR}Tok Ironhide; ${MAGE}Mira cheered.`,
+    );
+    expect(withClassIcons("Miranda and TheMira stay plain.", classes, ICONS)).toBe("Miranda and TheMira stay plain.");
+  });
+
+  it("leaves names without an emoji, and texts of an older site, as they are", () => {
+    expect(withClassIcons("Ves won.", { Ves: "WARLOCK" }, ICONS)).toBe("Ves won.");
+    expect(withClassIcons("Mira won.", undefined, ICONS)).toBe("Mira won.");
+    expect(withClassIcons("Mira won.", { Mira: "MAGE" }, {})).toBe("Mira won.");
+    expect(withClassIcons("A (b) won.", { "A (b)": "MAGE" }, ICONS)).toBe(`${MAGE}A (b) won.`);
+  });
+
+  it("shows the icons in the award's and cards' title and text, also inside a spoiler", () => {
+    const recap = readRecap({
+      ...EVENT,
+      award: { ...EVENT.award, classes: { "Ves Doombringer": "WARRIOR", "Bob Example": "MAGE" } },
+      cards: [EVENT.cards[0], EVENT.cards[1], { ...EVENT.cards[2], classes: { "Lia Thornwhisper": "MAGE" } }],
+    })!;
+    const embeds = recapMessage(recap, SITE, [], 60, LADDER, ICONS).embeds;
+    expect(embeds[1]?.description).toBe(
+      `**${WARRIOR}Ves Doombringer took 142 honorable kills**\nRunner-up: ${MAGE}Bob Example with 97.`,
+    );
+    expect(embeds[4]?.description).toBe(`**Who am I?**\nAnswer: ||${MAGE}Lia Thornwhisper||`);
+    expect(recapMessage(recap, SITE, [], 60).embeds[1]?.description).toContain("**Ves Doombringer took");
   });
 });
