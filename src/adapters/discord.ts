@@ -1,6 +1,7 @@
 // The Discord gateway (BOT-02): one client with the Guilds intent only (no privileged intents), its state changes
 // reported as ConnectionEvents, the global slash command registration, and posting (BOT-03). Thin: what to do with
 // them is src/app's. It also tells what the server's channels and roles are, for the site's dropdowns (BOT-08).
+import { randomUUID } from "node:crypto";
 import {
   ApplicationCommandOptionType,
   ChannelType,
@@ -17,7 +18,7 @@ import type { Emoji } from "../core/emoji.js";
 import type { CommandDefinition } from "../core/commands.js";
 import type { ConnectionEvent, FailReason } from "../core/connection.js";
 import type { GuildSnapshot } from "../core/guild.js";
-import type { MessageContent, PostedMessage } from "../core/message.js";
+import { type MessageContent, type PostedMessage, fitLimits } from "../core/message.js";
 
 export interface Discord {
   /** Logs in; resolves undefined once the gateway accepted the bot, or the reason it never will. */
@@ -117,6 +118,16 @@ export class PostError extends Error {
   }
 }
 
+/**
+ * What went wrong, for the log: Discord's code for a refusal, else the error's name and message (a bug in the bot);
+ * never message content or ids.
+ */
+export function problemOf(error: unknown): string {
+  if (error instanceof PostError) return `code ${error.code ?? "none"}`;
+  if (error instanceof Error) return `${error.name}: ${error.message}`.replace(/\s+/g, " ").slice(0, 200);
+  return "no answer";
+}
+
 interface ApiMessage {
   id: string;
   author?: { id?: string };
@@ -170,12 +181,15 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     if (interaction.isButton() || interaction.isStringSelectMenu()) {
       let deferred: Promise<unknown> | undefined;
       let deferredAs: "reply" | "update" | undefined;
-      const answer = (content: MessageContent) => ({
-        ...(content.content !== undefined ? { content: content.content } : {}),
-        embeds: content.embeds,
-        allowedMentions: { parse: [] },
-        components: (content.components ?? []) as never[],
-      });
+      const answer = (given: MessageContent) => {
+        const content = fitLimits(given);
+        return {
+          ...(content.content !== undefined ? { content: content.content } : {}),
+          embeds: content.embeds,
+          allowedMentions: { parse: [] },
+          components: (content.components ?? []) as never[],
+        };
+      };
       const press: ButtonPress = {
         customId: interaction.customId,
         userId: interaction.user.id,
@@ -218,7 +232,7 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
           try {
             // The ephemeral answer stays; the shared copy is a new message in the channel.
             await interaction.reply({
-              embeds: content.embeds,
+              embeds: fitLimits(content).embeds,
               allowedMentions: { parse: [] },
               files: files(attachments),
             });
@@ -251,7 +265,7 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
         await deferred;
         try {
           await interaction.editReply({
-            embeds: content.embeds,
+            embeds: fitLimits(content).embeds,
             allowedMentions: { parse: [] },
             files: files(attachments),
             ...(content.components !== undefined ? { components: content.components } : {}),
@@ -285,7 +299,7 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     async post(channelId, content, files = []) {
       try {
         const message = (await rest.post(Routes.channelMessages(channelId), {
-          body: content,
+          body: once(fitLimits(content)),
           ...(files.length > 0 ? { files: files.map((f) => ({ name: f.name, data: Buffer.from(f.data) })) } : {}),
         })) as ApiMessage;
         return message.id;
@@ -299,8 +313,8 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
           // Discord keeps the attachments listed in `attachments`; the new files are listed by their index.
           body:
             files === undefined
-              ? content
-              : { ...content, attachments: files.map((f, id) => ({ id, filename: f.name })) },
+              ? fitLimits(content)
+              : { ...fitLimits(content), attachments: files.map((f, id) => ({ id, filename: f.name })) },
           ...(files !== undefined ? { files: files.map((f) => ({ name: f.name, data: Buffer.from(f.data) })) } : {}),
         });
       } catch (error) {
@@ -310,7 +324,9 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     async dm(userId, content) {
       try {
         const channel = (await rest.post(Routes.userChannels(), { body: { recipient_id: userId } })) as { id: string };
-        const message = (await rest.post(Routes.channelMessages(channel.id), { body: content })) as ApiMessage;
+        const message = (await rest.post(Routes.channelMessages(channel.id), {
+          body: once(fitLimits(content)),
+        })) as ApiMessage;
         return message.id;
       } catch (error) {
         throw refused(error);
@@ -362,10 +378,14 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
       const guild = client.guilds.cache.first();
       if (guild === undefined) return undefined;
       const me = guild.members.me;
+      // Attach Files for the card images; Read Message History to find its own posts after a restart (without it
+      // Discord answers an empty list, and posts would come twice).
       const needed = [
         PermissionFlagsBits.ViewChannel,
         PermissionFlagsBits.SendMessages,
         PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.ReadMessageHistory,
       ];
       return {
         channels: guild.channels.cache.map((channel) => ({
@@ -417,6 +437,14 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
       await client.destroy();
     },
   };
+}
+
+/**
+ * A new message with a nonce Discord enforces: @discordjs/rest sends a POST again after a timeout or a 5xx, and when
+ * the first one did arrive Discord answers with that message instead of posting it twice (CLAUDE.md rule 9).
+ */
+function once(content: MessageContent): MessageContent & { nonce: string; enforce_nonce: true } {
+  return { ...content, nonce: randomUUID().replace(/-/g, "").slice(0, 25), enforce_nonce: true };
 }
 
 function failReason(error: unknown): FailReason {

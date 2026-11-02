@@ -1,7 +1,7 @@
 // The slash commands' answers (BOT-05 `/recap`, BOT-06 the look-ups in app/lookups.ts, BOT-04 the runs in
 // app/runActions.ts). Each answer is only for the asker (the adapter defers it ephemerally). Never fatal: a failed
 // answer is logged and the user can ask again.
-import type { Autocomplete, ButtonPress, SlashCommand } from "../adapters/discord.js";
+import { type Autocomplete, type ButtonPress, type SlashCommand, problemOf } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site } from "../adapters/site.js";
 import { MY_GOALS, boardUrl } from "../core/doomsday.js";
@@ -61,8 +61,8 @@ export function commandHandlers(deps: CommandDeps, signal: AbortSignal): Handler
   const runs = new RunActions({ ...deps, settings: () => deps.settings?.() });
   // A failed answer is logged and, where there is one to give, the asker gets "Something went wrong" instead of
   // waiting until Discord gives up.
-  const failed = (what: string, tell?: () => Promise<void>) => () => {
-    deps.log.error(`discord: answering ${what} failed`);
+  const failed = (what: string, tell?: () => Promise<void>) => (error: unknown) => {
+    deps.log.error(`discord: answering ${what} failed (${problemOf(error)})`);
     tell?.().catch(() => undefined);
   };
   return {

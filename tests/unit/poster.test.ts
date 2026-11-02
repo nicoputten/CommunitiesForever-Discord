@@ -117,21 +117,75 @@ describe("runPoster", () => {
     await running;
   });
 
-  it("retries a refused post with backoff and posts it once Discord accepts", async () => {
+  it("retries a post Discord can't take right now with backoff and posts it once Discord accepts", async () => {
     discord.postFailures = 2;
+    discord.postFailCode = 130000;
     site.add(milestonesEvent(4));
     const running = run();
     // The post reads its class icon from assets/ first (BOT-20), so each step waits for the log.
     await vi.waitFor(() =>
-      expect(log.texts()).toContain("discord: posting event 4 failed (code 50013); trying again in 5 s"),
+      expect(log.texts()).toContain("discord: posting event 4 failed (code 130000); trying again in 5 s"),
     );
     await vi.advanceTimersByTimeAsync(5_000);
     await vi.waitFor(() =>
-      expect(log.texts()).toContain("discord: posting event 4 failed (code 50013); trying again in 10 s"),
+      expect(log.texts()).toContain("discord: posting event 4 failed (code 130000); trying again in 10 s"),
     );
     await vi.advanceTimersByTimeAsync(10_000);
     await vi.waitFor(() => expect(site.acked.has(4)).toBe(true));
     expect(discord.messages).toHaveLength(1);
+    stop.abort();
+    await running;
+  });
+
+  it("reads the channel for markers again after a post without an answer, so it never posts twice", async () => {
+    discord.postsLost = 1;
+    site.add(milestonesEvent(4));
+    const running = run();
+    await vi.waitFor(() =>
+      expect(log.texts()).toContain("discord: posting event 4 failed (code none); trying again in 5 s"),
+    );
+    await vi.advanceTimersByTimeAsync(5_000);
+    await vi.waitFor(() => expect(site.acked.get(4)).toBe(discord.messages[0]?.id));
+    expect(discord.messages).toHaveLength(1);
+    stop.abort();
+    await running;
+  });
+
+  it("holds an event Discord refuses for good, posts the others, and tries the held one again after 5 minutes", async () => {
+    discord.postFailures = 1;
+    site.add(milestonesEvent(4));
+    site.add(milestonesEvent(5, "Tok Ironhide"));
+    const running = run();
+    await vi.waitFor(() => expect(site.acked.has(5)).toBe(true));
+    expect(site.acked.has(4)).toBe(false);
+    expect(log.texts()).toContain(
+      "discord: posting event 4 failed (code 50013); trying it again in 5 min, the others go on",
+    );
+
+    // After 5 minutes (the next answer of the long poll) the held event is tried again.
+    now += 5 * 60_000;
+    site.add(milestonesEvent(6, "Bob Example"));
+    await vi.waitFor(() => expect(site.acked.has(4)).toBe(true));
+    expect(site.acked.has(6)).toBe(true);
+    expect(discord.messages).toHaveLength(2);
+    stop.abort();
+    await running;
+  });
+
+  it("goes on with the other channels when one can't be read", async () => {
+    const DOOMSDAY = "100000000000000003";
+    site.settingsBody = {
+      siteName: "Doombringers",
+      posts: { milestones: true },
+      channels: { posts: CHANNEL, doomsday: DOOMSDAY },
+    };
+    discord.unreadable.add(DOOMSDAY);
+    site.add(milestonesEvent(4));
+    const running = run();
+    await vi.waitFor(() => expect(site.acked.has(4)).toBe(true));
+    expect(log.texts()).toContain(
+      "discord: the Doomsday channel can't be read (code 50001); its posts wait, the others go on",
+    );
     stop.abort();
     await running;
   });

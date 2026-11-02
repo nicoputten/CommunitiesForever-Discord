@@ -139,6 +139,81 @@ export function markedEvents(siteUrl: string, messages: readonly PostedMessage[]
   return found;
 }
 
+/** Discord's limits on a message (characters; Discord counts fewer than JavaScript's length for emoji, so this is safe). */
+export const LIMITS = {
+  content: 2000,
+  embeds: 10,
+  title: 256,
+  description: 4096,
+  fields: 25,
+  fieldName: 256,
+  fieldValue: 1024,
+  footer: 2048,
+  author: 256,
+  /** All embeds of a message together: titles, descriptions, field names and values, footers and author names. */
+  total: 6000,
+} as const;
+
+/**
+ * The message within Discord's limits, so a long text from the site or many names never get a post refused (50035):
+ * each text is cut with "…", and over the total the longest description or field value is cut first.
+ */
+export function fitLimits(message: MessageContent): MessageContent {
+  const embeds: Embed[] = message.embeds.slice(0, LIMITS.embeds).map((e) => ({
+    ...e,
+    ...(e.title !== undefined ? { title: cut(e.title, LIMITS.title) } : {}),
+    ...(e.description !== undefined ? { description: cut(e.description, LIMITS.description) } : {}),
+    ...(e.fields !== undefined
+      ? {
+          fields: e.fields
+            .slice(0, LIMITS.fields)
+            .map((f) => ({ ...f, name: cut(f.name, LIMITS.fieldName), value: cut(f.value, LIMITS.fieldValue) })),
+        }
+      : {}),
+    ...(e.footer !== undefined ? { footer: { ...e.footer, text: cut(e.footer.text, LIMITS.footer) } } : {}),
+    ...(e.author !== undefined ? { author: { ...e.author, name: cut(e.author.name, LIMITS.author) } } : {}),
+  }));
+  let over = embeds.reduce((n, e) => n + embedLength(e), 0) - LIMITS.total;
+  while (over > 0) {
+    // The longest text that can still give.
+    let longest: { text: string; set: (text: string) => void } | undefined;
+    for (const e of embeds) {
+      const texts = [
+        ...(e.description !== undefined ? [{ text: e.description, set: (t: string) => (e.description = t) }] : []),
+        ...(e.fields ?? []).map((f) => ({ text: f.value, set: (t: string) => (f.value = t) })),
+      ];
+      for (const t of texts) if (longest === undefined || t.text.length > longest.text.length) longest = t;
+    }
+    if (longest === undefined || longest.text.length <= 1) break;
+    const shorter = cut(longest.text, Math.max(1, longest.text.length - over));
+    over -= longest.text.length - shorter.length;
+    longest.set(shorter);
+  }
+  return {
+    ...message,
+    ...(message.content !== undefined ? { content: cut(message.content, LIMITS.content) } : {}),
+    embeds,
+  };
+}
+
+function embedLength(e: Embed): number {
+  return (
+    (e.title?.length ?? 0) +
+    (e.description?.length ?? 0) +
+    (e.fields ?? []).reduce((n, f) => n + f.name.length + f.value.length, 0) +
+    (e.footer?.text.length ?? 0) +
+    (e.author?.name.length ?? 0)
+  );
+}
+
+/** At most `max` characters, "…" last when cut, never half an emoji (a lone surrogate). */
+function cut(text: string, max: number): string {
+  if (text.length <= max) return text;
+  let kept = text.slice(0, Math.max(0, max - 1));
+  if (/[\uD800-\uDBFF]$/.test(kept)) kept = kept.slice(0, -1);
+  return `${kept}…`;
+}
+
 /** A text to match literally in a RegExp (the site URL in the markers). */
 export function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import type { Attachment, ButtonPress, SlashCommand } from "../../src/adapters/discord.js";
+import { describe, expect, it, vi } from "vitest";
+import { type Attachment, type ButtonPress, PostError, type SlashCommand } from "../../src/adapters/discord.js";
 import { commandHandlers } from "../../src/app/commands.js";
 import { SHARE_FOR_MS } from "../../src/app/lookups.js";
 import type { MessageContent } from "../../src/core/message.js";
@@ -256,5 +256,32 @@ describe("autocomplete", () => {
     expect(responses[0]).toEqual([{ name: "Nico", value: "Nico" }]);
     await ask("profession", "tail");
     expect(responses[1]).toEqual([{ name: "Tailoring", value: "Tailoring" }]);
+  });
+});
+
+describe("a failed answer", () => {
+  it("is logged with Discord's code, or the error itself when it is a bug", async () => {
+    const site = new FakeSite();
+    const log = logger();
+    const handlers = commandHandlers(
+      { siteUrl: SITE, site, log: log.log, now: () => NOW },
+      new AbortController().signal,
+    );
+    const refused = asked("recap");
+    refused.command.reply = async () => {
+      throw new PostError(50035);
+    };
+    handlers.command(refused.command);
+    await vi.waitFor(() => expect(log.texts()).toContain("discord: answering /recap failed (code 50035)"));
+
+    site.recapLatest = async () => {
+      throw new TypeError("Cannot read properties of undefined (reading 'week')");
+    };
+    handlers.command(asked("recap").command);
+    await vi.waitFor(() =>
+      expect(log.texts()).toContain(
+        "discord: answering /recap failed (TypeError: Cannot read properties of undefined (reading 'week'))",
+      ),
+    );
   });
 });
