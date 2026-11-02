@@ -6,7 +6,7 @@ import { readFile } from "node:fs/promises";
 import type { Discord } from "../adapters/discord.js";
 import { PostError } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
-import { BOT_EMOJI, type Emojis, NO_EMOJI, markup, syncPlan } from "../core/emoji.js";
+import { BOT_EMOJI, type Emoji, type Emojis, NO_EMOJI, markup, syncPlan } from "../core/emoji.js";
 
 /** The emoji the bot uses now; empty until the sync is done or when it failed. */
 export interface EmojiBox {
@@ -47,24 +47,37 @@ export async function syncEmoji(discord: Discord, log: Log, read: ReadEmoji = re
   }
   const plan = syncPlan(hashes, existing);
   const icons: Record<string, string> = { ...plan.icons };
+  const kept: Emoji[] = [];
+  let uploaded = 0;
   for (const { key, name } of plan.upload) {
     try {
       icons[key] = markup(await discord.createEmoji(name, files.get(key) as Uint8Array));
+      uploaded++;
     } catch (error) {
       log.error(`discord: uploading the ${key.toLowerCase()} emoji failed (${codeOf(error)})`);
+      // Its older picture, when there is one, stays until the next start: an old icon beats none.
+      const older = plan.remove.find((e) => emojiKey(e.name) === key.toLowerCase());
+      if (older !== undefined) {
+        icons[key] = markup(older);
+        kept.push(older);
+      }
     }
   }
   // The older emoji only after the new ones are there; one that stays only takes a slot.
-  for (const old of plan.remove) {
+  for (const old of plan.remove.filter((e) => !kept.includes(e))) {
     try {
       await discord.deleteEmoji(old.id);
     } catch (error) {
       log.error(`discord: deleting an old emoji failed (${codeOf(error)})`);
     }
   }
-  const uploaded = plan.upload.filter((u) => icons[u.key] !== undefined).length;
   log.info(`emoji: ${Object.keys(icons).length} of ${BOT_EMOJI.length} ready (${uploaded} uploaded)`);
   return icons;
+}
+
+/** The key part of a `cf_<key>_<hash>` name, lower case. */
+function emojiKey(name: string): string | undefined {
+  return /^cf_(.+)_[0-9a-f]{6}$/.exec(name)?.[1];
 }
 
 function codeOf(error: unknown): string {
