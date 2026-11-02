@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- A post Discord refuses (for example a channel where the bot lacks a permission) no longer stops all other posts: it is tried again every 5 minutes while feats, runs, Doomsday and the recap go on in their channels.
 
 ## v0.4.1 (2026-10-30)
 - Test posts from the site's Discord page show the site's sample images, as the real posts do: the Doomsday board picture, the feat card, and the recap's award picture and zone map. They still say "Test" and "not real". An older site still gets the text board.
