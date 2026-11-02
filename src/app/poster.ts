@@ -255,6 +255,8 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         messageId = await handle(action, event.id, settings, ch);
       } catch (error) {
         failed = true;
+        // Without Discord's answer the post may have arrived: the channels are read for markers again first.
+        if (!(error instanceof PostError) || error.code === undefined) channel = undefined;
         await retry(`${failure(action, event.id)} (${codeOf(error)})`);
         break;
       }

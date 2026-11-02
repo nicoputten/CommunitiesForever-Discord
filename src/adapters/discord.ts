@@ -1,6 +1,7 @@
 // The Discord gateway (BOT-02): one client with the Guilds intent only (no privileged intents), its state changes
 // reported as ConnectionEvents, the global slash command registration, and posting (BOT-03). Thin: what to do with
 // them is src/app's. It also tells what the server's channels and roles are, for the site's dropdowns (BOT-08).
+import { randomUUID } from "node:crypto";
 import {
   ApplicationCommandOptionType,
   ChannelType,
@@ -285,7 +286,7 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     async post(channelId, content, files = []) {
       try {
         const message = (await rest.post(Routes.channelMessages(channelId), {
-          body: content,
+          body: once(content),
           ...(files.length > 0 ? { files: files.map((f) => ({ name: f.name, data: Buffer.from(f.data) })) } : {}),
         })) as ApiMessage;
         return message.id;
@@ -310,7 +311,7 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     async dm(userId, content) {
       try {
         const channel = (await rest.post(Routes.userChannels(), { body: { recipient_id: userId } })) as { id: string };
-        const message = (await rest.post(Routes.channelMessages(channel.id), { body: content })) as ApiMessage;
+        const message = (await rest.post(Routes.channelMessages(channel.id), { body: once(content) })) as ApiMessage;
         return message.id;
       } catch (error) {
         throw refused(error);
@@ -417,6 +418,14 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
       await client.destroy();
     },
   };
+}
+
+/**
+ * A new message with a nonce Discord enforces: @discordjs/rest sends a POST again after a timeout or a 5xx, and when
+ * the first one did arrive Discord answers with that message instead of posting it twice (CLAUDE.md rule 9).
+ */
+function once(content: MessageContent): MessageContent & { nonce: string; enforce_nonce: true } {
+  return { ...content, nonce: randomUUID().replace(/-/g, "").slice(0, 25), enforce_nonce: true };
 }
 
 function failReason(error: unknown): FailReason {

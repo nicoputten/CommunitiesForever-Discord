@@ -152,6 +152,8 @@ export class FakeDiscord implements Discord {
     this.registered.push(commands);
     return commands.length;
   };
+  /** Posts that arrive in the channel, but whose answer is lost (a timeout): the bot can't know they arrived. */
+  postsLost = 0;
   post = async (channel: string, content: MessageContent, files: readonly Attachment[] = []) => {
     if (this.postFailures > 0) {
       this.postFailures--;
@@ -165,6 +167,10 @@ export class FakeDiscord implements Discord {
       files: files.map((f) => f.name),
       texts: content.embeds.flatMap((e) => [e.url ?? "", e.description ?? ""]),
     });
+    if (this.postsLost > 0) {
+      this.postsLost--;
+      throw new PostError(undefined);
+    }
     return id;
   };
   editFailures = 0;

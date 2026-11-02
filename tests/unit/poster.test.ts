@@ -136,6 +136,20 @@ describe("runPoster", () => {
     await running;
   });
 
+  it("reads the channel for markers again after a post without an answer, so it never posts twice", async () => {
+    discord.postsLost = 1;
+    site.add(milestonesEvent(4));
+    const running = run();
+    await vi.waitFor(() =>
+      expect(log.texts()).toContain("discord: posting event 4 failed (code none); trying again in 5 s"),
+    );
+    await vi.advanceTimersByTimeAsync(5_000);
+    await vi.waitFor(() => expect(site.acked.get(4)).toBe(discord.messages[0]?.id));
+    expect(discord.messages).toHaveLength(1);
+    stop.abort();
+    await running;
+  });
+
   it("waits out a site outage, a refused token at the longest wait", async () => {
     site.settingsDown = 1;
     site.eventsDown = 1;
