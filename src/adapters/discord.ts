@@ -313,7 +313,9 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     async dm(userId, content) {
       try {
         const channel = (await rest.post(Routes.userChannels(), { body: { recipient_id: userId } })) as { id: string };
-        const message = (await rest.post(Routes.channelMessages(channel.id), { body: fitLimits(content) })) as ApiMessage;
+        const message = (await rest.post(Routes.channelMessages(channel.id), {
+          body: fitLimits(content),
+        })) as ApiMessage;
         return message.id;
       } catch (error) {
         throw refused(error);
