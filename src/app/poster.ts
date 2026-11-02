@@ -241,7 +241,9 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       } catch (error) {
         const name = what === "doomsday" ? "Doomsday" : what;
         if (lasting(error)) {
-          log.error(`discord: the ${name} channel can't be read (${problemOf(error)}); its posts wait, the others go on`);
+          log.error(
+            `discord: the ${name} channel can't be read (${problemOf(error)}); its posts wait, the others go on`,
+          );
           scanned.add(ch[what]);
           unreadable.add(ch[what]);
           continue;

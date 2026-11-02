@@ -79,4 +79,3 @@ export async function syncEmoji(discord: Discord, log: Log, read: ReadEmoji = re
 function emojiKey(name: string): string | undefined {
   return /^cf_(.+)_[0-9a-f]{6}$/.exec(name)?.[1];
 }
-

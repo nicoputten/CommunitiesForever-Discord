@@ -18,7 +18,7 @@ import type { Emoji } from "../core/emoji.js";
 import type { CommandDefinition } from "../core/commands.js";
 import type { ConnectionEvent, FailReason } from "../core/connection.js";
 import type { GuildSnapshot } from "../core/guild.js";
-import type { MessageContent, PostedMessage } from "../core/message.js";
+import { type MessageContent, type PostedMessage, fitLimits } from "../core/message.js";
 
 export interface Discord {
   /** Logs in; resolves undefined once the gateway accepted the bot, or the reason it never will. */
@@ -181,12 +181,15 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     if (interaction.isButton() || interaction.isStringSelectMenu()) {
       let deferred: Promise<unknown> | undefined;
       let deferredAs: "reply" | "update" | undefined;
-      const answer = (content: MessageContent) => ({
-        ...(content.content !== undefined ? { content: content.content } : {}),
-        embeds: content.embeds,
-        allowedMentions: { parse: [] },
-        components: (content.components ?? []) as never[],
-      });
+      const answer = (given: MessageContent) => {
+        const content = fitLimits(given);
+        return {
+          ...(content.content !== undefined ? { content: content.content } : {}),
+          embeds: content.embeds,
+          allowedMentions: { parse: [] },
+          components: (content.components ?? []) as never[],
+        };
+      };
       const press: ButtonPress = {
         customId: interaction.customId,
         userId: interaction.user.id,
@@ -229,7 +232,7 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
           try {
             // The ephemeral answer stays; the shared copy is a new message in the channel.
             await interaction.reply({
-              embeds: content.embeds,
+              embeds: fitLimits(content).embeds,
               allowedMentions: { parse: [] },
               files: files(attachments),
             });
@@ -262,7 +265,7 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
         await deferred;
         try {
           await interaction.editReply({
-            embeds: content.embeds,
+            embeds: fitLimits(content).embeds,
             allowedMentions: { parse: [] },
             files: files(attachments),
             ...(content.components !== undefined ? { components: content.components } : {}),
@@ -296,7 +299,7 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     async post(channelId, content, files = []) {
       try {
         const message = (await rest.post(Routes.channelMessages(channelId), {
-          body: once(content),
+          body: once(fitLimits(content)),
           ...(files.length > 0 ? { files: files.map((f) => ({ name: f.name, data: Buffer.from(f.data) })) } : {}),
         })) as ApiMessage;
         return message.id;
@@ -310,8 +313,8 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
           // Discord keeps the attachments listed in `attachments`; the new files are listed by their index.
           body:
             files === undefined
-              ? content
-              : { ...content, attachments: files.map((f, id) => ({ id, filename: f.name })) },
+              ? fitLimits(content)
+              : { ...fitLimits(content), attachments: files.map((f, id) => ({ id, filename: f.name })) },
           ...(files !== undefined ? { files: files.map((f) => ({ name: f.name, data: Buffer.from(f.data) })) } : {}),
         });
       } catch (error) {
@@ -321,7 +324,9 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
     async dm(userId, content) {
       try {
         const channel = (await rest.post(Routes.userChannels(), { body: { recipient_id: userId } })) as { id: string };
-        const message = (await rest.post(Routes.channelMessages(channel.id), { body: once(content) })) as ApiMessage;
+        const message = (await rest.post(Routes.channelMessages(channel.id), {
+          body: once(fitLimits(content)),
+        })) as ApiMessage;
         return message.id;
       } catch (error) {
         throw refused(error);
