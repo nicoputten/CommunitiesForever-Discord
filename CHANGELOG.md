@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- The weekly recap shows the class icon before each character and friend its cards name (with a site that sends the classes).
 - A post can no longer show up twice when Discord answers slowly or briefly fails: the bot checks the channel before it tries again.
 - The site's channel lists only offer channels where the bot may also attach files and read the message history. Without those, posts with images were refused there, and posts could come twice after a restart.
 - When a changed icon can't be uploaded at start, names keep the old icon instead of showing none.

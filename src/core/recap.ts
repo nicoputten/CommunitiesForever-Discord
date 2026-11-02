@@ -3,7 +3,7 @@
 // to 8 embeds: the header with the numbers, the award, the cards (each its own embed, with the recap icon as thumbnail
 // or its map), the Doomsday section and the challenge, then the link buttons. Pure: the event comes in as read from
 // the site, the message goes out as Discord's JSON, the images as files for the poster to fetch or read and attach.
-import { RECAP_CARD_ICONS, RECAP_ICONS } from "./emoji.js";
+import { type Emojis, NO_EMOJI, RECAP_CARD_ICONS, RECAP_ICONS, icon as classIcon } from "./emoji.js";
 import { thousands } from "./feats.js";
 import { type RecapDoomsday, readRecapDoomsday, recapDoomsdayEmbed } from "./ladder.js";
 import { CLASS_COLOURS, type Embed, type FileSource, GOLD, type MessageContent, marker } from "./message.js";
@@ -20,6 +20,8 @@ export interface RecapCard {
   image?: string;
   /** BOT-20: the award winner's class, for the award's colour. */
   classFile?: string;
+  /** BOT-23 (web WEB-72): the class of each name the card writes, keyed exactly as written. */
+  classes?: Readonly<Record<string, string>>;
 }
 
 export interface Recap {
@@ -84,7 +86,38 @@ function card(value: unknown): RecapCard | undefined {
     ...opt("slot", text(value.slot)),
     ...opt("image", image !== undefined && /^[a-z0-9][a-z0-9-]{0,80}$/i.test(image) ? image : undefined),
     ...opt("classFile", text(value.classFile)),
+    ...opt("classes", readClasses(value.classes)),
   };
+}
+
+/** WEB-72: `{ "<name>": "<classFile>" }`; undefined when it isn't there or names nobody. */
+function readClasses(value: unknown): Record<string, string> | undefined {
+  if (!isObject(value) || Array.isArray(value)) return undefined;
+  const classes: Record<string, string> = {};
+  for (const [name, classFile] of Object.entries(value)) {
+    const file = text(classFile);
+    if (name.trim() !== "" && file !== undefined) classes[name] = file;
+  }
+  return Object.keys(classes).length > 0 ? classes : undefined;
+}
+
+/**
+ * BOT-23: the class icon before each name of `classes` in `s`. The longest names first, so a character "Mira
+ * Sunstrider" wins over a friend "Mira", and whole names only ("Mira" not in "Miranda"). A name whose class has no
+ * emoji, and a card without `classes` (an older site), stay as they are.
+ */
+export function withClassIcons(
+  s: string,
+  classes: Readonly<Record<string, string>> | undefined,
+  icons: Emojis,
+): string {
+  const names = Object.keys(classes ?? {})
+    .filter((name) => classIcon(icons, classes?.[name]) !== "")
+    .sort((a, b) => b.length - a.length);
+  if (names.length === 0) return s;
+  const alternatives = names.map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const pattern = new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives})(?![\\p{L}\\p{N}])`, "gu");
+  return s.replace(pattern, (name) => `${classIcon(icons, classes?.[name])}${name}`);
 }
 
 /** The `recap` event's data (or `GET recap/latest`), read defensively; undefined when it isn't a recap. */
@@ -182,7 +215,8 @@ export function recapFiles(recap: Recap): FileSource[] {
  * 7. the Doomsday section (gold): PvE and PvP top 3 side by side, never added together; "Most devoted" underneath
  * 8. the challenge (grey)
  * and the link buttons "The full week ↗" and "Doomsday ladder ↗". Texts exactly as the site wrote them ("Who am I?"
- * answers are Discord spoilers); mentions are off. `attached`: the files the poster could get; a missing image is left
+ * answers are Discord spoilers), BOT-23 with the class icon of `icons` before each name the site gave a class; mentions
+ * are off. `attached`: the files the poster could get; a missing image is left
  * out and the rest goes out anyway. `eventId` marks the post so a restart finds it; undefined for `/recap`.
  */
 export function recapMessage(
@@ -191,7 +225,10 @@ export function recapMessage(
   attached: readonly string[],
   eventId?: number,
   doomsdayUrl = `${siteUrl}/doomsday`,
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
+  const named = (c: RecapCard) =>
+    `**${withClassIcons(c.title, c.classes, icons)}**\n${withClassIcons(c.text, c.classes, icons)}`;
   const has = (name: string) => attached.includes(name);
   const header = `${headerImage(recap)}.png`;
   const embeds: Embed[] = [
@@ -217,7 +254,7 @@ export function recapMessage(
         name: clip(award.name, LIMIT.title),
         ...(icon !== undefined && has(icon.name) ? { icon_url: `attachment://${icon.name}` } : {}),
       },
-      description: clip(`**${award.title}**\n${award.text}`, LIMIT.description),
+      description: clip(named(award), LIMIT.description),
       color:
         (award.classFile && CLASS_COLOURS[award.classFile]) ||
         (icon !== undefined ? ICON_COLOURS[icon.key] : undefined) ||
@@ -231,7 +268,7 @@ export function recapMessage(
     const mapName = map !== undefined && has(`${map}.png`) ? `${map}.png` : undefined;
     embeds.push({
       title: clip(c.name, LIMIT.title),
-      description: clip(`**${c.title}**\n${c.text}`, LIMIT.description),
+      description: clip(named(c), LIMIT.description),
       color: (icon !== undefined ? ICON_COLOURS[icon.key] : undefined) ?? GOLD,
       ...(mapName !== undefined
         ? { image: { url: `attachment://${mapName}` }, footer: { text: MAP_CREDIT } }

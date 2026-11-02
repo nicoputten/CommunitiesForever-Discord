@@ -123,7 +123,17 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         const files = await loadFiles(testFiles(action.kind, action.images), site, log, signal, "the test post");
         const names = files.map((f) => f.name);
         const now = Math.floor(deps.now() / 1000);
-        const content = testSample(action.kind, eventId, siteUrl, host, now, page, names, action.images);
+        const content = testSample(
+          action.kind,
+          eventId,
+          siteUrl,
+          host,
+          now,
+          page,
+          names,
+          action.images,
+          deps.icons?.current,
+        );
         // Only what the sample shows, else Discord adds the rest as loose files.
         const shown = attachmentNames(content);
         const id = await discord.post(
@@ -144,6 +154,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
           files.map((f) => f.name),
           eventId,
           page,
+          deps.icons?.current,
         );
         const id = await discord.post(ch.recap, content, files);
         log.info(`posted event ${eventId} (recap of week ${action.recap.week})`);
