@@ -1,5 +1,7 @@
 # Changelog
 
+## Unreleased
+
 ## v0.5.0 (2026-11-02)
 - The weekly recap shows the class icon before each character and friend its cards name (with a site that sends the classes).
 - A post can no longer show up twice when Discord answers slowly or briefly fails: the bot checks the channel before it tries again.
