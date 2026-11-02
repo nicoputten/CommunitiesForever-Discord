@@ -59,6 +59,20 @@ export function backoffSeconds(attempt: number): number {
 
 export const MAX_BACKOFF_SECONDS = 300;
 
+/** How long an event Discord refuses for good waits before it is tried again, while the others go on. */
+export const HOLD_MS = 5 * 60_000;
+
+/**
+ * Discord's codes that won't change by trying again soon: 10003 unknown channel, 40005 too large, 50001 missing access,
+ * 50006 empty message, 50008 not a text channel, 50013 missing permissions, 50035 invalid form body (e.g. too long).
+ * Only someone changing the server, or a newer bot, fixes them.
+ */
+const LASTING = new Set([10003, 40005, 50001, 50006, 50008, 50013, 50035]);
+
+export function isLasting(code: number | string | undefined): boolean {
+  return LASTING.has(Number(code));
+}
+
 /** How often the connected bot writes its heartbeat, and how old it may be for the health check. */
 export const HEARTBEAT_MS = 15_000;
 export const HEARTBEAT_MAX_AGE_MS = 60_000;

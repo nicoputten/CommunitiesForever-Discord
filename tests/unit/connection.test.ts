@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { COMMANDS, type CommandOption } from "../../src/core/commands.js";
-import { backoffSeconds, isConnected, isHealthy, stateText } from "../../src/core/connection.js";
+import { backoffSeconds, isConnected, isHealthy, isLasting, stateText } from "../../src/core/connection.js";
 import { readSettings, settingsText } from "../../src/core/settings.js";
 
 describe("stateText", () => {
@@ -105,5 +105,12 @@ describe("COMMANDS", () => {
       }
     }
     expect(COMMANDS.find((c) => c.name === "run")?.options?.map((o) => o.name)).toEqual(["edit", "cancel"]);
+  });
+});
+
+describe("isLasting", () => {
+  it("knows Discord's refusals that trying again soon won't fix", () => {
+    for (const code of [10003, 40005, 50001, 50006, 50008, 50013, 50035, "50013"]) expect(isLasting(code)).toBe(true);
+    for (const code of [130000, 10008, 50007, undefined, "none"]) expect(isLasting(code)).toBe(false);
   });
 });
