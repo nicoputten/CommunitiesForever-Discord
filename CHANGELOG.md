@@ -2,6 +2,10 @@
 
 ## Unreleased
 - A post can no longer show up twice when Discord answers slowly or briefly fails: the bot checks the channel before it tries again.
+- The site's channel lists only offer channels where the bot may also attach files and read the message history. Without those, posts with images were refused there, and posts could come twice after a restart.
+- When a changed icon can't be uploaded at start, names keep the old icon instead of showing none.
+- A post Discord refuses (for example a channel where the bot lacks a permission) no longer stops all other posts: it is tried again every 5 minutes while feats, runs, Doomsday and the recap go on in their channels.
+- A very long text (a recap with long cards, many new characters in one feat post, a long list in a command's answer) is cut short with "…" instead of the post or answer being refused by Discord.
 
 ## v0.4.1 (2026-10-30)
 - Test posts from the site's Discord page show the site's sample images, as the real posts do: the Doomsday board picture, the feat card, and the recap's award picture and zone map. They still say "Test" and "not real". An older site still gets the text board.
