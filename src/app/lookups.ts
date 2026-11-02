@@ -19,6 +19,7 @@ import {
   readProfessions,
   readWhereis,
   readWho,
+  shareGoneMessage,
   sharedMessage,
   whereisMessage,
   whoMessage,
@@ -233,11 +234,14 @@ export async function answerLookup(deps: LookupDeps, command: SlashCommand, sign
   );
 }
 
-/** Share: posts the kept answer in the channel, "Shared by <display name>" under it; once. */
+/** Share: posts the kept answer in the channel, "Shared by <display name>" under it; once, else it says so. */
 export async function answerShare(deps: LookupDeps, press: ButtonPress): Promise<void> {
   if (!press.customId.startsWith("share:")) return;
   const kept = deps.shares.take(press.customId, deps.now());
-  if (kept === undefined) return;
+  if (kept === undefined) {
+    await press.reply(shareGoneMessage());
+    return;
+  }
   await press.share(sharedMessage(kept.content, kept.asker), kept.files);
 }
 

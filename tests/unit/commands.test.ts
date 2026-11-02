@@ -179,6 +179,7 @@ describe("Share", () => {
     const customId = answers[0]!.content.components![0]!.components[0]!.custom_id!;
 
     const shared: MessageContent[] = [];
+    const replies: MessageContent[] = [];
     const press = (id: string): ButtonPress => ({
       customId: id,
       userId: USER,
@@ -187,7 +188,9 @@ describe("Share", () => {
         shared.push(content);
       },
       defer: () => undefined,
-      reply: async () => undefined,
+      reply: async (content) => {
+        replies.push(content);
+      },
       update: async () => undefined,
     });
     handlers.button(press(customId));
@@ -195,12 +198,13 @@ describe("Share", () => {
     expect(shared).toHaveLength(1);
     expect(shared[0]?.embeds[0]?.description).toContain("-# Shared by Ada");
     expect(shared[0]?.components).toBeUndefined();
-    // Once only.
+    // Once only; a second press says so, only to the presser.
     handlers.button(press(customId));
     await new Promise((r) => setTimeout(r, 0));
     expect(shared).toHaveLength(1);
+    expect(replies.map((r) => r.embeds[0]?.title)).toEqual(["Can't share this any more"]);
 
-    // An old button does nothing.
+    // An old button says so too.
     const again = asked("alts", { friend: "Nico" });
     handlers.command(again.command);
     await again.answered;
@@ -208,6 +212,23 @@ describe("Share", () => {
     handlers.button(press(again.answers[0]!.content.components![0]!.components[0]!.custom_id!));
     await new Promise((r) => setTimeout(r, 0));
     expect(shared).toHaveLength(1);
+    expect(replies).toHaveLength(2);
+  });
+});
+
+describe("a failed answer", () => {
+  it("tells the asker something went wrong instead of leaving them waiting", async () => {
+    const { site, handlers } = setup();
+    site.recapLatest = async () => {
+      throw new TypeError("a bug");
+    };
+    const { command, answers, answered } = asked("recap");
+    handlers.command(command);
+    await answered;
+    expect(answers[0]?.content.embeds[0]).toMatchObject({
+      title: "Something went wrong",
+      description: "Try again in a moment.",
+    });
   });
 });
 

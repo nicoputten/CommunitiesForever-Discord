@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- When an answer to a command or button fails, you see "Something went wrong. Try again in a moment." instead of waiting until Discord gives up.
+- Share pressed after 15 minutes, or a second time, says so instead of "This interaction failed".
+- Two more refusals from the site have words: "That's already your answer." and "That sign-up is no longer on the run."
 
 ## v0.4.1 (2026-10-30)
 - Test posts from the site's Discord page show the site's sample images, as the real posts do: the Doomsday board picture, the feat card, and the recap's award picture and zone map. They still say "Test" and "not real". An older site still gets the text board.

@@ -163,6 +163,16 @@ export function nothingMessage(title: string, text: string): MessageContent {
   return message({ title, description: text, color: GOLD });
 }
 
+/** An answer that failed on the bot's side (a refusal by Discord, a bug): instead of waiting until Discord gives up. */
+export function failedMessage(): MessageContent {
+  return nothingMessage("Something went wrong", "Try again in a moment.");
+}
+
+/** Share pressed after its 15 minutes, or a second time. */
+export function shareGoneMessage(): MessageContent {
+  return nothingMessage("Can't share this any more", "Ask again, then press Share within 15 minutes.");
+}
+
 /** `/whereis`: the characters by last sighting, with the card image of the newest (attached as `card`). */
 export function whereisMessage(
   title: string,
