@@ -143,6 +143,10 @@ export class FakeDiscord implements Discord {
   loginResult: Promise<FailReason | undefined> = new Promise(() => undefined);
   registerError = false;
   postFailures = 0;
+  /** Discord's code for the refused posts: missing permissions unless a test says otherwise. */
+  postFailCode = 50013;
+  /** Channels whose messages the bot may not read (50001). */
+  unreadable = new Set<string>();
   messages: (PostedMessage & { channel: string; content: MessageContent; files: string[] })[] = [];
   private next = 1100000000000000001n;
 
@@ -152,10 +156,12 @@ export class FakeDiscord implements Discord {
     this.registered.push(commands);
     return commands.length;
   };
+  /** Posts that arrive in the channel, but whose answer is lost (a timeout): the bot can't know they arrived. */
+  postsLost = 0;
   post = async (channel: string, content: MessageContent, files: readonly Attachment[] = []) => {
     if (this.postFailures > 0) {
       this.postFailures--;
-      throw new PostError(50013);
+      throw new PostError(this.postFailCode);
     }
     const id = String(this.next++);
     this.messages.push({
@@ -165,6 +171,10 @@ export class FakeDiscord implements Discord {
       files: files.map((f) => f.name),
       texts: content.embeds.flatMap((e) => [e.url ?? "", e.description ?? ""]),
     });
+    if (this.postsLost > 0) {
+      this.postsLost--;
+      throw new PostError(undefined);
+    }
     return id;
   };
   editFailures = 0;
@@ -237,7 +247,10 @@ export class FakeDiscord implements Discord {
     this.dms.push({ user, content });
     return String(this.next++);
   };
-  recentPosts = async (channel: string) => this.messages.filter((m) => m.channel === channel).slice(-50);
+  recentPosts = async (channel: string) => {
+    if (this.unreadable.has(channel)) throw new PostError(50001);
+    return this.messages.filter((m) => m.channel === channel).slice(-50);
+  };
   destroy = async () => {
     this.destroyed = true;
   };

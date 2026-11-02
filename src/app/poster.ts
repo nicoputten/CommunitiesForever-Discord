@@ -1,6 +1,8 @@
 // The poster (BOT-03): reads the site's settings, long-polls its events, posts each one once and acknowledges it
 // (CLAUDE.md rule 9). Posts carry a marker (core/message.ts), so after a restart the bot finds what it already posted
-// in its channels and only acknowledges it. Never fatal: the site and Discord may be away for a while. Each kind of
+// in its channels and only acknowledges it. Never fatal: the site and Discord may be away for a while, and an event
+// Discord refuses for good (missing permissions, too long) is held and tried again every 5 minutes while the others
+// go on. Each kind of
 // event has its channel (the posts channel when none is set) and its handler:
 // - feats (the `milestones` event): app/featPosts.ts, grouped by editing (BOT-09, BOT-14), the feats channel (BOT-17)
 // - the weekly recap with its card images (BOT-05): the recap channel. A recap missed while the bot was away comes
@@ -9,10 +11,10 @@
 // - the daily Doomsday board (BOT-15): app/doomsdayPosts.ts; the weekly ladder (BOT-16): the Doomsday channel
 // - test posts (WEB-39, BOT-17): the plain one in the posts channel, a sample per kind in that kind's channel
 import type { Discord } from "../adapters/discord.js";
-import { PostError } from "../adapters/discord.js";
+import { PostError, problemOf } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site, SiteAnswer } from "../adapters/site.js";
-import { MAX_BACKOFF_SECONDS, backoffSeconds } from "../core/connection.js";
+import { HOLD_MS, MAX_BACKOFF_SECONDS, backoffSeconds, isLasting } from "../core/connection.js";
 import { boardUrl } from "../core/doomsday.js";
 import { type Action, decide, readEvents } from "../core/events.js";
 import { ladderMessage } from "../core/ladder.js";
@@ -70,6 +72,11 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
   let posted = new Map<number, string>();
   // The other channels whose posts were read for markers.
   let scanned = new Set<string>();
+  // Channels Discord won't let the bot read: read again when a held event is tried again.
+  const unreadable = new Set<string>();
+  // Events Discord refused for good (missing permissions, too long, a bug): event id → when to try again, ms. The
+  // other events go on meanwhile; one refused post never stops the rest.
+  const held = new Map<number, number>();
   const icons = opt("icons", deps.icons);
   const runs = deps.runPosts ?? new RunPosts({ siteUrl, discord, log, now: deps.now, ...icons });
   const boards = new DoomsdayBoards(
@@ -116,7 +123,17 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         const files = await loadFiles(testFiles(action.kind, action.images), site, log, signal, "the test post");
         const names = files.map((f) => f.name);
         const now = Math.floor(deps.now() / 1000);
-        const content = testSample(action.kind, eventId, siteUrl, host, now, page, names, action.images);
+        const content = testSample(
+          action.kind,
+          eventId,
+          siteUrl,
+          host,
+          now,
+          page,
+          names,
+          action.images,
+          deps.icons?.current,
+        );
         // Only what the sample shows, else Discord adds the rest as loose files.
         const shown = attachmentNames(content);
         const id = await discord.post(
@@ -137,6 +154,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
           files.map((f) => f.name),
           eventId,
           page,
+          deps.icons?.current,
         );
         const id = await discord.post(ch.recap, content, files);
         log.info(`posted event ${eventId} (recap of week ${action.recap.week})`);
@@ -184,6 +202,16 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       await sleep(SETTINGS_EVERY_MS - (deps.now() - settingsAt), signal);
       continue;
     }
+    const due = [...held].filter(([, at]) => at <= deps.now());
+    if (due.length > 0) {
+      // A held event is due: from the start, so the site hands it out again (held again if refused again; one the site
+      // no longer has is simply gone); unreadable channels are read again.
+      for (const [id] of due) held.delete(id);
+      cursor = "0";
+      for (const ch of unreadable) scanned.delete(ch);
+      if (channel !== undefined && unreadable.has(channel)) channel = undefined;
+      unreadable.clear();
+    }
     if (wanted !== channel) {
       try {
         const recent = await discord.recentPosts(wanted);
@@ -191,8 +219,15 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         runs.forget();
         runs.learn(recent);
       } catch (error) {
-        await retry(`discord: reading the posts channel failed (${codeOf(error)})`);
-        continue;
+        if (!lasting(error)) {
+          await retry(`discord: reading the posts channel failed (${problemOf(error)})`);
+          continue;
+        }
+        // Nothing of the bot's can be there; its events are held when posting there is refused too.
+        log.error(`discord: the posts channel can't be read (${problemOf(error)}); its posts wait, the others go on`);
+        posted = new Map();
+        runs.forget();
+        unreadable.add(wanted);
       }
       channel = wanted;
       cursor = "0";
@@ -215,7 +250,16 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
         runs.learn(recent);
         scanned.add(ch[what]);
       } catch (error) {
-        unread = `discord: reading the ${what === "doomsday" ? "Doomsday" : what} channel failed (${codeOf(error)})`;
+        const name = what === "doomsday" ? "Doomsday" : what;
+        if (lasting(error)) {
+          log.error(
+            `discord: the ${name} channel can't be read (${problemOf(error)}); its posts wait, the others go on`,
+          );
+          scanned.add(ch[what]);
+          unreadable.add(ch[what]);
+          continue;
+        }
+        unread = `discord: reading the ${name} channel failed (${problemOf(error)})`;
         break;
       }
     }
@@ -248,17 +292,30 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
           break;
         }
       }
+      if ((held.get(event.id) ?? 0) > deps.now()) continue;
       const action = decide(event, settings, posted, siteUrl, host);
       if (action.do === "leave" || waits(action, settings)) continue;
+      // An update of a held board waits for it, else it would post the board a second time.
+      if (action.do === "board" && action.board.update !== undefined && held.has(action.board.update.boardEvent)) {
+        continue;
+      }
       let messageId: string | undefined;
       try {
         messageId = await handle(action, event.id, settings, ch);
       } catch (error) {
+        if (lasting(error)) {
+          held.set(event.id, deps.now() + HOLD_MS);
+          log.error(`${failure(action, event.id)} (${problemOf(error)}); trying it again in 5 min, the others go on`);
+          continue;
+        }
         failed = true;
-        await retry(`${failure(action, event.id)} (${codeOf(error)})`);
+        // Without Discord's answer the post may have arrived: the channels are read for markers again first.
+        if (!(error instanceof PostError) || error.code === undefined) channel = undefined;
+        await retry(`${failure(action, event.id)} (${problemOf(error)})`);
         break;
       }
       if (signal.aborted) return;
+      held.delete(event.id);
       if (messageId === undefined) continue;
       posted.set(event.id, messageId);
       const ack = await site.posted(event.id, messageId, signal);
@@ -329,8 +386,9 @@ function failure(action: Handled, eventId: number): string {
   }
 }
 
-function codeOf(error: unknown): string {
-  return error instanceof PostError ? `code ${error.code ?? "none"}` : "no answer";
+/** Whether trying again soon won't help: Discord's lasting refusals, and an error that isn't Discord's (a bug). */
+function lasting(error: unknown): boolean {
+  return !(error instanceof PostError) || isLasting(error.code);
 }
 
 /** Waits `ms`, or less when `signal` aborts. */

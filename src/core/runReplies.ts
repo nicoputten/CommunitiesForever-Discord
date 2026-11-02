@@ -445,6 +445,8 @@ export function refusalMessage(error: string | undefined, status: number | undef
     unknown_dungeon: "No such dungeon: pick one from the list.",
     already_cancelled: "This run was already cancelled.",
     expired: "This ask has expired: its 10 minutes are over.",
+    same: "That's already your answer.",
+    unknown_sign_up: "That sign-up is no longer on the run.",
   };
   const known = error !== undefined ? texts[error] : undefined;
   if (known !== undefined) return reply("Not possible", known);

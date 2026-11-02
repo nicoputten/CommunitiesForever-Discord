@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.5.0 (2026-11-02)
+- The weekly recap shows the class icon before each character and friend its cards name (with a site that sends the classes).
+- A post can no longer show up twice when Discord answers slowly or briefly fails: the bot checks the channel before it tries again.
+- The site's channel lists only offer channels where the bot may also attach files and read the message history. Without those, posts with images were refused there, and posts could come twice after a restart.
+- When a changed icon can't be uploaded at start, names keep the old icon instead of showing none.
+- A post Discord refuses (for example a channel where the bot lacks a permission) no longer stops all other posts: it is tried again every 5 minutes while feats, runs, Doomsday and the recap go on in their channels.
+- A very long text (a recap with long cards, many new characters in one feat post, a long list in a command's answer) is cut short with "…" instead of the post or answer being refused by Discord.
+- When an answer to a command or button fails, you see "Something went wrong. Try again in a moment." instead of waiting until Discord gives up.
+- Share pressed after 15 minutes, or a second time, says so instead of "This interaction failed".
+- Two more refusals from the site have words: "That's already your answer." and "That sign-up is no longer on the run."
+
 ## v0.4.1 (2026-10-30)
 - Test posts from the site's Discord page show the site's sample images, as the real posts do: the Doomsday board picture, the feat card, and the recap's award picture and zone map. They still say "Test" and "not real". An older site still gets the text board.
 - A note a friend adds to an answer in the game ("Late, start without me") shows next to that answer in the run or ask post.

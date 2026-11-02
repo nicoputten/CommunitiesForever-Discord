@@ -96,6 +96,19 @@ describe("the start-up sync", () => {
     expect(icons.WARRIOR).toBeUndefined();
     expect(log.texts()).toContain("discord: uploading the warrior emoji failed (code 50035)");
   });
+
+  it("keeps the older icon, and doesn't delete it, when the upload of a changed picture fails", async () => {
+    const discord = new FakeDiscord();
+    const log = logger();
+    const first = await syncEmoji(discord, log.log);
+    discord.emojiFailures = 1;
+    const changed = await syncEmoji(discord, log.log, async (file) =>
+      file === "class-icons/mage.png" ? new Uint8Array([1, 2, 3]) : readEmojiFile(file),
+    );
+    expect(changed.MAGE).toBe(first.MAGE);
+    expect(discord.deletedEmoji).toEqual([]);
+    expect(log.texts().at(-1)).toBe("emoji: 24 of 24 ready (0 uploaded)");
+  });
 });
 
 describe("names with their icon", () => {

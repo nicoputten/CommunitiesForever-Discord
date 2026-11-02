@@ -5,6 +5,7 @@
 // (web WEB-68): the test event names the site's sample images (`images`), drawn with the same made-up names; they go
 // into the sample's data where the real event has its image ids, so the real builders and the real fetch-and-attach
 // path show them. Without `images` (an older site) the samples look as before: the board as text. Pure.
+import { type Emojis, NO_EMOJI } from "./emoji.js";
 import { type Board, boardMessage, readBoard } from "./doomsday.js";
 import { type Group, groupedMessage, milestoneFiles } from "./milestones.js";
 import { type FileSource, type MessageContent } from "./message.js";
@@ -97,6 +98,7 @@ function recapSample(images: TestImages = {}): Recap {
       title: `${CHARACTER.name} took 12 honorable kills`,
       text: "All of them test dummies.",
       classFile: CHARACTER.classFile,
+      classes: { [CHARACTER.name]: CHARACTER.classFile },
       ...opt("image", images.award),
     },
     cards: [
@@ -116,6 +118,7 @@ function recapSample(images: TestImages = {}): Recap {
             name: "Class census",
             title: "One Warlock",
             text: `${CHARACTER.name} holds the line alone.`,
+            classes: { [CHARACTER.name]: CHARACTER.classFile },
           },
       { id: "F16", slot: "fun", name: "Most deaths", title: `${FRIEND}: 3 deaths`, text: "The spirit healer waves." },
     ],
@@ -134,8 +137,9 @@ function recap(
   doomsdayUrl: string,
   attached: readonly string[],
   images: TestImages,
+  icons: Emojis,
 ): MessageContent {
-  return recapMessage(recapSample(images), siteUrl, attached, eventId, doomsdayUrl);
+  return recapMessage(recapSample(images), siteUrl, attached, eventId, doomsdayUrl, icons);
 }
 
 /** The sample board's data, with the site's sample picture when there is one. */
@@ -213,12 +217,13 @@ export function testSample(
   pageUrl: string,
   attached: readonly string[] = [],
   images: TestImages = {},
+  icons: Emojis = NO_EMOJI,
 ): MessageContent {
   switch (kind) {
     case "feats":
       return asTest(feats(eventId, siteUrl, siteHost, attached, images));
     case "recap":
-      return asTest(recap(eventId, siteUrl, pageUrl, attached, images));
+      return asTest(recap(eventId, siteUrl, pageUrl, attached, images, icons));
     case "doomsday":
       return asTest(board(eventId, siteUrl, now, pageUrl, attached, images));
   }

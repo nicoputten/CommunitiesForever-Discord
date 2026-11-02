@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import type { Attachment, ButtonPress, SlashCommand } from "../../src/adapters/discord.js";
+import { describe, expect, it, vi } from "vitest";
+import { type Attachment, type ButtonPress, PostError, type SlashCommand } from "../../src/adapters/discord.js";
 import { commandHandlers } from "../../src/app/commands.js";
 import { SHARE_FOR_MS } from "../../src/app/lookups.js";
 import type { MessageContent } from "../../src/core/message.js";
@@ -179,6 +179,7 @@ describe("Share", () => {
     const customId = answers[0]!.content.components![0]!.components[0]!.custom_id!;
 
     const shared: MessageContent[] = [];
+    const replies: MessageContent[] = [];
     const press = (id: string): ButtonPress => ({
       customId: id,
       userId: USER,
@@ -187,7 +188,9 @@ describe("Share", () => {
         shared.push(content);
       },
       defer: () => undefined,
-      reply: async () => undefined,
+      reply: async (content) => {
+        replies.push(content);
+      },
       update: async () => undefined,
     });
     handlers.button(press(customId));
@@ -195,12 +198,13 @@ describe("Share", () => {
     expect(shared).toHaveLength(1);
     expect(shared[0]?.embeds[0]?.description).toContain("-# Shared by Ada");
     expect(shared[0]?.components).toBeUndefined();
-    // Once only.
+    // Once only; a second press says so, only to the presser.
     handlers.button(press(customId));
     await new Promise((r) => setTimeout(r, 0));
     expect(shared).toHaveLength(1);
+    expect(replies.map((r) => r.embeds[0]?.title)).toEqual(["Can't share this any more"]);
 
-    // An old button does nothing.
+    // An old button says so too.
     const again = asked("alts", { friend: "Nico" });
     handlers.command(again.command);
     await again.answered;
@@ -208,6 +212,23 @@ describe("Share", () => {
     handlers.button(press(again.answers[0]!.content.components![0]!.components[0]!.custom_id!));
     await new Promise((r) => setTimeout(r, 0));
     expect(shared).toHaveLength(1);
+    expect(replies).toHaveLength(2);
+  });
+});
+
+describe("a failed answer", () => {
+  it("tells the asker something went wrong instead of leaving them waiting", async () => {
+    const { site, handlers } = setup();
+    site.recapLatest = async () => {
+      throw new TypeError("a bug");
+    };
+    const { command, answers, answered } = asked("recap");
+    handlers.command(command);
+    await answered;
+    expect(answers[0]?.content.embeds[0]).toMatchObject({
+      title: "Something went wrong",
+      description: "Try again in a moment.",
+    });
   });
 });
 
@@ -235,5 +256,32 @@ describe("autocomplete", () => {
     expect(responses[0]).toEqual([{ name: "Nico", value: "Nico" }]);
     await ask("profession", "tail");
     expect(responses[1]).toEqual([{ name: "Tailoring", value: "Tailoring" }]);
+  });
+});
+
+describe("a failed answer", () => {
+  it("is logged with Discord's code, or the error itself when it is a bug", async () => {
+    const site = new FakeSite();
+    const log = logger();
+    const handlers = commandHandlers(
+      { siteUrl: SITE, site, log: log.log, now: () => NOW },
+      new AbortController().signal,
+    );
+    const refused = asked("recap");
+    refused.command.reply = async () => {
+      throw new PostError(50035);
+    };
+    handlers.command(refused.command);
+    await vi.waitFor(() => expect(log.texts()).toContain("discord: answering /recap failed (code 50035)"));
+
+    site.recapLatest = async () => {
+      throw new TypeError("Cannot read properties of undefined (reading 'week')");
+    };
+    handlers.command(asked("recap").command);
+    await vi.waitFor(() =>
+      expect(log.texts()).toContain(
+        "discord: answering /recap failed (TypeError: Cannot read properties of undefined (reading 'week'))",
+      ),
+    );
   });
 });
