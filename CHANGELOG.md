@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- The site's channel lists only offer channels where the bot may also attach files and read the message history. Without those, posts with images were refused there, and posts could come twice after a restart.
 
 ## v0.4.1 (2026-10-30)
 - Test posts from the site's Discord page show the site's sample images, as the real posts do: the Doomsday board picture, the feat card, and the recap's award picture and zone map. They still say "Test" and "not real". An older site still gets the text board.

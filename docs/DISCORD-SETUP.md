@@ -44,7 +44,7 @@ On the site's Discord page (admin) switch on the posts you want and pick their c
 - **Feats** (BOT-14, BOT-17), **Weekly recap** (BOT-05), **Runs** (planned runs and asks, BOT-04, BOT-12) and **Doomsday** (the daily board and the weekly ladder, BOT-15, BOT-16): each its own channel, or the default one.
 - **Mention role** for new runs: roles set as **mentionable** in the server settings, without @everyone and bot roles.
 - Each box has a test button: the bot posts a made-up sample of that kind in its channel, titled "Test ·" (BOT-17).
-- The channel list holds text and announcement channels where the bot may view, send messages and embed links. A channel missing from the list: give the bot's role those permissions there.
+- The channel list holds text and announcement channels where the bot may view the channel, send messages, embed links, attach files and read the message history (the five permissions of the invite). A channel missing from the list: give the bot's role those permissions there. Without Attach Files the posts with images are refused; without Read Message History the bot can't find its own posts after a restart and would post them twice.
 - Changes in the server show up within about 5 seconds. One exception: giving the bot itself another role isn't seen until the next change or restart (that event needs a privileged intent the bot doesn't use).
 
 Without any channel the bot posts nothing and logs `posts channel not set`. It reads the settings again every 30 seconds, so a new channel (and a test post) works without a restart. After a restart it reads the last 50 messages of each channel to find its own posts, so nothing is posted twice.

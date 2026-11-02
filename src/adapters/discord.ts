@@ -362,10 +362,14 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
       const guild = client.guilds.cache.first();
       if (guild === undefined) return undefined;
       const me = guild.members.me;
+      // Attach Files for the card images; Read Message History to find its own posts after a restart (without it
+      // Discord answers an empty list, and posts would come twice).
       const needed = [
         PermissionFlagsBits.ViewChannel,
         PermissionFlagsBits.SendMessages,
         PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.ReadMessageHistory,
       ];
       return {
         channels: guild.channels.cache.map((channel) => ({
