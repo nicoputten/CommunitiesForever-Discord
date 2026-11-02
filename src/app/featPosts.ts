@@ -2,7 +2,7 @@
 // class icon in its author line, and the feats of uploads within 5 minutes of a post added to it by editing, up to 10. The poster hands each `milestones` event here
 // and acknowledges it with the message id this resolves.
 import type { Attachment, Discord } from "../adapters/discord.js";
-import { PostError } from "../adapters/discord.js";
+import { problemOf } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site } from "../adapters/site.js";
 import { type MessageContent, attachmentNames } from "../core/message.js";
@@ -69,7 +69,7 @@ export class FeatPosts {
         return open.id;
       } catch (error) {
         // Deleted or not editable: a new post instead.
-        log.error(`discord: adding event ${eventId} to the open post failed (${codeOf(error)}); posting it`);
+        log.error(`discord: adding event ${eventId} to the open post failed (${problemOf(error)}); posting it`);
         this.open = undefined;
       }
     }
@@ -89,8 +89,4 @@ export class FeatPosts {
     log.info(`posted event ${eventId}`);
     return id;
   }
-}
-
-function codeOf(error: unknown): string {
-  return error instanceof PostError ? `code ${error.code ?? "none"}` : "no answer";
 }
