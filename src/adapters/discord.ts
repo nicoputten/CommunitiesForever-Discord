@@ -111,9 +111,15 @@ export interface DiscordConfig {
   discordAppId: string;
 }
 
-/** A refused REST call, with Discord's error code (e.g. 50013 missing permissions, 10003 unknown channel). */
+/**
+ * A refused REST call, with Discord's error code (e.g. 50013 missing permissions, 10003 unknown channel) and the HTTP
+ * status, when Discord answered.
+ */
 export class PostError extends Error {
-  constructor(readonly code: number | string | undefined) {
+  constructor(
+    readonly code: number | string | undefined,
+    readonly status?: number,
+  ) {
     super(`Discord refused the request (${code ?? "no answer"})`);
   }
 }
@@ -281,7 +287,8 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
   client.on(Events.Error, () => undefined);
 
   const rest = new REST().setToken(config.discordToken);
-  const refused = (error: unknown) => new PostError(error instanceof DiscordAPIError ? error.code : undefined);
+  const refused = (error: unknown) =>
+    error instanceof DiscordAPIError ? new PostError(error.code, error.status) : new PostError(undefined);
 
   return {
     async login() {

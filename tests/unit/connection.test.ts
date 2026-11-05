@@ -113,4 +113,13 @@ describe("isLasting", () => {
     for (const code of [10003, 40005, 50001, 50006, 50008, 50013, 50035, "50013"]) expect(isLasting(code)).toBe(true);
     for (const code of [130000, 10008, 50007, undefined, "none"]) expect(isLasting(code)).toBe(false);
   });
+
+  it("knows the WoW-linked channel (20062), and takes any other 4xx but the rate limit as lasting", () => {
+    expect(isLasting(20062, 403)).toBe(true);
+    expect(isLasting(29999, 403)).toBe(true);
+    expect(isLasting(undefined, 404)).toBe(true);
+    expect(isLasting(20028, 429)).toBe(false);
+    expect(isLasting(0, 500)).toBe(false);
+    expect(isLasting(0, 503)).toBe(false);
+  });
 });

@@ -158,7 +158,11 @@ export class FakeDiscord implements Discord {
   };
   /** Posts that arrive in the channel, but whose answer is lost (a timeout): the bot can't know they arrived. */
   postsLost = 0;
+  /** Posts refused with postFailCode however often they are tried (e.g. one event in a WoW-linked channel). */
+  refuse: ((channel: string, texts: string[]) => boolean) | undefined;
   post = async (channel: string, content: MessageContent, files: readonly Attachment[] = []) => {
+    const texts = content.embeds.flatMap((e) => [e.url ?? "", e.description ?? ""]);
+    if (this.refuse?.(channel, texts)) throw new PostError(this.postFailCode, 403);
     if (this.postFailures > 0) {
       this.postFailures--;
       throw new PostError(this.postFailCode);

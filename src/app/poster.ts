@@ -1,9 +1,9 @@
 // The poster (BOT-03): reads the site's settings, long-polls its events, posts each one once and acknowledges it
 // (CLAUDE.md rule 9). Posts carry a marker (core/message.ts), so after a restart the bot finds what it already posted
 // in its channels and only acknowledges it. Never fatal: the site and Discord may be away for a while, and an event
-// Discord refuses for good (missing permissions, too long) is held and tried again every 5 minutes while the others
-// go on. Each kind of
-// event has its channel (the posts channel when none is set) and its handler:
+// Discord refuses for good (missing permissions, too long, a channel linked to WoW guild chat) is held and tried again
+// every 5 minutes while the others go on; after GIVE_UP_AFTER refusals it is given up until the channels change or the
+// bot restarts (the site lets it expire after 7 days). Each kind of event has its channel (the posts channel when none is set) and its handler:
 // - feats (the `milestones` event): app/featPosts.ts, grouped by editing (BOT-09, BOT-14), the feats channel (BOT-17)
 // - the weekly recap with its card images (BOT-05): the recap channel. A recap missed while the bot was away comes
 //   when it is back, since the site keeps it until it is acknowledged.
@@ -14,7 +14,14 @@ import type { Discord } from "../adapters/discord.js";
 import { PostError, problemOf } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
 import type { Site, SiteAnswer } from "../adapters/site.js";
-import { HOLD_MS, MAX_BACKOFF_SECONDS, backoffSeconds, isLasting } from "../core/connection.js";
+import {
+  GIVE_UP_AFTER,
+  HOLD_MS,
+  MAX_BACKOFF_SECONDS,
+  backoffSeconds,
+  isLasting,
+  refusalHint,
+} from "../core/connection.js";
 import { boardUrl } from "../core/doomsday.js";
 import { type Action, decide, readEvents } from "../core/events.js";
 import { ladderMessage } from "../core/ladder.js";
@@ -77,6 +84,11 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
   // Events Discord refused for good (missing permissions, too long, a bug): event id → when to try again, ms. The
   // other events go on meanwhile; one refused post never stops the rest.
   const held = new Map<number, number>();
+  // How often each event was refused for good in the current channels; at GIVE_UP_AFTER it is given up: skipped until
+  // the admin picks other channels (or the bot restarts), so one refused post never keeps coming back.
+  const refusals = new Map<number, number>();
+  const givenUp = new Set<number>();
+  let refusedIn = "";
   const icons = opt("icons", deps.icons);
   const runs = deps.runPosts ?? new RunPosts({ siteUrl, discord, log, now: deps.now, ...icons });
   const boards = new DoomsdayBoards(
@@ -202,6 +214,13 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       await sleep(SETTINGS_EVERY_MS - (deps.now() - settingsAt), signal);
       continue;
     }
+    // Other channels: what was refused or given up gets a fresh chance there.
+    if (channelsOf(settings) !== refusedIn) {
+      refusedIn = channelsOf(settings);
+      if (givenUp.size > 0 || refusals.size > 0) cursor = "0";
+      refusals.clear();
+      givenUp.clear();
+    }
     const due = [...held].filter(([, at]) => at <= deps.now());
     if (due.length > 0) {
       // A held event is due: from the start, so the site hands it out again (held again if refused again; one the site
@@ -292,20 +311,32 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
           break;
         }
       }
-      if ((held.get(event.id) ?? 0) > deps.now()) continue;
+      if ((held.get(event.id) ?? 0) > deps.now() || givenUp.has(event.id)) continue;
       const action = decide(event, settings, posted, siteUrl, host);
       if (action.do === "leave" || waits(action, settings)) continue;
-      // An update of a held board waits for it, else it would post the board a second time.
-      if (action.do === "board" && action.board.update !== undefined && held.has(action.board.update.boardEvent)) {
-        continue;
-      }
+      // An update of a held (or given up) board waits for it, else it would post the board a second time.
+      const board = action.do === "board" ? action.board.update?.boardEvent : undefined;
+      if (board !== undefined && (held.has(board) || givenUp.has(board))) continue;
       let messageId: string | undefined;
       try {
         messageId = await handle(action, event.id, settings, ch);
       } catch (error) {
         if (lasting(error)) {
-          held.set(event.id, deps.now() + HOLD_MS);
-          log.error(`${failure(action, event.id)} (${problemOf(error)}); trying it again in 5 min, the others go on`);
+          const times = (refusals.get(event.id) ?? 0) + 1;
+          refusals.set(event.id, times);
+          const hint = refusalHint(error instanceof PostError ? error.code : undefined);
+          if (times >= GIVE_UP_AFTER) {
+            held.delete(event.id);
+            givenUp.add(event.id);
+            log.error(
+              `${failure(action, event.id)} (${problemOf(error)})${hint}; refused ${times} times, so it is skipped until the channels change or the bot restarts`,
+            );
+          } else {
+            held.set(event.id, deps.now() + HOLD_MS);
+            log.error(
+              `${failure(action, event.id)} (${problemOf(error)})${hint}; trying it again in 5 min, the others go on`,
+            );
+          }
           continue;
         }
         failed = true;
@@ -316,6 +347,7 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       }
       if (signal.aborted) return;
       held.delete(event.id);
+      refusals.delete(event.id);
       if (messageId === undefined) continue;
       posted.set(event.id, messageId);
       const ack = await site.posted(event.id, messageId, signal);
@@ -388,7 +420,7 @@ function failure(action: Handled, eventId: number): string {
 
 /** Whether trying again soon won't help: Discord's lasting refusals, and an error that isn't Discord's (a bug). */
 function lasting(error: unknown): boolean {
-  return !(error instanceof PostError) || isLasting(error.code);
+  return !(error instanceof PostError) || isLasting(error.code, error.status);
 }
 
 /** Waits `ms`, or less when `signal` aborts. */

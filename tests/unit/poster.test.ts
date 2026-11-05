@@ -172,6 +172,49 @@ describe("runPoster", () => {
     await running;
   });
 
+  it("gives up a post Discord refuses in a WoW-linked channel (20062) after 3 tries, the others go on", async () => {
+    discord.postFailCode = 20062;
+    discord.refuse = (channel, texts) => channel === CHANNEL && texts.some((t) => t.endsWith("#e4"));
+    site.add(milestonesEvent(4));
+    const running = run();
+    await vi.waitFor(() =>
+      expect(log.texts()).toContain(
+        "discord: posting event 4 failed (code 20062); the channel is linked to WoW guild chat, where Discord lets no bot post: pick another channel on the site's Discord page; trying it again in 5 min, the others go on",
+      ),
+    );
+    const tries = () => log.texts().filter((t) => t.startsWith("discord: posting event 4 failed")).length;
+    // Every 5 minutes (the next answer of the long poll) it is tried again, while the other posts go out (test posts
+    // here, so event 4 isn't added to an open feat post).
+    for (let i = 0; i < 2; i++) {
+      now += 5 * 60_000;
+      site.add({ id: 10 + i, type: "test", data: { kind: "posts" } });
+      await vi.waitFor(() => expect(site.acked.has(10 + i)).toBe(true));
+      await vi.waitFor(() => expect(tries()).toBe(2 + i));
+    }
+    await vi.waitFor(() =>
+      expect(log.texts()).toContain(
+        "discord: posting event 4 failed (code 20062); the channel is linked to WoW guild chat, where Discord lets no bot post: pick another channel on the site's Discord page; refused 3 times, so it is skipped until the channels change or the bot restarts",
+      ),
+    );
+
+    // Given up: later events still go out, event 4 is not tried again.
+    now += 10 * 60_000;
+    site.add({ id: 20, type: "test", data: { kind: "posts" } });
+    await vi.waitFor(() => expect(site.acked.has(20)).toBe(true));
+    expect(site.acked.has(4)).toBe(false);
+    expect(tries()).toBe(3);
+
+    // Another channel picked on the site: event 4 gets a fresh chance there.
+    const OTHER = "100000000000000009";
+    site.settingsBody = { siteName: "Doombringers", posts: { milestones: true }, channels: { posts: OTHER } };
+    now += 30_000;
+    site.add({ id: 21, type: "test", data: { kind: "posts" } });
+    await vi.waitFor(() => expect(site.acked.has(4)).toBe(true));
+    expect(discord.messages.find((m) => m.id === site.acked.get(4))?.channel).toBe(OTHER);
+    stop.abort();
+    await running;
+  });
+
   it("goes on with the other channels when one can't be read", async () => {
     const DOOMSDAY = "100000000000000003";
     site.settingsBody = {

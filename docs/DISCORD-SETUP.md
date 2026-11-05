@@ -64,4 +64,5 @@ Nothing to upload by hand. At start the bot uploads its own **application emoji*
   emoji: 24 of 24 ready (0 uploaded)
   ```
 - `discord: the token was refused` → `DISCORD_TOKEN` is wrong or was reset. `asked for an intent the portal doesn't allow` → a privileged intent is needed but off (step 2). `refuses BOT_API_TOKEN` → make a new bot token on the site, put it in `BOT_API_TOKEN` and restart the container. The bot stays connected to Discord meanwhile and asks the site again every 5 minutes; other site or Discord trouble is retried sooner (5 s, doubling up to 5 minutes).
+- `(code 20062); the channel is linked to WoW guild chat` → Discord lets no bot post in a channel linked to WoW guild chat (only people with Battle.net linked). Pick another channel for that kind of post on the site's Discord page, or unlink the channel. A post Discord refuses like this waits 5 minutes while the others go on; after 3 refusals it is skipped until a channel is changed on the site or the bot restarts.
 - `docker stop` stops it within a few seconds with `stopping` and `stopped` in the log.
