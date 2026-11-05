@@ -63,14 +63,33 @@ export const MAX_BACKOFF_SECONDS = 300;
 export const HOLD_MS = 5 * 60_000;
 
 /**
- * Discord's codes that won't change by trying again soon: 10003 unknown channel, 40005 too large, 50001 missing access,
- * 50006 empty message, 50008 not a text channel, 50013 missing permissions, 50035 invalid form body (e.g. too long).
- * Only someone changing the server, or a newer bot, fixes them.
+ * Discord's codes that won't change by trying again soon: 10003 unknown channel, 20062 a channel linked to WoW guild
+ * chat (Discord lets no bot post there, by design), 40005 too large, 50001 missing access, 50006 empty message, 50008
+ * not a text channel, 50013 missing permissions, 50035 invalid form body (e.g. too long). Only someone changing the
+ * server, or a newer bot, fixes them.
  */
-const LASTING = new Set([10003, 40005, 50001, 50006, 50008, 50013, 50035]);
+const LASTING = new Set([10003, 20062, 40005, 50001, 50006, 50008, 50013, 50035]);
 
-export function isLasting(code: number | string | undefined): boolean {
-  return LASTING.has(Number(code));
+/**
+ * Whether a refusal won't change by trying again soon: one of Discord's lasting codes, or any other 4xx answer (a code
+ * the bot doesn't know yet) except 429, the rate limit. 5xx and no answer at all are passing.
+ */
+export function isLasting(code: number | string | undefined, status?: number): boolean {
+  if (LASTING.has(Number(code))) return true;
+  return status !== undefined && status >= 400 && status < 500 && status !== 429;
+}
+
+/** After this many lasting refusals of one event in the same channels, the bot gives it up (the others go on). */
+export const GIVE_UP_AFTER = 3;
+
+/** Discord's code for a channel linked to WoW guild chat: bots may not post there (discord-api-docs issue 8628). */
+export const LINKED_CHANNEL = 20062;
+
+/** What the admin can do about a lasting refusal, for the log; empty when there's nothing specific to say. */
+export function refusalHint(code: number | string | undefined): string {
+  return Number(code) === LINKED_CHANNEL
+    ? "; the channel is linked to WoW guild chat, where Discord lets no bot post: pick another channel on the site's Discord page"
+    : "";
 }
 
 /** How often the connected bot writes its heartbeat, and how old it may be for the health check. */
