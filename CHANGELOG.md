@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.5.1 (2026-11-05)
 - A post Discord refuses no longer holds up the other posts, whatever Discord's reason. Before, a refusal the bot didn't know (such as a channel linked to WoW guild chat) was tried again and again, and nothing else was posted meanwhile (no Doomsday board, no test posts). Now such a post waits 5 minutes while the others go on, and after 3 refusals it is skipped until a channel is changed on the site or the bot restarts.
 - A channel linked to WoW guild chat takes no bot posts (Discord allows only people there). The log now says so and asks to pick another channel on the site's Discord page.
 
