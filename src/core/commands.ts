@@ -67,6 +67,12 @@ export const COMMANDS: readonly CommandDefinition[] = [
     description: "Who has a profession, best first",
     options: [{ type: STRING, name: "profession", description: "A profession", required: true, autocomplete: true }],
   },
+  // BOT-25 (board `bot-recipes` = RC08): who can make an item; answered in the channel for everyone (PUBLIC_COMMANDS).
+  {
+    name: "craft",
+    description: "Who can make an item, with the reagents",
+    options: [{ type: STRING, name: "item", description: "The item", required: true, autocomplete: true }],
+  },
   {
     name: "character",
     description: "A character's card: level, gear, talents, professions, last seen",
@@ -135,3 +141,9 @@ export const COMMANDS: readonly CommandDefinition[] = [
   },
   { name: "recap", description: "The last weekly recap, again, only for you" },
 ];
+
+/**
+ * Commands whose answer is for everyone in the channel, not only the asker (CLAUDE.md rule 6's exception): `/craft`
+ * (RC08 and the recipes handoff D2: "Answers in the channel where it was typed"; DESIGN-NOTES "Deviations").
+ */
+export const PUBLIC_COMMANDS: readonly string[] = ["craft"];
