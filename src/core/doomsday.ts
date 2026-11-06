@@ -62,6 +62,11 @@ export interface Board {
   yesterdayCrown?: string;
   /** BOT-20 (web WEB-66): the site's 800 × 560 picture of the board (`cards/<image>.png`); its id changes with it. */
   image?: string;
+  /**
+   * BOT-24 (web WEB-87): every page of the picture, in order, 1 to 10 ids; the first is `image`. `[image]` from an
+   * older site; empty without `image`.
+   */
+  images: string[];
   /** BOT-20: the site's one line of news ("Mira finished all dailies first (23:13). Ada and Tok are 1 away."). */
   news?: string;
   update?: BoardUpdate;
@@ -163,6 +168,7 @@ export function readBoard(data: unknown, isUpdate = false): Board | undefined {
   const goals = (Array.isArray(data.goals) ? data.goals : []).flatMap((g) => readGoal(g) ?? []);
   if (label === undefined || goals.length === 0) return undefined;
   const crownName = isObject(data.crown) ? text(data.crown.name) : undefined;
+  const image = imageId(data.image);
   const board: Board = {
     label,
     ...opt("start", time(data.start)),
@@ -174,7 +180,8 @@ export function readBoard(data: unknown, isUpdate = false): Board | undefined {
       ? { crown: { name: crownName, ...opt("at", time((data.crown as Record<string, unknown>).at)) } }
       : {}),
     ...opt("yesterdayCrown", isObject(data.yesterdayCrown) ? text(data.yesterdayCrown.name) : undefined),
-    ...opt("image", imageId(data.image)),
+    ...opt("image", image),
+    images: pages(image, data.images),
     ...opt("news", text(data.news)),
   };
   if (!isUpdate) return board;
@@ -211,6 +218,19 @@ export function readBoard(data: unknown, isUpdate = false): Board | undefined {
 function imageId(value: unknown): string | undefined {
   const id = text(value);
   return id !== undefined && /^[a-z0-9][a-z0-9-]{0,80}$/i.test(id) ? id : undefined;
+}
+
+/** Discord's most attachments and embeds per message: the board's most pages (BOT-24). */
+export const MAX_PAGES = 10;
+
+/**
+ * BOT-24: the picture's pages, `images` as the site sent them (valid ids only, no repeats, at most 10). `[image]` when
+ * `images` is missing or doesn't start with `image` (an older site); empty without `image`.
+ */
+function pages(image: string | undefined, value: unknown): string[] {
+  if (image === undefined) return [];
+  const ids = [...new Set((Array.isArray(value) ? value : []).flatMap((v) => imageId(v) ?? []))];
+  return ids[0] === image ? ids.slice(0, MAX_PAGES) : [image];
 }
 
 // --- the daily board (BOT-15, BOT-20) ---------------------------------------------------------------------------
@@ -314,8 +334,10 @@ function dayOver(board: Board): string | undefined {
 
 /**
  * The daily board post (boards `bot-doomsday-daily`, `bot-visual-daily`): "Doomsday · Wed evening", then
- * - BOT-20, with the site's picture attached as `image` (`attachment://<image>`): one line of news (the site's, else
- *   the day's goals or the day's summary) and the picture;
+ * - BOT-20, with the site's picture attached (`images`, its files' names, `attachment://<image>`): one line of news
+ *   (the site's, else the day's goals or the day's summary) and the picture; BOT-24: pages 2 and on each in an embed
+ *   of their own after it, with only the picture, so they stack full size (one shared embed `url` would make a
+ *   cropping gallery);
  * - without a picture: the day's goals and a row per friend with Doomsday data, as text.
  * No legend (Nico: no notes in posts). The buttons "Open the board ↗" and "My goals"; the final version says "final"
  * and has none. `eventId`: the `doomsdayBoard` event, whose marker is on the title link so a restart finds the post.
@@ -326,9 +348,10 @@ export function boardMessage(
   siteUrl: string,
   pageUrl: string,
   b: Boxes = PLAIN_BOXES,
-  image?: string,
+  images: readonly string[] = [],
 ): MessageContent {
   const final = board.update?.final === true;
+  const [image, ...more] = images.slice(0, MAX_PAGES);
   let description: string;
   if (image !== undefined) {
     description =
@@ -364,7 +387,7 @@ export function boardMessage(
     ...(image !== undefined ? { image: { url: `attachment://${image}` } } : {}),
   };
   return {
-    embeds: [embed],
+    embeds: [embed, ...more.map((page): Embed => ({ color: GOLD, image: { url: `attachment://${page}` } }))],
     allowed_mentions: { parse: [] },
     components: final
       ? []

@@ -430,14 +430,9 @@ describe("the board with the site's picture (BOT-20, board `bot-visual-daily`)",
     )!;
 
   it("is one embed with the news line and the picture, without the table or a legend", () => {
-    const message = boardMessage(
-      readBoard({ ...fresh, image: "doomsday-20754-a" })!,
-      40,
-      SITE,
-      PAGE,
-      B,
+    const message = boardMessage(readBoard({ ...fresh, image: "doomsday-20754-a" })!, 40, SITE, PAGE, B, [
       "doomsday-20754-a.png",
-    );
+    ]);
     const embed = message.embeds[0]!;
     expect(embed.image).toEqual({ url: "attachment://doomsday-20754-a.png" });
     // Without the site's news, the start of the day names the goals.
@@ -445,7 +440,7 @@ describe("the board with the site's picture (BOT-20, board `bot-visual-daily`)",
       "**PvE** Finish 10 quests · Run a dungeon · Raise Cooking, First Aid or Fishing. **PvP** The Hunt\\: Night Elf Druid or Troll Priest · Lone wolf\\: 3 solo kills. 5 points each.",
     );
     expect(JSON.stringify(message)).not.toMatch(/Columns|\[ \]|updates during the day/);
-    const later = boardMessage(visual(41, "doomsday-20754-a"), 40, SITE, PAGE, B, "doomsday-20754-a.png");
+    const later = boardMessage(visual(41, "doomsday-20754-a"), 40, SITE, PAGE, B, ["doomsday-20754-a.png"]);
     expect(later.embeds[0]?.title).toBe("Doomsday · Wed evening");
     expect(later.embeds[0]?.description).toBe("News 41");
     expect(later.components?.[0]?.components.map((c) => c.label)).toEqual(["Open the board ↗", "My goals"]);
@@ -490,6 +485,159 @@ describe("the board with the site's picture (BOT-20, board `bot-visual-daily`)",
     await other.handle(51, readBoard({ ...midday, boardEvent: 50, messageId: null }, true)!, CHANNEL);
     expect(discord.messages[1]?.files).toEqual([]);
     expect(discord.messages[1]?.content.embeds[0]?.image).toBeUndefined();
+  });
+});
+
+describe("every page of the board's picture (BOT-24, web WEB-87)", () => {
+  let site: FakeSite;
+  let discord: FakeDiscord;
+  let now: number;
+  let stop: AbortController;
+  let log: ReturnType<typeof logger>;
+  let boards: DoomsdayBoards;
+  const png = new Uint8Array([137, 80, 78, 71]);
+  const ids = (image: string, n: number) => [image, ...Array.from({ length: n - 1 }, (_, i) => `${image}-${i + 2}`)];
+  const files = (image: string, n: number) => ids(image, n).map((id) => `${id}.png`);
+  const urls = (image: string, n: number) => files(image, n).map((f) => `attachment://${f}`);
+  const embedImages = (at = 0) => discord.messages[at]?.content.embeds.map((e) => e.image?.url);
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    site = new FakeSite();
+    discord = new FakeDiscord();
+    now = 1_793_240_000_000;
+    stop = new AbortController();
+    log = logger();
+    boards = new DoomsdayBoards({ siteUrl: SITE, site, discord, log: log.log, now: () => now }, stop.signal);
+    for (const id of [...ids("doomsday-20754-a", 3), ...ids("doomsday-20754-b", 4)])
+      site.images.set(`cards/${id}.png`, png);
+  });
+
+  afterEach(() => {
+    stop.abort();
+    vi.useRealTimers();
+  });
+
+  const paged = (image: string, n: number) => readBoard({ ...fresh, image, images: ids(image, n) })!;
+  const update = (id: number, image: string, n: number, extra: object = {}) =>
+    readBoard(
+      {
+        ...midday,
+        label: "Wed evening",
+        messageId: "1100000000000000001",
+        image,
+        images: ids(image, n),
+        news: `News ${id}`,
+        ...extra,
+      },
+      true,
+    )!;
+
+  it("reads the pages: valid ids only, at most 10, and page 1 alone from an older site", () => {
+    const image = "doomsday-20754-a";
+    expect(readBoard({ ...fresh, image })!.images).toEqual([image]);
+    expect(readBoard({ ...fresh, image, images: image })!.images).toEqual([image]);
+    expect(paged(image, 3).images).toEqual(ids(image, 3));
+    expect(
+      readBoard({ ...fresh, image, images: [image, "../secret", 7, null, `${image}-2`, `${image}-2`, "a b"] })!.images,
+    ).toEqual([image, `${image}-2`]);
+    expect(paged(image, 14).images).toEqual(ids(image, 10));
+    // A list that doesn't start with `image` is not the picture's pages.
+    expect(readBoard({ ...fresh, image, images: ["doomsday-20754-z", `${image}-2`] })!.images).toEqual([image]);
+    expect(readBoard({ ...fresh, images: ids(image, 3) })!.images).toEqual([]);
+    expect(readBoard({ ...fresh, image: "../x", images: ["../x"] })!.images).toEqual([]);
+  });
+
+  it("stacks pages 2 and on full size, each in an embed of its own with only the picture", () => {
+    const message = boardMessage(paged("doomsday-20754-a", 3), 40, SITE, PAGE, B, files("doomsday-20754-a", 3));
+    expect(message.embeds).toHaveLength(3);
+    expect(message.embeds[0]?.title).toBe("Doomsday · Wed 28 Oct");
+    expect(message.embeds[0]?.image).toEqual({ url: "attachment://doomsday-20754-a.png" });
+    expect(message.embeds.slice(1)).toEqual([
+      { color: message.embeds[0]?.color, image: { url: "attachment://doomsday-20754-a-2.png" } },
+      { color: message.embeds[0]?.color, image: { url: "attachment://doomsday-20754-a-3.png" } },
+    ]);
+    // At most 10 pages.
+    expect(boardMessage(readBoard(fresh)!, 40, SITE, PAGE, B, files("doomsday-20754-a", 12)).embeds).toHaveLength(10);
+  });
+
+  it("posts 3 pages, then swaps them for 4 together at the 5-minute pace", async () => {
+    const id = await boards.handle(40, paged("doomsday-20754-a", 3), CHANNEL);
+    expect(discord.messages[0]?.files).toEqual(files("doomsday-20754-a", 3));
+    expect(embedImages()).toEqual(urls("doomsday-20754-a", 3));
+    // 1 minute later 4 pages: the text changes, all 3 pages stay.
+    now += 60_000;
+    expect(await boards.handle(41, update(41, "doomsday-20754-b", 4), CHANNEL)).toBe(id);
+    expect(discord.messages[0]?.content.embeds[0]?.description).toBe("News 41");
+    expect(discord.messages[0]?.files).toEqual(files("doomsday-20754-a", 3));
+    expect(embedImages()).toEqual(urls("doomsday-20754-a", 3));
+    // Once the 5 minutes are over all 4 new pages replace the 3 old ones.
+    now += IMAGE_EVERY_MS;
+    await vi.advanceTimersByTimeAsync(IMAGE_EVERY_MS);
+    await vi.waitFor(() => expect(discord.messages[0]?.files).toEqual(files("doomsday-20754-b", 4)));
+    expect(embedImages()).toEqual(urls("doomsday-20754-b", 4));
+    // The final edit is never held back, and may have fewer pages.
+    now += 60_000;
+    await boards.handle(42, update(42, "doomsday-20754-a", 3, { final: true }), CHANNEL);
+    expect(discord.messages[0]?.files).toEqual(files("doomsday-20754-a", 3));
+    expect(embedImages()).toEqual(urls("doomsday-20754-a", 3));
+    expect(discord.messages[0]?.content.embeds[0]?.title).toBe("Doomsday · Wed evening · final");
+  });
+
+  it("leaves out a later page it can't have, and shows the text board without page 1", async () => {
+    site.images.delete("cards/doomsday-20754-a-2.png");
+    await boards.handle(40, paged("doomsday-20754-a", 3), CHANNEL);
+    expect(discord.messages[0]?.files).toEqual(["doomsday-20754-a.png", "doomsday-20754-a-3.png"]);
+    expect(embedImages()).toEqual(["attachment://doomsday-20754-a.png", "attachment://doomsday-20754-a-3.png"]);
+    expect(log.texts()).toContain("site: board image doomsday-20754-a-2 (page 2) unavailable; leaving that page out");
+
+    site.images.delete("cards/doomsday-20754-b.png");
+    const other = new DoomsdayBoards({ siteUrl: SITE, site, discord, log: log.log, now: () => now }, stop.signal);
+    await other.handle(50, paged("doomsday-20754-b", 4), CHANNEL);
+    expect(discord.messages[1]?.files).toEqual([]);
+    expect(discord.messages[1]?.content.embeds).toHaveLength(1);
+    expect(discord.messages[1]?.content.embeds[0]?.description).toContain("**Ada**");
+    expect(log.texts()).toContain("site: board image doomsday-20754-b unavailable; showing the text board");
+  });
+
+  it("posts page 1 alone for an older site without images", async () => {
+    await boards.handle(40, readBoard({ ...fresh, image: "doomsday-20754-a" })!, CHANNEL);
+    expect(discord.messages[0]?.files).toEqual(["doomsday-20754-a.png"]);
+    expect(discord.messages[0]?.content.embeds).toHaveLength(1);
+  });
+
+  it("gives up a board with pages that Discord refuses in a WoW-linked channel (20062) after 3 tries", async () => {
+    const DOOM = "100000000000000003";
+    site.settingsBody = {
+      posts: { milestones: true, doomsdayBoard: true },
+      channels: { posts: CHANNEL, doomsday: DOOM },
+      doomsday: { url: PAGE },
+    };
+    discord.postFailCode = 20062;
+    discord.refuse = (channel) => channel === DOOM;
+    site.add({
+      id: 40,
+      type: "doomsdayBoard",
+      data: { ...fresh, image: "doomsday-20754-a", images: ids("doomsday-20754-a", 3) },
+    });
+    const running = runPoster({ siteUrl: SITE, site, discord, log: log.log, now: () => now }, stop.signal);
+    const tries = () =>
+      log.texts().filter((t) => t.startsWith("discord: Doomsday board event 40 failed (code 20062)")).length;
+    await vi.waitFor(() => expect(tries()).toBe(1));
+    for (let i = 0; i < 2; i++) {
+      now += 5 * 60_000;
+      site.add({ id: 10 + i, type: "test", data: { kind: "posts" } });
+      await vi.waitFor(() => expect(site.acked.has(10 + i)).toBe(true));
+      await vi.waitFor(() => expect(tries()).toBe(2 + i));
+    }
+    await vi.waitFor(() =>
+      expect(
+        log.texts().some((t) => t.startsWith("discord: Doomsday board event 40") && t.includes("refused 3 times")),
+      ).toBe(true),
+    );
+    expect(site.acked.has(40)).toBe(false);
+    stop.abort();
+    await running;
   });
 });
 
