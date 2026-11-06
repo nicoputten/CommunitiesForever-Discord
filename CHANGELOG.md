@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.5.2 (2026-11-06)
 - The daily Doomsday board shows everyone: with a site that splits the board's picture into pages of 8 rows, every page is in the one post, stacked full size under each other, and they are swapped together. A page the site can't give is left out; without the first page the post shows the text board as before. An older site still gets one picture.
 
 ## v0.5.1 (2026-11-05)
