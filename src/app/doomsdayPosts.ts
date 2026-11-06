@@ -5,7 +5,8 @@
 // once it is shown. BOT-20: the site's picture of the board is attached, and swapped at most every 5 minutes and only
 // when the site's picture changed (Nico, 2026-10-29); a change within those 5 minutes is shown once they are over,
 // and the final edit always gets the newest picture. A board whose message is gone is posted again and acknowledged
-// with the new message. "My goals" answers like `/doomsday`.
+// with the new message. "My goals" answers like `/doomsday`. BOT-24: the picture comes in pages (`images`), all
+// attached to the one message and swapped together; a new page 1 id means every page is new.
 import type { Attachment, ButtonPress, Discord } from "../adapters/discord.js";
 import { PostError, problemOf } from "../adapters/discord.js";
 import type { Log } from "../adapters/log.js";
@@ -48,8 +49,10 @@ interface Shown {
   id: string;
   /** When it was last posted or edited, ms; 0 when found after a restart. */
   at: number;
-  /** BOT-20: the site's picture it shows (its id), and when that was attached, ms. */
+  /** BOT-20: the site's picture it shows (page 1's id), and when that was attached, ms. */
   image?: string;
+  /** BOT-24: the ids of the pages it shows, page 1 first; empty for the text board. */
+  pages: string[];
   imageAt: number;
   /** The newest board shown, for showing it again with a newer picture. */
   board?: Board;
@@ -151,25 +154,27 @@ export class DoomsdayBoards {
       const final = board.update?.final === true;
       const newer = board.image !== undefined && board.image !== shown.image;
       const due = final || shown.image === undefined || now - shown.imageAt >= IMAGE_EVERY_MS;
-      // The picture to show: a newer one when it is due and can be had, else the one attached.
+      // The picture to show: a newer one when it is due and can be had, else the one attached. BOT-24: all its
+      // pages, which replace all the old ones (the count may change).
       let files: Attachment[] | undefined;
-      let image = shown.image;
+      let pages = shown.pages;
       if (newer && due) {
-        const fetched = await this.picture(board.image as string);
-        if (fetched !== undefined) {
-          files = [fetched];
-          image = board.image;
+        const fetched = await this.pictures(board.images);
+        if (fetched.length > 0) {
+          files = fetched.map((p) => p.file);
+          pages = fetched.map((p) => p.id);
         }
       } else if (board.image === undefined && shown.image !== undefined) {
-        // The site sends no picture any more: the text board, and the old picture goes.
+        // The site sends no picture any more: the text board, and the old pictures go.
         files = [];
-        image = undefined;
+        pages = [];
       }
       try {
-        await this.deps.discord.edit(shown.channel, shown.id, this.content(boardEvent, board, image), files);
+        await this.deps.discord.edit(shown.channel, shown.id, this.content(boardEvent, board, pages), files);
         shown.at = now;
         if (files !== undefined) {
-          shown.image = image;
+          shown.pages = pages;
+          shown.image = pages[0];
           shown.imageAt = now;
         }
         shown.board = board;
@@ -197,19 +202,20 @@ export class DoomsdayBoards {
   }
 
   private async post(boardEvent: number, eventId: number, board: Board, channel: string): Promise<string> {
-    const picture = board.image !== undefined ? await this.picture(board.image) : undefined;
-    const image = picture !== undefined ? board.image : undefined;
+    const fetched = await this.pictures(board.images);
+    const pages = fetched.map((p) => p.id);
     const id = await this.deps.discord.post(
       channel,
-      this.content(boardEvent, board, image),
-      picture !== undefined ? [picture] : [],
+      this.content(boardEvent, board, pages),
+      fetched.map((p) => p.file),
     );
     const now = this.deps.now();
     this.remember(boardEvent, {
       channel,
       id,
       at: now,
-      ...(image !== undefined ? { image } : {}),
+      ...(pages[0] !== undefined ? { image: pages[0] } : {}),
+      pages,
       imageAt: now,
       board,
       eventId,
@@ -217,17 +223,30 @@ export class DoomsdayBoards {
     return id;
   }
 
-  /** The site's picture of the board; undefined (and logged) when it can't be had: the post shows text instead. */
-  private async picture(image: string): Promise<Attachment | undefined> {
-    const data = await this.deps.site.image(`cards/${image}.png`, this.signal);
-    if (data === undefined) this.deps.log.error(`site: board image ${image} unavailable; showing the text board`);
-    return data === undefined ? undefined : { name: `${image}.png`, data };
+  /**
+   * The site's pictures of the board, its pages in order (BOT-24). Without page 1 none (logged): the post shows text
+   * instead. A later page that can't be had is left out (logged).
+   */
+  private async pictures(ids: readonly string[]): Promise<{ id: string; file: Attachment }[]> {
+    const got: { id: string; file: Attachment }[] = [];
+    for (const [n, id] of ids.entries()) {
+      const data = await this.deps.site.image(`cards/${id}.png`, this.signal);
+      if (data !== undefined) {
+        got.push({ id, file: { name: `${id}.png`, data } });
+      } else if (n === 0) {
+        this.deps.log.error(`site: board image ${id} unavailable; showing the text board`);
+        return [];
+      } else {
+        this.deps.log.error(`site: board image ${id} (page ${n + 1}) unavailable; leaving that page out`);
+      }
+    }
+    return got;
   }
 
   private found(boardEvent: number, channel: string, id: string | undefined): Shown | undefined {
     if (id === undefined) return undefined;
     // Found after a restart: which picture it shows isn't known, so the next update attaches the site's.
-    const shown: Shown = { channel, id, at: 0, imageAt: 0 };
+    const shown: Shown = { channel, id, at: 0, pages: [], imageAt: 0 };
     this.remember(boardEvent, shown);
     return shown;
   }
@@ -240,7 +259,7 @@ export class DoomsdayBoards {
     }
   }
 
-  private content(boardEvent: number, board: Board, image: string | undefined) {
+  private content(boardEvent: number, board: Board, pages: readonly string[]) {
     const { siteUrl, icons, pageUrl } = this.deps;
     return boardMessage(
       board,
@@ -248,7 +267,7 @@ export class DoomsdayBoards {
       siteUrl,
       boardUrl(siteUrl, pageUrl?.()),
       boxes(icons?.current ?? NO_EMOJI),
-      image !== undefined ? `${image}.png` : undefined,
+      pages.map((id) => `${id}.png`),
     );
   }
 }
