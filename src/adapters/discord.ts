@@ -15,7 +15,7 @@ import {
   Routes,
 } from "discord.js";
 import type { Emoji } from "../core/emoji.js";
-import type { CommandDefinition } from "../core/commands.js";
+import { type CommandDefinition, PUBLIC_COMMANDS } from "../core/commands.js";
 import type { ConnectionEvent, FailReason } from "../core/connection.js";
 import type { GuildSnapshot } from "../core/guild.js";
 import { type MessageContent, type PostedMessage, fitLimits } from "../core/message.js";
@@ -45,8 +45,8 @@ export interface Discord {
   /** The (first) server's channels and roles as Discord's cache knows them; undefined when not in a server. */
   guild(): GuildSnapshot | undefined;
   /**
-   * Calls `listener` for each slash command (BOT-05). The answer is deferred at once, only for the asker (ephemeral);
-   * `reply` fills it in. Returns the unsubscribe.
+   * Calls `listener` for each slash command (BOT-05). The answer is deferred at once, only for the asker (ephemeral),
+   * except `PUBLIC_COMMANDS` (BOT-25), for the channel; `reply` fills it in. Returns the unsubscribe.
    */
   onCommand(listener: (command: SlashCommand) => void): () => void;
   /** Calls `listener` for autocomplete requests (BOT-06). Returns the unsubscribe. */
@@ -251,8 +251,13 @@ export function connectDiscord(config: DiscordConfig, report: (event: Connection
       return;
     }
     if (!interaction.isChatInputCommand()) return;
-    // Within Discord's 3 seconds; the answer follows when the site has given it.
-    const deferred = interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => undefined);
+    // Within Discord's 3 seconds; the answer follows when the site has given it. Only for the asker, except the
+    // commands answered for the channel (BOT-25 `/craft`).
+    const deferred = (
+      PUBLIC_COMMANDS.includes(interaction.commandName)
+        ? interaction.deferReply()
+        : interaction.deferReply({ flags: MessageFlags.Ephemeral })
+    ).catch(() => undefined);
     const options: Record<string, string | boolean> = {};
     for (const option of interaction.options.data) {
       if (typeof option.value === "string" || typeof option.value === "boolean") options[option.name] = option.value;

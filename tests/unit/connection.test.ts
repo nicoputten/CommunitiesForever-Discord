@@ -77,11 +77,12 @@ describe("readSettings", () => {
 });
 
 describe("COMMANDS", () => {
-  it("has the look-ups (BOT-06), /doomsday and /doom (BOT-16), the runs (BOT-04) and /recap (BOT-05), within Discord's limits", () => {
+  it("has the look-ups (BOT-06), /craft (BOT-25), /doomsday and /doom (BOT-16), the runs (BOT-04) and /recap (BOT-05), within Discord's limits", () => {
     expect(COMMANDS.map((c) => c.name)).toEqual([
       "whereis",
       "who",
       "whocancraft",
+      "craft",
       "character",
       "alts",
       "me",

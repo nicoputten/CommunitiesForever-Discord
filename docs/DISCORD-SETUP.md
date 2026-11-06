@@ -60,7 +60,7 @@ Nothing to upload by hand. At start the bot uploads its own **application emoji*
   discord: connecting
   site: https://wow.vestras.nl answers as Doombringers
   discord: ready in 1 server
-  discord: registered 13 slash commands
+  discord: registered 14 slash commands
   emoji: 24 of 24 ready (0 uploaded)
   ```
 - `discord: the token was refused` → `DISCORD_TOKEN` is wrong or was reset. `asked for an intent the portal doesn't allow` → a privileged intent is needed but off (step 2). `refuses BOT_API_TOKEN` → make a new bot token on the site, put it in `BOT_API_TOKEN` and restart the container. The bot stays connected to Discord meanwhile and asks the site again every 5 minutes; other site or Discord trouble is retried sooner (5 s, doubling up to 5 minutes).

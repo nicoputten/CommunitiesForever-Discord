@@ -10,6 +10,7 @@ import type { SiteSettings } from "../core/settings.js";
 import type { EmojiBox } from "./emoji.js";
 import { answerMyGoals } from "./doomsdayPosts.js";
 import { loadFiles } from "./files.js";
+import { answerCraft, answerCraftAutocomplete } from "./craft.js";
 import { LOOKUPS, SharedAnswers, answerAutocomplete, answerLookup, answerShare } from "./lookups.js";
 import { failedMessage } from "../core/lookups.js";
 import { RUN_COMMANDS, RunActions } from "./runActions.js";
@@ -70,6 +71,7 @@ export function commandHandlers(deps: CommandDeps, signal: AbortSignal): Handler
     command(command) {
       const tell = () => command.reply(failedMessage());
       if (command.name === "recap") answerRecap(deps, command, signal).catch(failed("/recap", tell));
+      else if (command.name === "craft") answerCraft(deps, command, signal).catch(failed("/craft", tell));
       else if ((RUN_COMMANDS as readonly string[]).includes(command.name)) {
         runs.command(command, signal).catch(failed(`/${command.name}`, tell));
       } else if ((LOOKUPS as readonly string[]).includes(command.name)) {
@@ -77,6 +79,10 @@ export function commandHandlers(deps: CommandDeps, signal: AbortSignal): Handler
       }
     },
     autocomplete(request) {
+      if (request.command === "craft") {
+        answerCraftAutocomplete(deps, request, signal).catch(failed("/craft autocomplete"));
+        return;
+      }
       if ((RUN_COMMANDS as readonly string[]).includes(request.command)) {
         runs.autocomplete(request, signal).catch(failed(`/${request.command} autocomplete`));
         return;
