@@ -195,6 +195,27 @@ function sourcesText(sources: readonly RecipeSource[], short = false): string | 
   return words.length > 0 ? words.join(" · ") : undefined;
 }
 
+/**
+ * The game's item quality names (the client's ITEM_QUALITY<n>_DESC: 0 Poor .. 6 Artifact). Nico (2026-11-07): the
+ * quality as a word after the item's name, since Discord can't colour it; left out for Poor and Common, the plain
+ * items, so only what stands out says so.
+ */
+const QUALITY_NAMES: readonly (string | undefined)[] = [
+  undefined,
+  undefined,
+  "Uncommon",
+  "Rare",
+  "Epic",
+  "Legendary",
+  "Artifact",
+];
+
+/** "Robe of the Archmage — Epic" (escaped), for a title. */
+export function itemName(item: RecipeItem): string {
+  const quality = QUALITY_NAMES[item.quality];
+  return quality !== undefined ? `${escapeMarkdown(item.name)} — ${quality}` : escapeMarkdown(item.name);
+}
+
 const DOTS: Readonly<Record<Difficulty, string>> = { orange: "🟠", yellow: "🟡", green: "🟢", grey: "⚪" };
 
 /** How many crafters `/craft` names before "+N more" (RC08). */
@@ -241,7 +262,7 @@ export function recipeFindsMessage(
     ...(thumb !== undefined ? { thumbnail: { url: thumb } } : {}),
   };
   if (n === 1) {
-    embed.title = escapeMarkdown(first.item.name);
+    embed.title = itemName(first.item);
     embed.url = link(first);
     const fields = [];
     if (first.profession !== undefined) {
@@ -259,7 +280,10 @@ export function recipeFindsMessage(
     embed.description = data.finds
       .map((f) => {
         const from = sourcesText(f.sources, true);
-        return `[**${escapeMarkdown(f.item.name)}**](${link(f)})${from !== undefined ? ` · ${from}` : ""}`;
+        const quality = QUALITY_NAMES[f.item.quality];
+        return `[**${escapeMarkdown(f.item.name)}**](${link(f)})${quality !== undefined ? ` — ${quality}` : ""}${
+          from !== undefined ? ` · ${from}` : ""
+        }`;
       })
       .join("\n");
   }
@@ -277,7 +301,7 @@ export function craftCard(craft: Craft, siteUrl: string): MessageContent {
   const url = craft.url !== undefined ? `${siteUrl}${craft.url}` : undefined;
   const thumb = iconUrl(siteUrl, craft.item);
   const embed: Embed = {
-    title: escapeMarkdown(craft.item.name),
+    title: itemName(craft.item),
     ...(url !== undefined ? { url } : {}),
     color: colour(craft.item.qualityColor),
     ...(thumb !== undefined ? { thumbnail: { url: thumb } } : {}),

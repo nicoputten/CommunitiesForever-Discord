@@ -5,7 +5,14 @@ import type { SlashCommand } from "../../src/adapters/discord.js";
 import { PUBLIC_COMMANDS } from "../../src/core/commands.js";
 import { decide } from "../../src/core/events.js";
 import type { MessageContent } from "../../src/core/message.js";
-import { craftCard, readCraft, readRecipeFinds, recipeFindsMessage, sourceText } from "../../src/core/recipes.js";
+import {
+  craftCard,
+  itemName,
+  readCraft,
+  readRecipeFinds,
+  recipeFindsMessage,
+  sourceText,
+} from "../../src/core/recipes.js";
 import { CHANNEL, FakeDiscord, FakeSite, logger } from "./fakes.js";
 
 // BOT-25 (board `bot-recipes` = RC08, web BOT-API.md "Recipes"): the rare-find post and `/craft`. Made-up names and
@@ -58,7 +65,7 @@ describe("rare-find posts", () => {
     expect(content.embeds).toEqual([
       {
         author: { name: "Mira Sunstrider learned a rare recipe", icon_url: "attachment://class-mage.png" },
-        title: "Robe of the Archmage",
+        title: "Robe of the Archmage — Epic",
         url: `${SITE}/professions/tailoring?recipe=18457#e31`,
         color: 0xa335ee,
         thumbnail: { url: `${SITE}/api/item-icons/inv_chest_cloth_38.jpg` },
@@ -77,8 +84,8 @@ describe("rare-find posts", () => {
       color: 0xa335ee,
       thumbnail: { url: `${SITE}/api/item-icons/inv_chest_cloth_38.jpg` },
       description: [
-        `[**Robe of the Archmage**](${SITE}/professions/tailoring?recipe=18457#e32) · Drop · Blackrock Spire`,
-        `[**Mooncloth Robe**](${SITE}/professions/tailoring?recipe=22902) · Rep · Thorium Brotherhood`,
+        `[**Robe of the Archmage**](${SITE}/professions/tailoring?recipe=18457#e32) — Epic · Drop · Blackrock Spire`,
+        `[**Mooncloth Robe**](${SITE}/professions/tailoring?recipe=22902) — Rare · Rep · Thorium Brotherhood`,
       ].join("\n"),
     });
   });
@@ -120,7 +127,7 @@ describe("rare-find posts", () => {
       expect(discord.messages).toHaveLength(1);
       expect(discord.messages[0]?.channel).toBe(FEATS);
       expect(site.acked.get(31)).toBe(discord.messages[0]?.id);
-      expect(discord.messages[0]?.content.embeds[0]?.title).toBe("Robe of the Archmage");
+      expect(discord.messages[0]?.content.embeds[0]?.title).toBe("Robe of the Archmage — Epic");
       stop.abort();
       await running;
     });
@@ -150,7 +157,7 @@ describe("/craft", () => {
   it("someone can make it: crafters with their dot, the reagents and the recipe's link", () => {
     expect(craftCard(readCraft(answer)!, SITE).embeds).toEqual([
       {
-        title: "Robe of the Archmage",
+        title: "Robe of the Archmage — Epic",
         url: `${SITE}/professions/tailoring?recipe=18457`,
         color: 0xa335ee,
         thumbnail: { url: `${SITE}/api/item-icons/inv_chest_cloth_38.jpg` },
@@ -196,7 +203,7 @@ describe("/craft", () => {
       sources: mooncloth.sources,
     };
     expect(craftCard(readCraft(gloves)!, SITE).embeds[0]).toEqual({
-      title: "Flarecore Gloves",
+      title: "Flarecore Gloves — Rare",
       url: `${SITE}/professions/tailoring?recipe=18457`,
       color: 0x0070dd,
       description: "Nobody can make it yet.",
@@ -219,11 +226,23 @@ describe("/craft", () => {
     site.lookupAnswers.set("craft", { ok: true, body: answer });
     await answerCraft({ siteUrl: SITE, site }, command("18457"), signal);
     expect(site.lookups).toEqual([{ what: "craft", params: { item: "18457" } }]);
-    expect(replies[0]?.embeds[0]?.title).toBe("Robe of the Archmage");
+    expect(replies[0]?.embeds[0]?.title).toBe("Robe of the Archmage — Epic");
 
     site.lookupAnswers.set("craft", { ok: false, status: 404, error: "not_found" });
     await answerCraft({ siteUrl: SITE, site }, command("Test Sword"), signal);
     expect(replies[1]?.embeds[0]?.description).toBe("No recipe makes that.");
+  });
+
+  it("names the quality after the item, except Poor and Common (Nico, 2026-11-07)", () => {
+    const named = (quality: number) => itemName({ name: "Test Item", quality });
+    expect([0, 1, 2, 3, 4, 5].map(named)).toEqual([
+      "Test Item",
+      "Test Item",
+      "Test Item — Uncommon",
+      "Test Item — Rare",
+      "Test Item — Epic",
+      "Test Item — Legendary",
+    ]);
   });
 
   it("words every kind of source as RC08 does", () => {

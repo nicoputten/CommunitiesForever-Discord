@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- Rare recipe finds: when a friend learns a recipe that drops or comes from a reputation vendor, one post per character in the feats channel, with the item, the profession and where it was learned (with a site that sends them; the feats switch turns them off too). Never for a first scan or a trainer, vendor or quest recipe.
+- Rare recipe finds: when a friend learns a recipe that drops or comes from a reputation vendor, one post per character in the feats channel, with the item and its quality ("— Epic"), the profession and where it was learned (with a site that sends them; the feats switch turns them off too). Never for a first scan or a trainer, vendor or quest recipe.
 - `/craft <item>`: who can make an item, up to 5 crafters with a dot for what it gives them, the reagents and a link to the recipe on the site; or "Nobody can make it yet." with where to learn it. The answer is visible to the channel.
 
 ## v0.5.2 (2026-11-06)
