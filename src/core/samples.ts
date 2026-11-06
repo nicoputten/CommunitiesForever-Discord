@@ -177,8 +177,7 @@ function board(
 ): MessageContent {
   const sample = boardSample(now, images);
   // The picture as on the real board when it could be had, else the text board (as before).
-  const picture =
-    sample.image !== undefined && attached.includes(`${sample.image}.png`) ? `${sample.image}.png` : undefined;
+  const picture = sample.image !== undefined && attached.includes(`${sample.image}.png`) ? [`${sample.image}.png`] : [];
   const message = boardMessage(sample, eventId, siteUrl, pageUrl, undefined, picture);
   // Only "Open the board ↗": "My goals" answers with real data, and the sample is never edited.
   return {
