@@ -5,6 +5,7 @@
 // every 5 minutes while the others go on; after GIVE_UP_AFTER refusals it is given up until the channels change or the
 // bot restarts (the site lets it expire after 7 days). Each kind of event has its channel (the posts channel when none is set) and its handler:
 // - feats (the `milestones` event): app/featPosts.ts, grouped by editing (BOT-09, BOT-14), the feats channel (BOT-17)
+// - rare recipe finds (the `recipeFinds` event, BOT-25): one post each, the feats channel
 // - the weekly recap with its card images (BOT-05): the recap channel. A recap missed while the bot was away comes
 //   when it is back, since the site keeps it until it is acknowledged.
 // - planned runs and asks (BOT-04, BOT-12): app/runPosts.ts, the runs channel
@@ -28,6 +29,7 @@ import { ladderMessage } from "../core/ladder.js";
 import { attachmentNames, markedEvents } from "../core/message.js";
 import { opt } from "../core/read.js";
 import { recapFiles, recapMessage } from "../core/recap.js";
+import { recipeFindsFiles, recipeFindsMessage } from "../core/recipes.js";
 import { testFiles, testSample } from "../core/samples.js";
 import { type SiteSettings, readSettings, settingsText } from "../core/settings.js";
 import { DoomsdayBoards } from "./doomsdayPosts.js";
@@ -120,6 +122,19 @@ export async function runPoster(deps: PosterDeps, signal: AbortSignal): Promise<
       case "board":
         // Undefined: waiting for the edit throttle, acknowledged once shown.
         return boards.handle(eventId, action.board, ch.doomsday, action.posted);
+      case "finds": {
+        // BOT-25: the class icon for the author line; the item icons are the site's open URLs (web WEB-91).
+        const files = await loadFiles(recipeFindsFiles(action.finds), site, log, signal, "the rare-find post");
+        const content = recipeFindsMessage(
+          action.finds,
+          eventId,
+          siteUrl,
+          files.map((f) => f.name),
+        );
+        const id = await discord.post(ch.feats, content, files);
+        log.info(`posted event ${eventId} (rare finds)`);
+        return id;
+      }
       case "ladder": {
         const id = await discord.post(ch.doomsday, ladderMessage(action.ladder, eventId, siteUrl, host, page));
         log.info(`posted event ${eventId} (Doomsday ladder)`);
@@ -385,6 +400,7 @@ function waits(action: Handled, settings: SiteSettings): boolean {
   const own = (value: string | null | undefined) => typeof value !== "string";
   switch (action.do) {
     case "post":
+    case "finds":
       return own(settings.featsChannel);
     case "send":
       return true;

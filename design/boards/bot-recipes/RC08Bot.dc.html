@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Recipes · DoomBot</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#070C15}
+a{color:#D4AF6A}a:hover{color:#F0D08E}
+.box{padding:18px 20px;border-radius:14px;background:rgba(12,18,30,.8);border:1px solid rgba(212,175,106,.22);display:flex;flex-direction:column;gap:12px}
+.bt{margin:0;font:17px 'Marcellus SC',serif;letter-spacing:.08em;color:#F0D08E}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:10px;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;border:0;box-sizing:border-box}
+.pri{background:#D4AF6A;color:#0B0F14}
+.sec{background:transparent;border:1px solid rgba(212,175,106,.4);color:#F0D08E}
+.ghost{background:transparent;color:#AEB6C3;border:1px solid rgba(174,182,195,.25)}
+.danger{background:transparent;color:#F59A9C;border:1px solid rgba(218,55,60,.45)}
+.on{background:rgba(127,217,154,.16);color:#9BE3B0;border:1px solid rgba(127,217,154,.5)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(174,182,195,.25);background:rgba(12,18,30,.8);color:#AEB6C3;font:500 13px Inter,sans-serif;cursor:pointer}
+.chip.act{border-color:#D4AF6A;background:rgba(212,175,106,.16);color:#F3EBDA}
+.pill{display:inline-block;font:700 11px/1 Inter,sans-serif;padding:4px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
+.p-open{background:rgba(212,175,106,.18);color:#F3DFAE}
+.p-soon{background:rgba(240,167,116,.18);color:#F6C29C}
+.p-full{background:rgba(127,217,154,.16);color:#9BE3B0}
+.p-done{background:rgba(174,182,195,.12);color:#C4C9D0}
+.p-cx{background:rgba(218,55,60,.18);color:#F59A9C}
+.lab{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#7E8898}
+.sel{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:0 14px;border-radius:10px;background:#0B1220;border:1px solid rgba(174,182,195,.25);font-size:14px;color:#E6E1D6;box-sizing:border-box}
+.muted{color:#8E98A8}
+.slots{display:flex;gap:4px}
+.slots i{width:22px;height:8px;border-radius:2px;display:block}
+.run{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:18px;align-items:center;padding:16px 18px;border-radius:12px;background:rgba(12,18,30,.8);border:1px solid rgba(174,182,195,.14);text-decoration:none;color:#E6E1D6}
+.run:hover{border-color:rgba(212,175,106,.45)}
+.when{display:flex;flex-direction:column;gap:2px}
+.when b{font:22px/1 'Marcellus',serif;color:#F3EBDA;font-weight:400}
+.when span{font-size:12px;color:#8E98A8}
+.rn{font:18px 'Marcellus',serif;color:#F3EBDA}
+.rm{font-size:13px;color:#AEB6C3;margin-top:3px}
+.yours{font-size:12px;margin-top:6px}
+.sk{background:linear-gradient(90deg,#121B2A,#1A2537,#121B2A);background-size:200% 100%;animation:sh 1.4s linear infinite;border-radius:8px}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.wa{color:#C69B6D}.pa{color:#F48CBA}.hu{color:#AAD372}.ro{color:#FFF468}.pr{color:#FFFFFF}.sh{color:#4DA3FF}.ma{color:#3FC7EB}.wl{color:#A9AAF5}.dr{color:#FF9A45}
+a:focus-visible,button:focus-visible{outline:2px solid #F0D08E;outline-offset:2px}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+
+.chatd{background:#313338;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:16px;font-family:Inter,sans-serif;color:#DBDEE1}
+.ch{font-size:13px;font-weight:600;color:#949BA4;padding-bottom:10px;border-bottom:1px solid #3F4147}
+.msg{display:grid;grid-template-columns:40px minmax(0,1fr);gap:14px}
+.nm{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;color:#F2F3F5}
+.app{font:700 10px/1 Inter,sans-serif;padding:3px 5px;border-radius:3px;background:#5865F2;color:#fff}
+.ts{font-size:12px;font-weight:400;color:#949BA4}
+.emb{margin-top:6px;background:#2B2D31;border-left:4px solid #D4AF6A;border-radius:4px;padding:12px 16px 14px;display:flex;flex-direction:column;gap:8px}
+.et{font-size:16px;font-weight:700;color:#F2F3F5}
+.ed{font-size:14px;line-height:1.5;color:#DBDEE1}
+.fn{font-size:13px;font-weight:700;color:#F2F3F5}
+.ef{font-size:12px;color:#949BA4}
+.b{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 14px;border-radius:4px;font:500 14px Inter,sans-serif;color:#fff;background:#4E5058}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.fl{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:14px;line-height:1.3}
+.st{text-decoration:line-through;color:#949BA4}
+.eph{font-size:12px;color:#949BA4;display:flex;align-items:center;gap:6px;margin-top:6px}
+.lab2{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#B5BAC1}
+.wa{color:#C69B6D}.pa{color:#F48CBA}.hu{color:#AAD372}.ro{color:#FFF468}.pr{color:#FFFFFF}.sh{color:#4DA3FF}.ma{color:#3FC7EB}.wl{color:#A9AAF5}.drc{color:#FF9A45}
+
+.h1{margin:0;font:38px 'Marcellus SC',serif;letter-spacing:.05em;color:#F3DFAE}
+.sub{margin:6px 0 0;font-size:15px;color:#8E98A8;line-height:1.5;max-width:1150px}
+.hs{margin:0;font:24px 'Marcellus SC',serif;letter-spacing:.06em;color:#F0D08E;display:flex;align-items:center;gap:12px}
+.hs i{flex:1;height:1px;background:linear-gradient(90deg,rgba(212,175,106,.45),rgba(212,175,106,0))}
+.card{padding:18px 20px;border-radius:14px;background:rgba(12,18,30,.82);border:1px solid rgba(212,175,106,.22);display:flex;flex-direction:column;gap:10px}
+.card h3{margin:0;font:17px 'Marcellus SC',serif;letter-spacing:.07em;color:#F3DFAE}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;font-size:13.5px;line-height:1.5;color:#C9CFD9;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.row:last-child{border-bottom:0}
+.row b{color:#F3EBDA;font-weight:600}
+.row em{font-style:normal;color:#8E98A8}
+.sev{font:700 10px/1 Inter,sans-serif;padding:3px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.s-bug{background:rgba(218,55,60,.2);color:#F59A9C}.s-ux{background:rgba(111,176,224,.18);color:#A8D2F0}.s-leak{background:rgba(240,167,116,.18);color:#F6C29C}.s-ok{background:rgba(127,217,154,.16);color:#9BE3B0}
+.q{font-size:12px;color:#7E8898;font-family:ui-monospace,Menlo,monospace}
+.before{position:relative;padding:14px;border-radius:12px;border:1px dashed rgba(218,55,60,.45);background:rgba(218,55,60,.04)}
+.after{position:relative;padding:14px;border-radius:12px;border:1px solid rgba(127,217,154,.45);background:rgba(127,217,154,.03)}
+.tagb,.taga{position:absolute;top:-10px;left:12px;font:700 10px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:4px 7px;border-radius:4px}
+.tagb{background:#3A1A1E;color:#F59A9C}.taga{background:#16301F;color:#9BE3B0}
+.lab{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#7E8898}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(174,182,195,.25);background:rgba(12,18,30,.8);color:#AEB6C3;font:500 13px Inter,sans-serif;white-space:nowrap}
+.chip.act{border-color:#D4AF6A;background:rgba(212,175,106,.16);color:#F3EBDA}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:10px;font:600 14px Inter,sans-serif;border:0}
+.ghost{background:transparent;color:#AEB6C3;border:1px solid rgba(174,182,195,.25)}
+.tip{position:relative;display:inline-flex;width:18px;height:18px;border-radius:50%;border:1px solid rgba(212,175,106,.55);color:#D4AF6A;font:600 11px/16px Inter,sans-serif;justify-content:center;vertical-align:1px}
+.bubble{position:absolute;z-index:3;width:260px;padding:10px 12px;border-radius:10px;background:#0E1626;border:1px solid rgba(212,175,106,.45);box-shadow:0 12px 30px rgba(0,0,0,.5);font-size:12.5px;line-height:1.5;color:#C9CFD9}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#F3DFAE}
+.emb2{margin-top:6px;background:#2B2D31;border-left:4px solid #D4AF6A;border-radius:4px;padding:12px 16px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;max-width:432px;box-sizing:border-box}
+.emb2 .full{grid-column:1 / -1}
+.au{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#F2F3F5}
+.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 12px}
+.fields b{display:block;font-size:13px;color:#F2F3F5}
+.fields span{font-size:14px;color:#DBDEE1}
+.thumb{width:72px;height:72px;border-radius:4px;flex:none}
+.ic{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;border:1px solid;border-radius:4px;overflow:hidden;background:linear-gradient(145deg,#3A3226,#121212)}
+.ic .n{position:absolute;right:2px;bottom:0;font:700 11px Inter,sans-serif;color:#fff;text-shadow:0 0 2px #000,0 0 2px #000}
+</style>
+</helmet>
+<div style="width: 1880px; box-sizing: border-box; padding: 48px 56px 64px; background: radial-gradient(1200px 500px at 30% -10%, #12233A, rgba(7,12,21,0) 70%), #070C15; font-family: Inter, system-ui, sans-serif; color: #E6E1D6; display: flex; flex-direction: column; gap: 26px">
+  <div><h1 class="h1">Recipes · DoomBot</h1><p class="sub">Rare finds post by themselves; /craft answers who can make an item, with the reagents.</p></div><div style="display: grid; grid-template-columns: 600px 600px 460px; gap: 32px; align-items: start"><div><div class="lab" style="margin-bottom: 8px">Rare find posts</div><div class="chatd" style="width: 600px; box-sizing: border-box"><div class="ch"># doombringers</div><div class="msg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="40" height="40" style="flex: none; border-radius: 50%"><defs><radialGradient id="bgr1" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#1E3352"></stop><stop offset=".6" stop-color="#0D1828"></stop><stop offset="1" stop-color="#060B14"></stop></radialGradient>
+<radialGradient id="glr1" cx="50%" cy="45%" r="50%"><stop offset="0" stop-color="#D4AF6A" stop-opacity=".22"></stop><stop offset="1" stop-color="#D4AF6A" stop-opacity="0"></stop></radialGradient></defs>
+<rect width="512" height="512" fill="url(#bgr1)"></rect><circle cx="256" cy="262" r="200" fill="url(#glr1)"></circle><g transform="translate(87 99) scale(13)" stroke-linejoin="round" stroke-linecap="round"><path d="M13 2V-0.6" stroke="#F0D08E" stroke-width="0.9"></path><circle cx="13" cy="-1.3" r="1.1" fill="#F0D08E"></circle><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z" fill="#121B2A" stroke="#F0D08E" stroke-width="1"></path><rect x="8.2" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><rect x="14.6" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><path d="M9.5 16h7" stroke="#D4AF6A" stroke-width="0.9"></path><path d="M11.2 15.2v1.6M13 15.2v1.6M14.8 15.2v1.6" stroke="#D4AF6A" stroke-width="0.6"></path></g></svg><div style="min-width: 0"><div class="nm">DoomBot <span class="app">APP</span> <span class="ts">Today at 21:14</span></div><div class="emb2" style="border-left-color: #A335EE"><div class="full" style="display: contents"></div><div style="display: flex; flex-direction: column; gap: 8px; min-width: 0"><div class="au"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="20" height="20" style="flex: none; vertical-align: -4px" role="img" aria-label="Mage"><defs><radialGradient id="hz1-mage" cx="35%" cy="28%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".38"></stop><stop offset=".55" stop-color="#fff" stop-opacity="0"></stop></radialGradient></defs><circle cx="64" cy="64" r="60" fill="#3FC7EB"></circle><circle cx="64" cy="64" r="60" fill="url(#hz1-mage)"></circle><path d="M64 18 L73 55 L110 64 L73 73 L64 110 L55 73 L18 64 L55 55 Z" fill="#0B1322"></path><circle cx="64" cy="64" r="8" fill="#3FC7EB"></circle><circle cx="64" cy="64" r="60.5" fill="none" stroke="#0B0F14" stroke-width="4"></circle></svg> Mira learned a rare recipe</div>
+      <div style="font-size: 16px; font-weight: 600; color: #F2F3F5">Robe of the Archmage</div>
+      <div class="fields" style="grid-template-columns: repeat(2, minmax(0, 1fr))"><div><b>Tailoring</b><span>300</span></div><div><b>Learned from</b><span>Drop · Blackrock Spire</span></div></div></div><div><span class="ic" style="width: 64px; height: 64px; border-color: #A335EE"><svg width="60" height="60" viewBox="0 0 32 32"><path d="M11 5h10l3 6-3 2 2 14H9l2-14-3-2z" fill="#B66BE8" stroke="#3A1652" stroke-width="1"></path><path d="M16 6v20" stroke="#E5C5FF" stroke-width="1.2"></path></svg></span></div></div></div></div><div class="msg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="40" height="40" style="flex: none; border-radius: 50%"><defs><radialGradient id="bgr2" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#1E3352"></stop><stop offset=".6" stop-color="#0D1828"></stop><stop offset="1" stop-color="#060B14"></stop></radialGradient>
+<radialGradient id="glr2" cx="50%" cy="45%" r="50%"><stop offset="0" stop-color="#D4AF6A" stop-opacity=".22"></stop><stop offset="1" stop-color="#D4AF6A" stop-opacity="0"></stop></radialGradient></defs>
+<rect width="512" height="512" fill="url(#bgr2)"></rect><circle cx="256" cy="262" r="200" fill="url(#glr2)"></circle><g transform="translate(87 99) scale(13)" stroke-linejoin="round" stroke-linecap="round"><path d="M13 2V-0.6" stroke="#F0D08E" stroke-width="0.9"></path><circle cx="13" cy="-1.3" r="1.1" fill="#F0D08E"></circle><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z" fill="#121B2A" stroke="#F0D08E" stroke-width="1"></path><rect x="8.2" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><rect x="14.6" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><path d="M9.5 16h7" stroke="#D4AF6A" stroke-width="0.9"></path><path d="M11.2 15.2v1.6M13 15.2v1.6M14.8 15.2v1.6" stroke="#D4AF6A" stroke-width="0.6"></path></g></svg><div style="min-width: 0"><div class="nm">DoomBot <span class="app">APP</span> <span class="ts">Today at 22:40</span></div><div class="emb2" style="border-left-color: #A335EE"><div class="full" style="display: contents"></div><div style="display: flex; flex-direction: column; gap: 8px; min-width: 0"><div class="au"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="20" height="20" style="flex: none; vertical-align: -4px" role="img" aria-label="Mage"><defs><radialGradient id="hz2-mage" cx="35%" cy="28%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".38"></stop><stop offset=".55" stop-color="#fff" stop-opacity="0"></stop></radialGradient></defs><circle cx="64" cy="64" r="60" fill="#3FC7EB"></circle><circle cx="64" cy="64" r="60" fill="url(#hz2-mage)"></circle><path d="M64 18 L73 55 L110 64 L73 73 L64 110 L55 73 L18 64 L55 55 Z" fill="#0B1322"></path><circle cx="64" cy="64" r="8" fill="#3FC7EB"></circle><circle cx="64" cy="64" r="60.5" fill="none" stroke="#0B0F14" stroke-width="4"></circle></svg> Mira learned 2 rare recipes</div>
+      <div style="font-size: 14px; line-height: 1.6"><span style="color: #F2F3F5; font-weight: 600">Robe of the Archmage</span> · Drop · Blackrock Spire<br><span style="color: #F2F3F5; font-weight: 600">Mooncloth Robe</span> · Rep · Thorium Brotherhood</div></div><div><span class="ic" style="width: 64px; height: 64px; border-color: #A335EE"><svg width="60" height="60" viewBox="0 0 32 32"><path d="M11 5h10l3 6-3 2 2 14H9l2-14-3-2z" fill="#B66BE8" stroke="#3A1652" stroke-width="1"></path><path d="M16 6v20" stroke="#E5C5FF" stroke-width="1.2"></path></svg></span></div></div></div></div></div></div><div><div class="lab" style="margin-bottom: 8px">/craft</div><div class="chatd" style="width: 600px; box-sizing: border-box"><div class="ch"># doombringers</div><div style="font-size: 13px; color: #B5BAC1; margin: 0 0 4px 56px">↪ <span style="color: #F2F3F5">Ves</span> used <span style="color: #00A8FC">/craft</span></div><div class="msg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="40" height="40" style="flex: none; border-radius: 50%"><defs><radialGradient id="bgr3" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#1E3352"></stop><stop offset=".6" stop-color="#0D1828"></stop><stop offset="1" stop-color="#060B14"></stop></radialGradient>
+<radialGradient id="glr3" cx="50%" cy="45%" r="50%"><stop offset="0" stop-color="#D4AF6A" stop-opacity=".22"></stop><stop offset="1" stop-color="#D4AF6A" stop-opacity="0"></stop></radialGradient></defs>
+<rect width="512" height="512" fill="url(#bgr3)"></rect><circle cx="256" cy="262" r="200" fill="url(#glr3)"></circle><g transform="translate(87 99) scale(13)" stroke-linejoin="round" stroke-linecap="round"><path d="M13 2V-0.6" stroke="#F0D08E" stroke-width="0.9"></path><circle cx="13" cy="-1.3" r="1.1" fill="#F0D08E"></circle><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z" fill="#121B2A" stroke="#F0D08E" stroke-width="1"></path><rect x="8.2" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><rect x="14.6" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><path d="M9.5 16h7" stroke="#D4AF6A" stroke-width="0.9"></path><path d="M11.2 15.2v1.6M13 15.2v1.6M14.8 15.2v1.6" stroke="#D4AF6A" stroke-width="0.6"></path></g></svg><div style="min-width: 0"><div class="nm">DoomBot <span class="app">APP</span> <span class="ts">Today at 21:30</span></div><div class="emb2" style="border-left-color: #A335EE"><div class="full" style="display: contents"></div><div style="display: flex; flex-direction: column; gap: 8px; min-width: 0"><div style="font-size: 16px; font-weight: 600; color: #F2F3F5">Robe of the Archmage</div>
+      <div style="font-size: 13px; color: #B5BAC1">Tailoring 300</div>
+      <div><b style="font-size: 13px; color: #F2F3F5">Can make it</b><div style="font-size: 14px; color: #DBDEE1">🟠 Mira</div></div>
+      <div><b style="font-size: 13px; color: #F2F3F5">Reagents</b><div style="font-size: 14px; color: #DBDEE1">12 × Bolt of Runecloth · 4 × Mooncloth · 2 × Essence of Water · 1 × Rune Thread</div></div>
+      <div style="font-size: 14px"><a href="#" style="color: #00A8FC; text-decoration: none">Open the recipe ›</a></div></div><div><span class="ic" style="width: 64px; height: 64px; border-color: #A335EE"><svg width="60" height="60" viewBox="0 0 32 32"><path d="M11 5h10l3 6-3 2 2 14H9l2-14-3-2z" fill="#B66BE8" stroke="#3A1652" stroke-width="1"></path><path d="M16 6v20" stroke="#E5C5FF" stroke-width="1.2"></path></svg></span></div></div></div></div><div style="font-size: 13px; color: #B5BAC1; margin: 0 0 4px 56px">↪ <span style="color: #F2F3F5">Ves</span> used <span style="color: #00A8FC">/craft</span></div><div class="msg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="40" height="40" style="flex: none; border-radius: 50%"><defs><radialGradient id="bgr4" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#1E3352"></stop><stop offset=".6" stop-color="#0D1828"></stop><stop offset="1" stop-color="#060B14"></stop></radialGradient>
+<radialGradient id="glr4" cx="50%" cy="45%" r="50%"><stop offset="0" stop-color="#D4AF6A" stop-opacity=".22"></stop><stop offset="1" stop-color="#D4AF6A" stop-opacity="0"></stop></radialGradient></defs>
+<rect width="512" height="512" fill="url(#bgr4)"></rect><circle cx="256" cy="262" r="200" fill="url(#glr4)"></circle><g transform="translate(87 99) scale(13)" stroke-linejoin="round" stroke-linecap="round"><path d="M13 2V-0.6" stroke="#F0D08E" stroke-width="0.9"></path><circle cx="13" cy="-1.3" r="1.1" fill="#F0D08E"></circle><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z" fill="#121B2A" stroke="#F0D08E" stroke-width="1"></path><rect x="8.2" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><rect x="14.6" y="9" width="3.2" height="2.6" rx="0.5" fill="#F0D08E"></rect><path d="M9.5 16h7" stroke="#D4AF6A" stroke-width="0.9"></path><path d="M11.2 15.2v1.6M13 15.2v1.6M14.8 15.2v1.6" stroke="#D4AF6A" stroke-width="0.6"></path></g></svg><div style="min-width: 0"><div class="nm">DoomBot <span class="app">APP</span> <span class="ts">Today at 21:31</span></div><div class="emb2" style="border-left-color: #0070DD"><div class="full" style="display: contents"></div><div style="display: flex; flex-direction: column; gap: 8px; min-width: 0"><div style="font-size: 16px; font-weight: 600; color: #F2F3F5">Flarecore Gloves</div>
+      <div style="font-size: 14px; color: #DBDEE1">Nobody can make it yet.</div>
+      <div><b style="font-size: 13px; color: #F2F3F5">Learn from</b><div style="font-size: 14px; color: #DBDEE1">Rep · Thorium Brotherhood · Honored</div></div></div><div><span class="ic" style="width: 64px; height: 64px; border-color: #0070DD"><svg width="60" height="60" viewBox="0 0 32 32"><path d="M10 26V13l2-6 2 6 1-7 2 7 1-6 2 6 2-4v17z" fill="#E86B3A" stroke="#4A1A08"></path></svg></span></div></div></div></div></div></div><div class="card"><h3>Rules</h3>
+      <div class="row"><b>1</b><span><b>Rare find</b> = learned from a world or boss drop, or a reputation vendor. Trainer, vendor and quest recipes never post.</span></div>
+      <div class="row"><b>2</b><span>One post per upload per character; 2+ rare finds fold into one list. Embed colour bar in the best item quality (Discord can’t colour text).</span></div>
+      <div class="row"><b>3</b><span><code class="mono">/craft &lt;item&gt;</code> autocompletes item names. Dots: 🟠🟡🟢⚪ = what it gives that crafter. Max 5 crafters, then “+2 more” in the link.</span></div>
+      <div class="row"><b>4</b><span>Nobody knows it: “Nobody can make it yet.” + where to learn it. Unknown item: “No recipe makes that.”</span></div>
+      <div class="row"><b>5</b><span>Posts go to the channel set for feats on the Discord page; /craft answers where it was typed.</span></div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1880,"height":880}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

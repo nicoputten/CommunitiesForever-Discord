@@ -9,6 +9,7 @@ import { type TestImages, type TestKind, readTestImages } from "./samples.js";
 import { type Ask, type Ping, type Run, readAsk, readMention, readPing, readRun } from "./runs.js";
 import type { SiteSettings } from "./settings.js";
 import { isObject, number, opt, text } from "./read.js";
+import { type RecipeFinds, readRecipeFinds } from "./recipes.js";
 
 export interface SiteEvent {
   id: number;
@@ -169,6 +170,8 @@ export type Action =
   | { do: "board"; board: Board; posted?: string }
   /** BOT-16: the weekly Doomsday ladder, for the Doomsday channel. */
   | { do: "ladder"; ladder: Ladder }
+  /** BOT-25: a character's rare recipe finds of one upload, for the feats channel. */
+  | { do: "finds"; finds: RecipeFinds }
   /** Already in the channel (found by its marker): only acknowledge it. */
   | { do: "ack"; messageId: string }
   /** Nothing to post: leave it; the site lets it expire. */
@@ -295,6 +298,13 @@ export function decide(
     const run = readRunEvent(event);
     if (run === undefined) return { do: "leave" };
     return { do: "run", event: run, ...(messageId !== undefined ? { posted: messageId } : {}) };
+  }
+  if (event.type === "recipeFinds") {
+    // BOT-25: under the feats switch (web BOT-API.md "Recipes"); off on the site's Discord page: left.
+    if (settings.milestones === false) return { do: "leave" };
+    if (messageId !== undefined) return { do: "ack", messageId };
+    const finds = readRecipeFinds(event.data);
+    return finds !== undefined ? { do: "finds", finds } : { do: "leave" };
   }
   if (event.type !== "milestones" || settings.milestones === false) return { do: "leave" };
   if (messageId !== undefined) return { do: "ack", messageId };
